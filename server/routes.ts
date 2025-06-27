@@ -87,6 +87,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Login redirect route (for landing page buttons)
+  app.get('/api/login', (req, res) => {
+    res.redirect('/auth');
+  });
+
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
