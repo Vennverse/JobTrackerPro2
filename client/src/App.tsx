@@ -13,6 +13,7 @@ import Applications from "@/pages/applications";
 import Jobs from "@/pages/jobs";
 import Subscription from "@/pages/subscription";
 import Onboarding from "@/pages/onboarding";
+import Landing from "@/pages/landing";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
