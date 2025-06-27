@@ -5,7 +5,7 @@ import fs from "fs";
 import multer from "multer";
 // Dynamic import for pdf-parse to avoid startup issues
 import { storage } from "./storage";
-import { setupAuth, isAuthenticated } from "./replitAuth";
+import { setupAuth, isAuthenticated } from "./auth";
 import { groqService } from "./groqService";
 import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
 import { 
