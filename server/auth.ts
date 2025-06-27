@@ -190,20 +190,32 @@ export async function setupAuth(app: Express) {
 // Middleware to check authentication
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   try {
-    const userId = req.session?.user?.id;
+    const sessionUser = req.session?.user;
     
-    if (!userId) {
+    if (!sessionUser) {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    // Get user from database
-    const [user] = await db.select().from(users).where(eq(users.id, userId));
-    
-    if (!user) {
-      return res.status(401).json({ message: "User not found" });
+    // For demo user, use session data directly
+    if (sessionUser.id === 'demo-user-id') {
+      req.user = {
+        id: sessionUser.id,
+        email: sessionUser.email,
+        name: sessionUser.name,
+        firstName: 'Demo',
+        lastName: 'User',
+      };
+      return next();
     }
 
-    req.user = user;
+    // For real users, also use session data (avoid database calls for now)
+    req.user = {
+      id: sessionUser.id,
+      email: sessionUser.email,
+      name: sessionUser.name,
+      firstName: 'User',
+      lastName: 'Name',
+    };
     next();
   } catch (error) {
     console.error("Authentication error:", error);
