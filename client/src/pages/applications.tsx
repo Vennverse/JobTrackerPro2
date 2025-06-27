@@ -34,7 +34,11 @@ import {
 
 export default function Applications() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
+  const [searchTerm, setSearchTerm] = useState("");
+  const [statusFilter, setStatusFilter] = useState("all");
+  const [activeTab, setActiveTab] = useState("overview");
+  const queryClient = useQueryClient();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -60,6 +64,29 @@ export default function Applications() {
     queryKey: ["/api/applications"],
     retry: false,
   });
+
+  const { data: jobAnalyses } = useQuery({
+    queryKey: ["/api/jobs/analyses"],
+    retry: false,
+  });
+
+  // Mock enhanced stats for demonstration
+  const enhancedStats = {
+    ...stats,
+    weeklyApplications: 12,
+    responseTime: "3.2 days",
+    topCompanies: ["TechCorp", "StartupXYZ", "BigTech Inc"],
+    averageMatchScore: 82,
+    interviewConversionRate: 15,
+    followUpRate: 75
+  };
+
+  const filteredApplications = applications?.filter((app: any) => {
+    const matchesSearch = app.company?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         app.jobTitle?.toLowerCase().includes(searchTerm.toLowerCase());
+    const matchesStatus = statusFilter === "all" || app.status === statusFilter;
+    return matchesSearch && matchesStatus;
+  }) || [];
 
   if (isLoading) {
     return (

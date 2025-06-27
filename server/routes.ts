@@ -224,33 +224,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // For demo user, return enhanced mock response
+      // For demo user, return enhanced mock response with realistic AI analysis
       if (userId === 'demo-user-id') {
+        const mockAnalysis = await groqService.analyzeResume(
+          "Sample resume content for demo analysis",
+          await storage.getUserProfile(userId)
+        );
+        
         return res.json({
           id: Date.now(),
           name: req.body.name || "New Resume",
           fileName: req.file?.originalname || "resume.pdf",
           isActive: existingResumes.length === 0, // First resume is active by default
-          atsScore: Math.floor(Math.random() * 20) + 75, // Random score 75-95
-          analysis: {
-            atsScore: Math.floor(Math.random() * 20) + 75,
-            recommendations: [
-              "Add more quantified achievements with specific metrics",
-              "Include relevant keywords for ATS optimization",
-              "Improve formatting for better readability",
-              "Add technical skills section with proficiency levels"
-            ],
-            strengths: [
-              "Clear professional experience timeline",
-              "Good use of action verbs",
-              "Relevant educational background"
-            ],
-            improvements: [
-              "Add more specific project details",
-              "Include measurable results and impact",
-              "Optimize keyword density for target roles"
-            ]
-          },
+          atsScore: mockAnalysis.atsScore,
+          analysis: mockAnalysis,
           uploadedAt: new Date()
         });
       }

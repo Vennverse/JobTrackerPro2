@@ -83,6 +83,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent updates to the AutoJobr platform:
+- June 27, 2025: **Major Platform Enhancement** - Completely redesigned dashboard with comprehensive resume analysis, AI-powered job recommendations, and advanced analytics
+- June 27, 2025: **Resume Management System** - Implemented 2-resume limit for free users, unlimited for premium, with Groq AI-powered ATS analysis and optimization
+- June 27, 2025: **Enhanced Applications Page** - Added comprehensive analytics, application pipeline tracking, AI insights, and performance metrics
+- June 27, 2025: **Chrome Extension AI Upgrade** - Enhanced with advanced job analysis using Groq AI, intelligent auto-fill, and real-time match scoring
+- June 27, 2025: **Job Recommendations Engine** - Built AI-powered job matching with detailed compatibility scores and personalized suggestions
+- June 27, 2025: **Groq AI Integration** - Implemented advanced AI analysis for resumes, job matching, and cover letter generation using llama3-70b-8192
 - June 27, 2025: **Critical Bug Fixes Complete** - Fixed authentication middleware error, resume upload failures, and onboarding completion redirect
 - June 27, 2025: **Groq AI Model Updated** - Migrated from decommissioned `llama-3.1-70b-versatile` to `llama3-70b-8192` for resume analysis
 - June 27, 2025: **Robust Resume Processing** - Added fallback mechanisms for PDF parsing and AI analysis to prevent upload failures
