@@ -25,6 +25,22 @@ import {
   type InsertAiJobAnalysis,
 } from "@shared/schema";
 import { db } from "./db";
+
+// Helper function to handle database errors gracefully
+async function handleDbOperation<T>(operation: () => Promise<T>, fallback?: T): Promise<T> {
+  try {
+    return await operation();
+  } catch (error: any) {
+    if (error.message?.includes('endpoint is disabled') || error.message?.includes('Control plane request failed')) {
+      console.warn('Database operation failed due to Replit DB issues, using fallback');
+      if (fallback !== undefined) {
+        return fallback;
+      }
+      throw new Error('Database temporarily unavailable');
+    }
+    throw error;
+  }
+}
 import { eq, desc, and } from "drizzle-orm";
 
 // Interface for storage operations
@@ -95,23 +111,27 @@ export interface IStorage {
 export class DatabaseStorage implements IStorage {
   // User operations (IMPORTANT) these user operations are mandatory for Replit Auth.
   async getUser(id: string): Promise<User | undefined> {
-    const [user] = await db.select().from(users).where(eq(users.id, id));
-    return user;
+    return await handleDbOperation(async () => {
+      const [user] = await db.select().from(users).where(eq(users.id, id));
+      return user;
+    }, undefined);
   }
 
   async upsertUser(userData: UpsertUser): Promise<User> {
-    const [user] = await db
-      .insert(users)
-      .values(userData)
-      .onConflictDoUpdate({
-        target: users.id,
-        set: {
-          ...userData,
-          updatedAt: new Date(),
-        },
-      })
-      .returning();
-    return user;
+    return await handleDbOperation(async () => {
+      const [user] = await db
+        .insert(users)
+        .values(userData)
+        .onConflictDoUpdate({
+          target: users.id,
+          set: {
+            ...userData,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      return user;
+    }, userData as User);
   }
 
   // Profile operations

@@ -25,37 +25,21 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   
-  // Check if we have a working database connection
+  // Always use memory store for now due to Replit DB issues
   let sessionStore;
-  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('replit')) {
-    try {
-      const pgStore = connectPg(session);
-      sessionStore = new pgStore({
-        conString: process.env.DATABASE_URL,
-        createTableIfMissing: true,
-        ttl: sessionTtl,
-        tableName: "sessions",
-      });
-      console.log('✅ Using PostgreSQL session store');
-    } catch (error: any) {
-      console.warn('⚠️ PostgreSQL session store failed, using memory store:', error.message);
-      sessionStore = undefined;
-    }
-  } else {
-    console.warn('⚠️ Using memory store for sessions. Configure DATABASE_URL for persistence.');
-    sessionStore = undefined;
-  }
   
   if (!process.env.SESSION_SECRET) {
     // Generate a temporary session secret for development
     const tempSecret = 'dev-session-secret-' + Date.now() + '-' + Math.random();
-    console.warn('⚠️ SESSION_SECRET not set, using temporary secret. Add to .env for production.');
+    console.warn('SESSION_SECRET not set, using temporary secret');
     process.env.SESSION_SECRET = tempSecret;
   }
 
+  console.log('Using memory store for sessions (Replit DB has connection issues)');
+
   return session({
     secret: process.env.SESSION_SECRET,
-    store: sessionStore,
+    store: sessionStore, // undefined = memory store
     resave: false,
     saveUninitialized: false,
     cookie: {
