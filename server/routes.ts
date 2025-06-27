@@ -681,14 +681,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const profileCompleteness = Math.round((completedSteps / completionSteps.length) * 100);
       
       // Check if onboarding was explicitly completed via the frontend flow
+      // Don't override if already completed
       const onboardingCompleted = profile?.onboardingCompleted || completedSteps === completionSteps.length;
 
-      // Update profile completion status
-      if (profile) {
+      // Only update profile completion percentage, don't change onboarding status if already completed
+      if (profile && profile.profileCompletion !== profileCompleteness) {
         await storage.upsertUserProfile({
           userId,
           profileCompletion: profileCompleteness,
-          onboardingCompleted
+          // Only set onboardingCompleted if it wasn't already true
+          ...(profile.onboardingCompleted ? {} : { onboardingCompleted })
         });
       }
 
