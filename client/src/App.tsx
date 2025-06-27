@@ -17,11 +17,18 @@ import Onboarding from "@/pages/onboarding";
 function Router() {
   const { isAuthenticated, isLoading } = useAuth();
 
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+      </div>
+    );
+  }
+
   return (
     <Switch>
-      {isLoading || !isAuthenticated ? (
-        <Route path="/" component={AuthPage} />
-      ) : (
+      <Route path="/auth" component={AuthPage} />
+      {isAuthenticated ? (
         <>
           <Route path="/" component={Dashboard} />
           <Route path="/onboarding" component={Onboarding} />
@@ -30,6 +37,8 @@ function Router() {
           <Route path="/jobs" component={Jobs} />
           <Route path="/subscription" component={Subscription} />
         </>
+      ) : (
+        <Route path="/" component={AuthPage} />
       )}
       <Route component={NotFound} />
     </Switch>

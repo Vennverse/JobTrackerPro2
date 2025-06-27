@@ -90,9 +90,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth routes
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
-      const user = await storage.getUser(userId);
-      res.json(user);
+      // Use the user data from the authentication middleware
+      res.json(req.user);
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
@@ -185,7 +184,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Job applications routes
   app.get('/api/applications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
+      
+      // For demo user, return empty array or sample data
+      if (userId === 'demo-user-id') {
+        return res.json([]);
+      }
+      
       const applications = await storage.getUserApplications(userId);
       res.json(applications);
     } catch (error) {
@@ -232,7 +237,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Application statistics
   app.get('/api/applications/stats', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
+      
+      // For demo user, return sample stats
+      if (userId === 'demo-user-id') {
+        return res.json({
+          totalApplications: 0,
+          interviews: 0,
+          responseRate: 0,
+          avgMatchScore: 0
+        });
+      }
+      
       const stats = await storage.getApplicationStats(userId);
       res.json(stats);
     } catch (error) {

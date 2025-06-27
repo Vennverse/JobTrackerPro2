@@ -32,6 +32,16 @@ GITHUB_CLIENT_SECRET=your-github-client-secret
 # LinkedIn OAuth
 LINKEDIN_CLIENT_ID=your-linkedin-client-id
 LINKEDIN_CLIENT_SECRET=your-linkedin-client-secret
+
+# Payment Systems
+# Stripe (for one-time payments and subscriptions)
+STRIPE_SECRET_KEY=sk_test_your_stripe_secret_key
+VITE_STRIPE_PUBLIC_KEY=pk_test_your_stripe_public_key
+STRIPE_PRICE_ID=price_your_subscription_price_id
+
+# PayPal (for subscriptions)
+PAYPAL_CLIENT_ID=your_paypal_client_id
+PAYPAL_CLIENT_SECRET=your_paypal_client_secret
 ```
 
 ### 3. Getting OAuth Credentials
@@ -76,11 +86,31 @@ Once configured, the social login buttons will become functional and the "Setup 
 - ⏳ OAuth providers require setup (optional)
 - ✅ All features available with demo account
 
+## Payment System Setup
+
+### Stripe Setup (for subscriptions and one-time payments)
+1. Go to [Stripe Dashboard](https://dashboard.stripe.com/apikeys)
+2. Get your API keys:
+   - `STRIPE_SECRET_KEY` - Secret key (starts with `sk_test_` or `sk_live_`)
+   - `VITE_STRIPE_PUBLIC_KEY` - Publishable key (starts with `pk_test_` or `pk_live_`)
+3. Create a subscription product:
+   - Go to [Products](https://dashboard.stripe.com/products)
+   - Create a new product for your premium plan
+   - Copy the Price ID (`STRIPE_PRICE_ID`)
+
+### PayPal Setup (for alternative payment method)
+1. Go to [PayPal Developer](https://developer.paypal.com/developer/applications/)
+2. Create a new app
+3. Copy your credentials:
+   - `PAYPAL_CLIENT_ID` - Client ID
+   - `PAYPAL_CLIENT_SECRET` - Secret
+
 ## Production Deployment
 For production deployment on other platforms:
 1. Update redirect URIs to your production domain
 2. Set `NODE_ENV=production` 
 3. Use secure session secrets
 4. Enable HTTPS for OAuth providers
+5. Use live payment keys instead of test keys
 
 The system is designed to work seamlessly across different hosting platforms.
