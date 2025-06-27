@@ -192,10 +192,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      
+      // For demo user, return mock profile
+      if (userId === 'demo-user-id') {
+        return res.json({
+          id: 1,
+          userId: 'demo-user-id',
+          firstName: 'Demo',
+          lastName: 'User',
+          email: 'demo@autojobr.com',
+          phone: '+1-555-0123',
+          professionalSummary: 'Experienced software engineer with expertise in full-stack development',
+          linkedinProfile: 'https://linkedin.com/in/demo-user',
+          portfolioWebsite: 'https://demo-portfolio.com',
+          yearsExperience: 5,
+          currentJobTitle: 'Senior Software Engineer',
+          desiredJobTitle: 'Principal Engineer',
+          currentCity: 'San Francisco',
+          currentState: 'CA',
+          willingToRelocate: true,
+          preferredWorkMode: 'remote',
+          desiredSalaryMin: 150000,
+          desiredSalaryMax: 200000,
+          highestDegree: 'Bachelor\'s',
+          majorFieldOfStudy: 'Computer Science',
+          graduationYear: 2018,
+          onboardingCompleted: true,
+          profileCompletion: 100,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+      
       const profile = await storage.getUserProfile(userId);
       res.json(profile);
     } catch (error) {
       console.error("Error fetching profile:", error);
+      
+      // If demo user and database fails, return mock data
+      if (req.user.id === 'demo-user-id') {
+        return res.json({
+          id: 1,
+          userId: 'demo-user-id',
+          firstName: 'Demo',
+          lastName: 'User',
+          onboardingCompleted: false,
+          profileCompletion: 0
+        });
+      }
+      
       res.status(500).json({ message: "Failed to fetch profile" });
     }
   });
@@ -607,6 +652,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/onboarding/status', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      
+      // For demo user, return mock onboarding status
+      if (userId === 'demo-user-id') {
+        return res.json({
+          completed: false,
+          profile: null,
+          skillsCount: 0,
+          experienceCount: 0,
+          educationCount: 0,
+          completionSteps: [
+            { id: 'basic_info', completed: false, label: 'Basic Information' },
+            { id: 'work_auth', completed: false, label: 'Work Authorization' },
+            { id: 'location', completed: false, label: 'Location' },
+            { id: 'resume', completed: false, label: 'Resume Upload' },
+            { id: 'skills', completed: false, label: 'Skills' },
+            { id: 'experience', completed: false, label: 'Work Experience' },
+            { id: 'education', completed: false, label: 'Education' }
+          ],
+          percentComplete: 0
+        });
+      }
+      
       const [profile, skills, workExperience, education] = await Promise.all([
         storage.getUserProfile(userId),
         storage.getUserSkills(userId),
@@ -656,6 +723,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     } catch (error) {
       console.error("Error fetching onboarding status:", error);
+      
+      // Fallback for demo user when database fails
+      if (req.user.id === 'demo-user-id') {
+        return res.json({
+          completed: false,
+          profile: null,
+          skillsCount: 0,
+          experienceCount: 0,
+          educationCount: 0,
+          completionSteps: [
+            { id: 'basic_info', completed: false, label: 'Basic Information' },
+            { id: 'work_auth', completed: false, label: 'Work Authorization' },
+            { id: 'location', completed: false, label: 'Location' },
+            { id: 'resume', completed: false, label: 'Resume Upload' },
+            { id: 'skills', completed: false, label: 'Skills' },
+            { id: 'experience', completed: false, label: 'Work Experience' },
+            { id: 'education', completed: false, label: 'Education' }
+          ],
+          percentComplete: 0
+        });
+      }
+      
       res.status(500).json({ message: "Failed to fetch onboarding status" });
     }
   });
