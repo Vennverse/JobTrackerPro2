@@ -2,6 +2,7 @@ import express from "express";
 import session from "express-session";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
+import { storage } from "./storage";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { Express, RequestHandler } from "express";
@@ -156,23 +157,25 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  // Demo login for testing (without database dependency)
+  // Demo login for testing
   app.post('/api/auth/demo', async (req, res) => {
     try {
-      // Create demo user in session without database
-      const demoUser = {
+      const demoUserData = {
         id: 'demo-user-id',
         email: 'demo@autojobr.com',
-        name: 'Demo User',
         firstName: 'Demo',
         lastName: 'User',
+        profileImageUrl: null
       };
+
+      // Ensure demo user exists in database
+      const demoUser = await storage.upsertUser(demoUserData);
 
       // Set session
       (req as any).session.user = {
         id: demoUser.id,
         email: demoUser.email,
-        name: demoUser.name,
+        name: `${demoUser.firstName} ${demoUser.lastName}`,
       };
 
       res.json({ 
@@ -180,7 +183,7 @@ export async function setupAuth(app: Express) {
         user: {
           id: demoUser.id,
           email: demoUser.email,
-          name: demoUser.name,
+          name: `${demoUser.firstName} ${demoUser.lastName}`,
         }
       });
     } catch (error) {
