@@ -98,6 +98,91 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Complete onboarding
+  app.post('/api/user/complete-onboarding', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      if (userId === 'demo-user-id') {
+        return res.json({ message: "Onboarding completed for demo user" });
+      }
+      
+      // In a real implementation, this would update the database
+      // For now, return success
+      res.json({ message: "Onboarding completed successfully" });
+    } catch (error) {
+      console.error("Error completing onboarding:", error);
+      res.status(500).json({ message: "Failed to complete onboarding" });
+    }
+  });
+
+  // Resume management routes
+  app.post('/api/resumes/upload', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      // For demo user, return mock response
+      if (userId === 'demo-user-id') {
+        return res.json({
+          id: 1,
+          name: "Demo Resume",
+          fileName: "demo_resume.pdf",
+          isActive: true,
+          analysis: {
+            atsScore: 85,
+            recommendations: ["Add more keywords related to the target role", "Include quantified achievements"]
+          }
+        });
+      }
+      
+      // In real implementation, handle file upload and analysis
+      res.json({ message: "Resume uploaded successfully" });
+    } catch (error) {
+      console.error("Error uploading resume:", error);
+      res.status(500).json({ message: "Failed to upload resume" });
+    }
+  });
+
+  app.get('/api/resumes', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      if (userId === 'demo-user-id') {
+        return res.json([
+          {
+            id: 1,
+            name: "Demo Resume",
+            fileName: "demo_resume.pdf",
+            isActive: true,
+            atsScore: 85,
+            createdAt: new Date()
+          }
+        ]);
+      }
+      
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching resumes:", error);
+      res.status(500).json({ message: "Failed to fetch resumes" });
+    }
+  });
+
+  app.post('/api/resumes/:id/set-active', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const resumeId = req.params.id;
+      
+      if (userId === 'demo-user-id') {
+        return res.json({ message: "Resume set as active" });
+      }
+      
+      res.json({ message: "Resume set as active" });
+    } catch (error) {
+      console.error("Error setting active resume:", error);
+      res.status(500).json({ message: "Failed to set active resume" });
+    }
+  });
+
   // Profile routes
   app.get('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
