@@ -25,9 +25,9 @@ const getOidcConfig = memoize(
 export function getSession() {
   const sessionTtl = 7 * 24 * 60 * 60 * 1000; // 1 week
   
-  // Use memory store if no database URL is available
+  // Check if we have a working database connection
   let sessionStore;
-  if (process.env.DATABASE_URL) {
+  if (process.env.DATABASE_URL && !process.env.DATABASE_URL.includes('replit')) {
     try {
       const pgStore = connectPg(session);
       sessionStore = new pgStore({
@@ -36,16 +36,21 @@ export function getSession() {
         ttl: sessionTtl,
         tableName: "sessions",
       });
+      console.log('✅ Using PostgreSQL session store');
     } catch (error: any) {
-      console.warn('Failed to create PostgreSQL session store, using memory store:', error.message);
-      sessionStore = undefined; // Will use default memory store
+      console.warn('⚠️ PostgreSQL session store failed, using memory store:', error.message);
+      sessionStore = undefined;
     }
+  } else {
+    console.warn('⚠️ Using memory store for sessions. Configure DATABASE_URL for persistence.');
+    sessionStore = undefined;
   }
   
   if (!process.env.SESSION_SECRET) {
-    console.error("SESSION_SECRET is not set. Please add it to your .env file.");
-    console.error("Example: SESSION_SECRET=your-super-secret-session-key-at-least-32-characters-long");
-    process.exit(1);
+    // Generate a temporary session secret for development
+    const tempSecret = 'dev-session-secret-' + Date.now() + '-' + Math.random();
+    console.warn('⚠️ SESSION_SECRET not set, using temporary secret. Add to .env for production.');
+    process.env.SESSION_SECRET = tempSecret;
   }
 
   return session({

@@ -7,8 +7,21 @@ import * as schema from "@shared/schema";
 neonConfig.webSocketConstructor = ws;
 
 if (!process.env.DATABASE_URL) {
-  console.error("DATABASE_URL is not set. Please add it to your .env file.");
-  console.error("Example: DATABASE_URL=postgresql://username:password@host:port/database");
+  console.error("❌ DATABASE_URL is not set. Please add it to your .env file.");
+  console.error("📝 Example: DATABASE_URL=postgresql://username:password@host:port/database");
+  console.error("");
+  console.error("🔗 Get a free database from:");
+  console.error("   • Neon: https://neon.tech");
+  console.error("   • Supabase: https://supabase.com");
+  console.error("   • PlanetScale: https://planetscale.com");
+  console.error("");
+  process.exit(1);
+}
+
+// Check for Replit database issues
+if (process.env.DATABASE_URL.includes('replit') || process.env.DATABASE_URL.includes('endpoint is disabled')) {
+  console.error("❌ Replit database connection is broken. Please use an external database.");
+  console.error("🔗 Quick setup with Neon (free): https://neon.tech");
   process.exit(1);
 }
 
