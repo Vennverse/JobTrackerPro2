@@ -31,30 +31,30 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       {isAuthenticated ? (
         <>
-          {/* Redirect to onboarding if not completed */}
-          {!user?.onboardingCompleted ? (
+          {/* Temporarily skip onboarding check - database connection issues */}
+          {/* {!user?.onboardingCompleted ? (
             <>
               <Route path="/onboarding" component={Onboarding} />
               <Route path="/" component={Onboarding} />
             </>
-          ) : (
+          ) : ( */}
             <>
               <Route path="/" component={Dashboard} />
-              <Route path="/onboarding" component={Onboarding} />
               <Route path="/profile" component={Profile} />
               <Route path="/applications" component={Applications} />
               <Route path="/jobs" component={Jobs} />
               <Route path="/subscription" component={Subscription} />
+              <Route path="/onboarding" component={Onboarding} />
+              <Route component={NotFound} />
             </>
-          )}
         </>
       ) : (
         <>
           <Route path="/" component={Landing} />
           <Route path="/auth" component={AuthPage} />
+          <Route component={NotFound} />
         </>
       )}
-      <Route component={NotFound} />
     </Switch>
   );
 }
