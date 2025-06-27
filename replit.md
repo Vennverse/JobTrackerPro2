@@ -83,9 +83,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent updates to the AutoJobr platform:
+- June 27, 2025: **Major Feature Update** - Implemented comprehensive onboarding system with first-time user flow
+- June 27, 2025: **Resume Management** - Added multi-resume support (2 for free, unlimited for premium) with ATS scoring
+- June 27, 2025: **Smart Job Analysis** - Enhanced Chrome extension to analyze jobs using real page content with Groq AI
+- June 27, 2025: **Cover Letter Generation** - Automated cover letter creation using job description and user profile  
+- June 27, 2025: **Resume Match Scoring** - Added Simplify-style compatibility scoring with visual indicators
+- June 27, 2025: **Chrome Extension Enhancement** - Improved form filling with resume selection and cover letter integration
+- June 27, 2025: Fixed all authentication issues and implemented proper routing flow (landing → onboarding → dashboard)
+- June 27, 2025: Added payment system configuration for Stripe and PayPal subscriptions
 - June 27, 2025: Replaced Replit Auth with flexible authentication system supporting Google, GitHub, LinkedIn, and demo login
-- June 27, 2025: Fixed database connection issues by implementing graceful error handling and memory session storage
-- June 27, 2025: Added comprehensive Chrome extension with stealth mode for 40+ job sites including Workday, LinkedIn, Greenhouse
-- June 27, 2025: Implemented premium subscription model with PayPal integration and daily usage limits
-- June 27, 2025: Enhanced form auto-filling with human-like delays and intelligent field detection
-- June 21, 2025: Complete Chrome extension implementation with auto-fill forms, job analysis, and application tracking
