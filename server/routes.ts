@@ -207,7 +207,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const profileData = insertUserProfileSchema.parse({ ...req.body, userId });
+      
+      // Convert date strings to Date objects if needed
+      const bodyData = { ...req.body, userId };
+      if (bodyData.lastResumeAnalysis && typeof bodyData.lastResumeAnalysis === 'string') {
+        bodyData.lastResumeAnalysis = new Date(bodyData.lastResumeAnalysis);
+      }
+      
+      const profileData = insertUserProfileSchema.parse(bodyData);
       const profile = await storage.upsertUserProfile(profileData);
       res.json(profile);
     } catch (error) {
@@ -412,14 +419,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract text from PDF
       if (req.file.mimetype === 'application/pdf') {
         try {
-          // Try to load pdf-parse with fallback
-          let pdfParse;
-          try {
-            pdfParse = (await import('pdf-parse')).default;
-          } catch (importError) {
-            // Fallback to require
-            pdfParse = require('pdf-parse');
-          }
+          // Use dynamic import for pdf-parse
+          const pdfParseModule = await import('pdf-parse');
+          const pdfParse = pdfParseModule.default;
           
           const pdfData = await pdfParse(req.file.buffer);
           resumeText = pdfData.text;

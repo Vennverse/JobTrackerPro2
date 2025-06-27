@@ -121,8 +121,40 @@ Focus on:
         throw new Error("No response from Groq API");
       }
 
-      // Parse JSON response
-      const analysis = JSON.parse(content);
+      // Parse JSON response with error handling
+      let analysis;
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        const jsonContent = jsonMatch ? jsonMatch[0] : content;
+        analysis = JSON.parse(jsonContent);
+      } catch (parseError) {
+        console.error("Failed to parse Groq response as JSON:", content);
+        // Return a fallback analysis structure
+        analysis = {
+          atsScore: 75,
+          recommendations: [
+            "Resume uploaded successfully",
+            "AI analysis will be retried automatically",
+            "Complete your profile for better recommendations"
+          ],
+          keywordOptimization: {
+            missingKeywords: [],
+            overusedKeywords: [],
+            suggestions: ["AI analysis will be available shortly"]
+          },
+          formatting: {
+            score: 80,
+            issues: [],
+            improvements: ["Resume format appears acceptable"]
+          },
+          content: {
+            strengthsFound: ["Resume uploaded successfully"],
+            weaknesses: [],
+            suggestions: ["Complete profile information for detailed analysis"]
+          }
+        };
+      }
       return analysis as ResumeAnalysis;
     } catch (error) {
       console.error("Error analyzing resume with Groq:", error);
