@@ -48,7 +48,10 @@ function Router() {
           )}
         </>
       ) : (
-        <Route path="/" component={AuthPage} />
+        <>
+          <Route path="/" component={Landing} />
+          <Route path="/auth" component={AuthPage} />
+        </>
       )}
       <Route component={NotFound} />
     </Switch>

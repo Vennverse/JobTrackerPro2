@@ -14,8 +14,22 @@ export function Navbar() {
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
-  const handleLogout = () => {
-    window.location.href = "/api/logout";
+  const handleLogout = async () => {
+    try {
+      const response = await fetch('/api/auth/signout', {
+        method: 'POST',
+        credentials: 'include'
+      });
+      
+      if (response.ok) {
+        // Redirect to landing page after successful logout
+        window.location.href = '/';
+      }
+    } catch (error) {
+      console.error('Logout failed:', error);
+      // Fallback: still redirect to landing page
+      window.location.href = '/';
+    }
   };
 
   const navItems = [

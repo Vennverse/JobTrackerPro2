@@ -149,7 +149,10 @@ export async function setupAuth(app: Express) {
       if (err) {
         return res.status(500).json({ message: "Logout failed" });
       }
-      res.json({ message: "Logged out successfully" });
+      res.json({ 
+        message: "Logged out successfully",
+        redirectTo: "/" 
+      });
     });
   });
 
