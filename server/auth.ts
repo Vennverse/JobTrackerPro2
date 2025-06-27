@@ -111,12 +111,22 @@ export async function setupAuth(app: Express) {
   });
 
   // User info endpoint
-  app.get('/api/user', (req: any, res) => {
+  app.get('/api/user', async (req: any, res) => {
     try {
       const sessionUser = req.session?.user;
       
       if (!sessionUser) {
         return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Fetch onboarding status from database
+      let onboardingCompleted = false;
+      try {
+        const { storage } = await import("./storage");
+        const profile = await storage.getUserProfile(sessionUser.id);
+        onboardingCompleted = profile?.onboardingCompleted || false;
+      } catch (error) {
+        console.error("Error fetching profile for onboarding status:", error);
       }
 
       // For demo user, return session data directly
@@ -127,6 +137,7 @@ export async function setupAuth(app: Express) {
           name: sessionUser.name,
           firstName: 'Demo',
           lastName: 'User',
+          onboardingCompleted,
         });
       }
 
@@ -137,6 +148,7 @@ export async function setupAuth(app: Express) {
         name: sessionUser.name,
         firstName: 'User',
         lastName: 'Name',
+        onboardingCompleted,
       });
     } catch (error) {
       console.error("Error fetching user:", error);

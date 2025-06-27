@@ -8,6 +8,7 @@ interface User {
   image?: string;
   firstName?: string;
   lastName?: string;
+  onboardingCompleted?: boolean;
 }
 
 export function useAuth() {
