@@ -83,8 +83,9 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent updates to the AutoJobr platform:
+- June 27, 2025: Replaced Replit Auth with flexible authentication system supporting Google, GitHub, LinkedIn, and demo login
+- June 27, 2025: Fixed database connection issues by implementing graceful error handling and memory session storage
+- June 27, 2025: Added comprehensive Chrome extension with stealth mode for 40+ job sites including Workday, LinkedIn, Greenhouse
+- June 27, 2025: Implemented premium subscription model with PayPal integration and daily usage limits
+- June 27, 2025: Enhanced form auto-filling with human-like delays and intelligent field detection
 - June 21, 2025: Complete Chrome extension implementation with auto-fill forms, job analysis, and application tracking
-- June 21, 2025: Enhanced landing page with Chrome extension showcase and installation guide
-- June 21, 2025: Added extension file serving routes and comprehensive documentation
-- June 21, 2025: Implemented real-time job matching analysis with in-browser NLP processing
-- June 21, 2025: Created complete web application with authentication, profile management, and dashboard

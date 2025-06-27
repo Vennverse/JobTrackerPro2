@@ -1,109 +1,123 @@
-import NextAuth from "next-auth";
-import { DrizzleAdapter } from "@auth/drizzle-adapter";
-import GoogleProvider from "next-auth/providers/google";
-import GitHubProvider from "next-auth/providers/github";
-import LinkedInProvider from "next-auth/providers/linkedin";
-import CredentialsProvider from "next-auth/providers/credentials";
+import express from "express";
+import session from "express-session";
 import bcrypt from "bcryptjs";
 import { db } from "./db";
-import { users, accounts, sessionsAuth, verificationTokens } from "@shared/schema";
+import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { Express, RequestHandler } from "express";
 
-// NextAuth configuration
-export const authOptions = {
-  adapter: DrizzleAdapter(db, {
-    usersTable: users,
-    accountsTable: accounts,
-    sessionsTable: sessionsAuth,
-    verificationTokensTable: verificationTokens,
-  }),
-  providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID!,
-      clientSecret: process.env.GITHUB_CLIENT_SECRET!,
-    }),
-    LinkedInProvider({
-      clientId: process.env.LINKEDIN_CLIENT_ID!,
-      clientSecret: process.env.LINKEDIN_CLIENT_SECRET!,
-    }),
-    // Email/Password login (disabled by default)
-    ...(process.env.ENABLE_EMAIL_LOGIN === 'true' ? [
-      CredentialsProvider({
-        name: "credentials",
-        credentials: {
-          email: { label: "Email", type: "email" },
-          password: { label: "Password", type: "password" }
-        },
-        async authorize(credentials) {
-          if (!credentials?.email || !credentials?.password) {
-            return null;
-          }
-
-          const [user] = await db
-            .select()
-            .from(users)
-            .where(eq(users.email, credentials.email));
-
-          if (!user || !user.password) {
-            return null;
-          }
-
-          const isPasswordValid = await bcrypt.compare(credentials.password, user.password);
-
-          if (!isPasswordValid) {
-            return null;
-          }
-
-          return {
-            id: user.id,
-            email: user.email,
-            name: user.name,
-            image: user.image,
-          };
-        }
-      })
-    ] : []),
-  ],
+// Simple auth configuration
+const authConfig = {
   session: {
-    strategy: "jwt" as const,
+    secret: process.env.NEXTAUTH_SECRET || 'default-secret-key',
+    maxAge: 7 * 24 * 60 * 60 * 1000, // 1 week
   },
-  callbacks: {
-    async jwt({ token, user }: any) {
-      if (user) {
-        token.uid = user.id;
-      }
-      return token;
+  providers: {
+    google: {
+      enabled: !!(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+      clientId: process.env.GOOGLE_CLIENT_ID,
+      clientSecret: process.env.GOOGLE_CLIENT_SECRET,
     },
-    async session({ session, token }: any) {
-      if (token) {
-        session.user.id = token.uid as string;
-      }
-      return session;
+    github: {
+      enabled: !!(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+      clientId: process.env.GITHUB_CLIENT_ID,
+      clientSecret: process.env.GITHUB_CLIENT_SECRET,
     },
-  },
-  pages: {
-    signIn: '/auth/signin',
-    error: '/auth/error',
-  },
+    linkedin: {
+      enabled: !!(process.env.LINKEDIN_CLIENT_ID && process.env.LINKEDIN_CLIENT_SECRET),
+      clientId: process.env.LINKEDIN_CLIENT_ID,
+      clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
+    },
+    email: {
+      enabled: process.env.ENABLE_EMAIL_LOGIN === 'true',
+    }
+  }
 };
 
-const handler = NextAuth(authOptions);
-
 export async function setupAuth(app: Express) {
-  // NextAuth.js API routes
-  app.all('/api/auth/*', (req, res) => {
-    return handler(req, res);
+  // Setup session middleware
+  app.use(session({
+    secret: authConfig.session.secret,
+    resave: false,
+    saveUninitialized: false,
+    cookie: {
+      secure: process.env.NODE_ENV === 'production',
+      maxAge: authConfig.session.maxAge,
+    },
+  }));
+
+  // Auth status endpoint
+  app.get('/api/auth/providers', (req, res) => {
+    res.json({
+      providers: {
+        google: authConfig.providers.google.enabled,
+        github: authConfig.providers.github.enabled,
+        linkedin: authConfig.providers.linkedin.enabled,
+        email: authConfig.providers.email.enabled,
+      },
+    });
   });
 
-  // Custom auth routes
+  // Login route
+  app.post('/api/auth/signin', async (req, res) => {
+    const { provider, email, password } = req.body;
+
+    if (provider === 'credentials' && authConfig.providers.email.enabled) {
+      try {
+        if (!email || !password) {
+          return res.status(400).json({ message: "Email and password are required" });
+        }
+
+        const [user] = await db.select().from(users).where(eq(users.email, email));
+        
+        if (!user || !user.password) {
+          return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        const isValidPassword = await bcrypt.compare(password, user.password);
+        if (!isValidPassword) {
+          return res.status(401).json({ message: "Invalid credentials" });
+        }
+
+        // Set session
+        (req as any).session.user = {
+          id: user.id,
+          email: user.email,
+          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        };
+
+        res.json({ 
+          message: "Login successful", 
+          user: {
+            id: user.id,
+            email: user.email,
+            name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          }
+        });
+      } catch (error) {
+        console.error("Login error:", error);
+        res.status(500).json({ message: "Login failed" });
+      }
+    } else {
+      // For OAuth providers, redirect to their auth URLs
+      if (provider === 'google' && authConfig.providers.google.enabled) {
+        const authUrl = `https://accounts.google.com/oauth2/v2/auth?client_id=${authConfig.providers.google.clientId}&redirect_uri=${encodeURIComponent('http://localhost:5000/api/auth/callback/google')}&scope=openid%20email%20profile&response_type=code`;
+        res.json({ redirectUrl: authUrl });
+      } else {
+        res.status(400).json({ message: "Provider not supported or not configured" });
+      }
+    }
+  });
+
+  // User info endpoint
   app.get('/api/user', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.id;
+      const userId = req.session.user?.id;
+      
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
       const [user] = await db.select().from(users).where(eq(users.id, userId));
       
       if (!user) {
@@ -124,40 +138,50 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  // Register route (for email/password - optional)
-  app.post('/api/register', async (req, res) => {
-    if (process.env.ENABLE_EMAIL_LOGIN !== 'true') {
-      return res.status(403).json({ message: "Email registration is disabled" });
-    }
+  // Logout
+  app.post('/api/auth/signout', (req: any, res) => {
+    req.session.destroy((err: any) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      res.json({ message: "Logged out successfully" });
+    });
+  });
 
+  // Demo login for testing
+  app.post('/api/auth/demo', async (req, res) => {
     try {
-      const { email, password, name } = req.body;
-
-      if (!email || !password) {
-        return res.status(400).json({ message: "Email and password are required" });
+      // Create or get demo user
+      let [demoUser] = await db.select().from(users).where(eq(users.email, 'demo@autojobr.com'));
+      
+      if (!demoUser) {
+        [demoUser] = await db.insert(users).values({
+          id: crypto.randomUUID(),
+          email: 'demo@autojobr.com',
+          name: 'Demo User',
+          firstName: 'Demo',
+          lastName: 'User',
+        }).returning();
       }
 
-      // Check if user already exists
-      const [existingUser] = await db.select().from(users).where(eq(users.email, email));
-      if (existingUser) {
-        return res.status(400).json({ message: "User already exists" });
-      }
+      // Set session
+      (req as any).session.user = {
+        id: demoUser.id,
+        email: demoUser.email,
+        name: demoUser.name || 'Demo User',
+      };
 
-      // Hash password
-      const hashedPassword = await bcrypt.hash(password, 12);
-
-      // Create user
-      const [user] = await db.insert(users).values({
-        id: crypto.randomUUID(),
-        email,
-        name,
-        password: hashedPassword,
-      }).returning();
-
-      res.status(201).json({ message: "User created successfully", userId: user.id });
+      res.json({ 
+        message: "Demo login successful", 
+        user: {
+          id: demoUser.id,
+          email: demoUser.email,
+          name: demoUser.name || 'Demo User',
+        }
+      });
     } catch (error) {
-      console.error("Registration error:", error);
-      res.status(500).json({ message: "Failed to create user" });
+      console.error("Demo login error:", error);
+      res.status(500).json({ message: "Demo login failed" });
     }
   });
 }
@@ -165,20 +189,10 @@ export async function setupAuth(app: Express) {
 // Middleware to check authentication
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   try {
-    // Get token from session or authorization header
-    const token = req.headers.authorization?.replace('Bearer ', '') || 
-                 req.session?.token;
-
-    if (!token) {
-      return res.status(401).json({ message: "No token provided" });
-    }
-
-    // For development, we'll use a simple token validation
-    // In production, this should validate JWT tokens properly
     const userId = req.session?.user?.id;
     
     if (!userId) {
-      return res.status(401).json({ message: "Invalid token" });
+      return res.status(401).json({ message: "Not authenticated" });
     }
 
     // Get user from database

@@ -10,9 +10,47 @@ import { FcGoogle } from "react-icons/fc";
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSocialLogin = (provider: string) => {
+  const handleSocialLogin = async (provider: string) => {
     setIsLoading(true);
-    window.location.href = `/api/auth/signin/${provider}`;
+    try {
+      const response = await fetch('/api/auth/signin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ provider }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.redirectUrl) {
+        window.location.href = data.redirectUrl;
+      } else {
+        console.error('Auth failed:', data.message);
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
+      setIsLoading(false);
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    setIsLoading(true);
+    try {
+      const response = await fetch('/api/auth/demo', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+      
+      if (response.ok) {
+        window.location.href = '/';
+      } else {
+        console.error('Demo login failed');
+        setIsLoading(false);
+      }
+    } catch (error) {
+      console.error('Demo login error:', error);
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -27,6 +65,24 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
+            {/* Demo Login Button */}
+            <div className="space-y-3">
+              <Button
+                className="w-full"
+                onClick={handleDemoLogin}
+                disabled={isLoading}
+              >
+                <Mail className="w-4 h-4 mr-2" />
+                Continue with Demo Account
+              </Button>
+              
+              <div className="text-center text-sm text-muted-foreground">
+                Try AutoJobr instantly with a demo account
+              </div>
+            </div>
+
+            <Separator />
+
             {/* Social Login Buttons */}
             <div className="space-y-3">
               <Button
@@ -37,6 +93,7 @@ export default function AuthPage() {
               >
                 <FcGoogle className="w-4 h-4 mr-2" />
                 Continue with Google
+                <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
               </Button>
               
               <Button
@@ -47,6 +104,7 @@ export default function AuthPage() {
               >
                 <Github className="w-4 h-4 mr-2" />
                 Continue with GitHub
+                <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
               </Button>
               
               <Button
@@ -57,6 +115,7 @@ export default function AuthPage() {
               >
                 <Linkedin className="w-4 h-4 mr-2" />
                 Continue with LinkedIn
+                <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
               </Button>
             </div>
 
