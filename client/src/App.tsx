@@ -15,7 +15,7 @@ import Subscription from "@/pages/subscription";
 import Onboarding from "@/pages/onboarding";
 
 function Router() {
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   if (isLoading) {
     return (
@@ -30,12 +30,22 @@ function Router() {
       <Route path="/auth" component={AuthPage} />
       {isAuthenticated ? (
         <>
-          <Route path="/" component={Dashboard} />
-          <Route path="/onboarding" component={Onboarding} />
-          <Route path="/profile" component={Profile} />
-          <Route path="/applications" component={Applications} />
-          <Route path="/jobs" component={Jobs} />
-          <Route path="/subscription" component={Subscription} />
+          {/* Redirect to onboarding if not completed */}
+          {!user?.onboardingCompleted ? (
+            <>
+              <Route path="/onboarding" component={Onboarding} />
+              <Route path="/" component={Onboarding} />
+            </>
+          ) : (
+            <>
+              <Route path="/" component={Dashboard} />
+              <Route path="/onboarding" component={Onboarding} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/applications" component={Applications} />
+              <Route path="/jobs" component={Jobs} />
+              <Route path="/subscription" component={Subscription} />
+            </>
+          )}
         </>
       ) : (
         <Route path="/" component={AuthPage} />
