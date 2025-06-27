@@ -26,7 +26,7 @@ const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applicatio
       return res.status(401).json({ message: "Unauthorized" });
     }
 
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const usage = await subscriptionService.canUseFeature(userId, feature as keyof typeof USAGE_LIMITS.free);
 
     if (!usage.canUse) {
@@ -101,7 +101,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile routes
   app.get('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const profile = await storage.getUserProfile(userId);
       res.json(profile);
     } catch (error) {
@@ -112,7 +112,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const profileData = insertUserProfileSchema.parse({ ...req.body, userId });
       const profile = await storage.upsertUserProfile(profileData);
       res.json(profile);
@@ -125,7 +125,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Skills routes
   app.get('/api/skills', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const skills = await storage.getUserSkills(userId);
       res.json(skills);
     } catch (error) {
@@ -136,7 +136,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/skills', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const skillData = insertUserSkillSchema.parse({ ...req.body, userId });
       const skill = await storage.addUserSkill(skillData);
       res.json(skill);
@@ -160,7 +160,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Work experience routes
   app.get('/api/work-experience', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const experience = await storage.getUserWorkExperience(userId);
       res.json(experience);
     } catch (error) {
@@ -172,7 +172,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Education routes
   app.get('/api/education', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const education = await storage.getUserEducation(userId);
       res.json(education);
     } catch (error) {
@@ -201,7 +201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/applications', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const applicationData = insertJobApplicationSchema.parse({ ...req.body, userId });
       const application = await storage.addJobApplication(applicationData);
       res.json(application);
@@ -272,7 +272,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Job recommendations routes
   app.get('/api/recommendations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const recommendations = await storage.getUserRecommendations(userId);
       res.json(recommendations);
     } catch (error) {
@@ -283,7 +283,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/recommendations', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const recommendationData = insertJobRecommendationSchema.parse({ ...req.body, userId });
       const recommendation = await storage.addJobRecommendation(recommendationData);
       res.json(recommendation);
@@ -307,7 +307,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Resume Analysis and Onboarding Routes (with usage limit)
   app.post('/api/resume/upload', isAuthenticated, checkUsageLimit('resumeAnalyses'), upload.single('resume'), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       if (!req.file) {
         return res.status(400).json({ message: "No resume file uploaded" });
@@ -372,7 +372,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/resume/analysis', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const profile = await storage.getUserProfile(userId);
       
       if (!profile?.atsAnalysis) {
@@ -395,7 +395,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Enhanced Job Analysis Routes with Groq AI (with usage limit)
   app.post('/api/jobs/analyze', isAuthenticated, checkUsageLimit('jobAnalyses'), async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { jobUrl, jobTitle, company, jobDescription, requirements, qualifications, benefits } = req.body;
 
       if (!jobUrl || !jobTitle || !company || !jobDescription) {
@@ -504,7 +504,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get('/api/jobs/analyses', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const analyses = await storage.getUserJobAnalyses(userId);
       res.json(analyses);
     } catch (error) {
@@ -516,7 +516,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Onboarding Status and Completion Routes
   app.get('/api/onboarding/status', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const [profile, skills, workExperience, education] = await Promise.all([
         storage.getUserProfile(userId),
         storage.getUserSkills(userId),
@@ -573,7 +573,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Profile completion helper route for form auto-fill
   app.get('/api/profile/complete', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const [user, profile, skills, workExperience, education] = await Promise.all([
         storage.getUser(userId),
         storage.getUserProfile(userId),
@@ -674,7 +674,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Subscription Management Routes (PayPal Integration for India support)
   app.get('/api/subscription/status', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const subscription = await subscriptionService.getUserSubscription(userId);
       const usageStats = await subscriptionService.getUsageStats(userId);
       
@@ -691,7 +691,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { paypalOrderId, paypalSubscriptionId } = req.body;
       
       if (!paypalOrderId || !paypalSubscriptionId) {
@@ -720,7 +720,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post('/api/subscription/cancel', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       
       await subscriptionService.updateUserSubscription(userId, {
         planType: 'free',
@@ -743,7 +743,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auto-fill usage tracking route
   app.post('/api/usage/autofill', isAuthenticated, async (req: any, res) => {
     try {
-      const userId = req.user.claims.sub;
+      const userId = req.user.id;
       const { site, fieldsCount } = req.body;
       
       // Check if user can use auto-fill feature
