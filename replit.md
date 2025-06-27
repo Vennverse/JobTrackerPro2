@@ -83,6 +83,9 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent updates to the AutoJobr platform:
+- June 27, 2025: **Database Configuration Fixed** - Switched from Neon to Replit database for development, external PostgreSQL for production
+- June 27, 2025: **Landing Page & Logout Flow** - Fixed routing so landing page is proper entry point and logout destination
+- June 27, 2025: **Authentication Flow Complete** - All auth routes working: landing → auth → onboarding → dashboard → logout → landing
 - June 27, 2025: **Major Feature Update** - Implemented comprehensive onboarding system with first-time user flow
 - June 27, 2025: **Resume Management** - Added multi-resume support (2 for free, unlimited for premium) with ATS scoring
 - June 27, 2025: **Smart Job Analysis** - Enhanced Chrome extension to analyze jobs using real page content with Groq AI
