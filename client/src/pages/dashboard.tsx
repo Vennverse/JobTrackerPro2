@@ -70,48 +70,45 @@ export default function Dashboard() {
   const recentApplications = Array.isArray(applications) ? applications.slice(0, 5) : [];
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gray-50">
       <Navbar />
       
-      {/* Hero Section */}
-      <section className="gradient-hero py-12 sm:py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center">
-            <h1 className="text-3xl sm:text-4xl md:text-6xl font-bold text-foreground mb-4 sm:mb-6">
-              Your Job Search Dashboard
-            </h1>
-            <p className="text-lg sm:text-xl text-muted-foreground max-w-3xl mx-auto">
-              Track applications, monitor progress, and optimize your job search strategy
-            </p>
-          </div>
+      {/* Simple test content */}
+      <div className="container mx-auto px-4 py-8">
+        <h1 className="text-3xl font-bold text-gray-900 mb-8">
+          Dashboard
+        </h1>
+        
+        {/* Debug Info */}
+        <div className="bg-white p-4 rounded-lg shadow mb-6">
+          <h2 className="text-lg font-semibold mb-2">Debug Info</h2>
+          <p>Authentication: {isAuthenticated ? 'Yes' : 'No'}</p>
+          <p>Loading: {isLoading ? 'Yes' : 'No'}</p>
+          <p>Stats Loading: {statsLoading ? 'Yes' : 'No'}</p>
+          <p>Apps Loading: {applicationsLoading ? 'Yes' : 'No'}</p>
+          <p>Stats Data: {JSON.stringify(stats)}</p>
+          <p>Apps Data: {JSON.stringify(applications)}</p>
         </div>
-      </section>
 
-      {/* Dashboard Content */}
-      <section className="py-8 sm:py-16 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          {/* Stats Cards */}
+        {/* Stats Cards */}
+        <div className="mb-8">
+          <h2 className="text-xl font-semibold mb-4">Statistics</h2>
           <StatsCards stats={stats as any} isLoading={statsLoading} />
-
-          {/* Recent Applications */}
-          <Card className="mt-8 sm:mt-12">
-            <CardHeader>
-              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <CardTitle className="text-lg sm:text-xl">Recent Applications</CardTitle>
-                <Button variant="outline" size="sm">
-                  View All
-                </Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              <ApplicationsTable 
-                applications={recentApplications} 
-                isLoading={applicationsLoading} 
-              />
-            </CardContent>
-          </Card>
         </div>
-      </section>
+
+        {/* Recent Applications */}
+        <Card>
+          <CardHeader>
+            <CardTitle>Recent Applications</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <ApplicationsTable 
+              applications={recentApplications} 
+              isLoading={applicationsLoading} 
+            />
+          </CardContent>
+        </Card>
+      </div>
     </div>
   );
 }
