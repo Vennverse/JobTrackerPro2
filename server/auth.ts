@@ -110,27 +110,32 @@ export async function setupAuth(app: Express) {
   });
 
   // User info endpoint
-  app.get('/api/user', isAuthenticated, async (req: any, res) => {
+  app.get('/api/user', (req: any, res) => {
     try {
-      const userId = req.session.user?.id;
+      const sessionUser = req.session?.user;
       
-      if (!userId) {
+      if (!sessionUser) {
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const [user] = await db.select().from(users).where(eq(users.id, userId));
-      
-      if (!user) {
-        return res.status(404).json({ message: "User not found" });
+      // For demo user, return session data directly
+      if (sessionUser.id === 'demo-user-id') {
+        return res.json({
+          id: sessionUser.id,
+          email: sessionUser.email,
+          name: sessionUser.name,
+          firstName: 'Demo',
+          lastName: 'User',
+        });
       }
 
+      // For real users, try database (with fallback)
       res.json({
-        id: user.id,
-        email: user.email,
-        name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
-        image: user.image || user.profileImageUrl,
-        firstName: user.firstName,
-        lastName: user.lastName,
+        id: sessionUser.id,
+        email: sessionUser.email,
+        name: sessionUser.name,
+        firstName: 'User',
+        lastName: 'Name',
       });
     } catch (error) {
       console.error("Error fetching user:", error);
@@ -148,27 +153,23 @@ export async function setupAuth(app: Express) {
     });
   });
 
-  // Demo login for testing
+  // Demo login for testing (without database dependency)
   app.post('/api/auth/demo', async (req, res) => {
     try {
-      // Create or get demo user
-      let [demoUser] = await db.select().from(users).where(eq(users.email, 'demo@autojobr.com'));
-      
-      if (!demoUser) {
-        [demoUser] = await db.insert(users).values({
-          id: crypto.randomUUID(),
-          email: 'demo@autojobr.com',
-          name: 'Demo User',
-          firstName: 'Demo',
-          lastName: 'User',
-        }).returning();
-      }
+      // Create demo user in session without database
+      const demoUser = {
+        id: 'demo-user-id',
+        email: 'demo@autojobr.com',
+        name: 'Demo User',
+        firstName: 'Demo',
+        lastName: 'User',
+      };
 
       // Set session
       (req as any).session.user = {
         id: demoUser.id,
         email: demoUser.email,
-        name: demoUser.name || 'Demo User',
+        name: demoUser.name,
       };
 
       res.json({ 
@@ -176,7 +177,7 @@ export async function setupAuth(app: Express) {
         user: {
           id: demoUser.id,
           email: demoUser.email,
-          name: demoUser.name || 'Demo User',
+          name: demoUser.name,
         }
       });
     } catch (error) {

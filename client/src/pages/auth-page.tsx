@@ -120,7 +120,7 @@ export default function AuthPage() {
             </div>
 
             {/* Email Login Section (if enabled) */}
-            {process.env.VITE_ENABLE_EMAIL_LOGIN === 'true' && (
+            {import.meta.env.VITE_ENABLE_EMAIL_LOGIN === 'true' && (
               <>
                 <div className="relative">
                   <div className="absolute inset-0 flex items-center">
