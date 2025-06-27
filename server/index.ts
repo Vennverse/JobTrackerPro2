@@ -12,7 +12,11 @@ app.use(cors({
     'moz-extension://*',
     /^https?:\/\/localhost:\d+$/,
     /^https?:\/\/.*\.replit\.app$/,
-    /^https?:\/\/.*\.replit\.dev$/
+    /^https?:\/\/.*\.replit\.dev$/,
+    /^https?:\/\/.*\.vercel\.app$/,
+    /^https?:\/\/.*\.railway\.app$/,
+    /^https?:\/\/.*\.netlify\.app$/,
+    ...(process.env.PRODUCTION_DOMAIN ? [process.env.PRODUCTION_DOMAIN] : [])
   ],
   credentials: true,
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
