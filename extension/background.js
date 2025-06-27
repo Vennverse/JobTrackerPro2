@@ -73,9 +73,26 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function getUserProfile(sendResponse) {
   try {
     const { apiUrl } = await chrome.storage.sync.get(['apiUrl']);
+    const finalApiUrl = apiUrl || 'http://localhost:5000';
     
-    // First check authentication
-    const authResponse = await fetch(`${apiUrl}/api/auth/user`, {
+    // Try extension-specific endpoint first
+    const extensionResponse = await fetch(`${finalApiUrl}/api/extension/profile`, {
+      method: 'GET',
+      credentials: 'include',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (extensionResponse.ok) {
+      const profileData = await extensionResponse.json();
+      sendResponse({ success: true, data: profileData });
+      return;
+    }
+    
+    // Fallback: Check authentication
+    const authResponse = await fetch(`${finalApiUrl}/api/auth/user`, {
       method: 'GET',
       credentials: 'include',
       mode: 'cors',

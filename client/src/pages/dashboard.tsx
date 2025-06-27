@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -33,6 +33,7 @@ import {
 export default function Dashboard() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
+  const queryClient = useQueryClient();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -78,6 +79,71 @@ export default function Dashboard() {
     queryKey: ["/api/jobs/analyses"],
     retry: false,
   });
+
+  // Resume upload mutation
+  const uploadResumeMutation = useMutation({
+    mutationFn: async (formData: FormData) => {
+      const response = await fetch("/api/resumes/upload", {
+        method: "POST",
+        body: formData,
+        credentials: "include",
+      });
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || "Upload failed");
+      }
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
+      toast({
+        title: "Resume uploaded",
+        description: "Your resume has been uploaded and analyzed successfully.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Upload failed",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleResumeUpload = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const file = event.target.files?.[0];
+    if (!file) return;
+
+    // Validate file type
+    const allowedTypes = ['application/pdf', 'application/msword', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+    if (!allowedTypes.includes(file.type)) {
+      toast({
+        title: "Invalid file type",
+        description: "Please upload a PDF, DOC, or DOCX file.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Validate file size (5MB limit)
+    if (file.size > 5 * 1024 * 1024) {
+      toast({
+        title: "File too large",
+        description: "Please upload a file smaller than 5MB.",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    const formData = new FormData();
+    formData.append('resume', file);
+    formData.append('name', file.name.replace(/\.[^/.]+$/, "")); // Remove extension for name
+
+    uploadResumeMutation.mutate(formData);
+    
+    // Reset the input
+    event.target.value = '';
+  };
 
   if (isLoading) {
     return (
@@ -286,10 +352,21 @@ export default function Dashboard() {
                       ))}
                       
                       {(!resumes || resumes.length < 2 || user?.planType === 'premium') && (
-                        <Button variant="outline" className="w-full" size="sm">
-                          <Plus className="w-4 h-4 mr-2" />
-                          Add Resume
-                        </Button>
+                        <label htmlFor="resume-upload" className="w-full">
+                          <Button variant="outline" className="w-full" size="sm" asChild>
+                            <div className="cursor-pointer">
+                              <Plus className="w-4 h-4 mr-2" />
+                              Add Resume
+                            </div>
+                          </Button>
+                          <input
+                            id="resume-upload"
+                            type="file"
+                            accept=".pdf,.doc,.docx"
+                            className="hidden"
+                            onChange={handleResumeUpload}
+                          />
+                        </label>
                       )}
                       
                       {resumes?.length >= 2 && user?.planType !== 'premium' && (
