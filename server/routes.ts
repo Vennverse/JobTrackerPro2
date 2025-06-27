@@ -22,9 +22,13 @@ import { z } from "zod";
 // Middleware to check usage limits
 const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applications' | 'autoFills') => {
   return async (req: any, res: any, next: any) => {
-    if (!req.isAuthenticated()) {
+    const sessionUser = req.session?.user;
+    if (!sessionUser) {
       return res.status(401).json({ message: "Unauthorized" });
     }
+
+    // Set user data for usage check
+    req.user = req.user || { id: sessionUser.id };
 
     const userId = req.user.id;
     const usage = await subscriptionService.canUseFeature(userId, feature as keyof typeof USAGE_LIMITS.free);
