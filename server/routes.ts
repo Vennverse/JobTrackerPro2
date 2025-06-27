@@ -665,7 +665,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const hasResume = !!(profile?.resumeText);
       const hasSkills = skills.length > 0;
       const hasExperience = workExperience.length > 0;
-      const hasEducation = education.length > 0;
+      const hasEducation = education.length > 0 || !!(profile?.highestDegree && profile?.majorFieldOfStudy);
 
       const completionSteps = [
         { id: 'basic_info', completed: hasBasicInfo, label: 'Basic Information' },
@@ -679,7 +679,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const completedSteps = completionSteps.filter(step => step.completed).length;
       const profileCompleteness = Math.round((completedSteps / completionSteps.length) * 100);
-      const onboardingCompleted = completedSteps === completionSteps.length;
+      
+      // Check if onboarding was explicitly completed via the frontend flow
+      const onboardingCompleted = profile?.onboardingCompleted || completedSteps === completionSteps.length;
 
       // Update profile completion status
       if (profile) {
