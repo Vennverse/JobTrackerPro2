@@ -248,6 +248,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      
+      // For demo user, return success without database operation
+      if (userId === 'demo-user-id') {
+        return res.json({
+          ...req.body,
+          id: 1,
+          userId: 'demo-user-id',
+          onboardingCompleted: true,
+          profileCompletion: 100,
+          createdAt: new Date(),
+          updatedAt: new Date()
+        });
+      }
+      
       const profileData = insertUserProfileSchema.parse({ ...req.body, userId });
       const profile = await storage.upsertUserProfile(profileData);
       res.json(profile);
