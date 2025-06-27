@@ -166,6 +166,30 @@ export const education = pgTable("education", {
   createdAt: timestamp("created_at").defaultNow(),
 });
 
+// Resumes - stores multiple resumes per user
+export const resumes = pgTable("resumes", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  name: varchar("name").notNull(), // User-given name like "Software Engineer Resume"
+  fileName: varchar("file_name").notNull(), // Original file name
+  fileUrl: varchar("file_url"), // Storage URL (could be S3, etc.)
+  fileData: text("file_data"), // Base64 encoded file content for demo
+  resumeText: text("resume_text"), // Extracted text content for analysis
+  isActive: boolean("is_active").default(false), // Which resume to use for applications
+  
+  // ATS Analysis
+  atsScore: integer("ats_score"), // 0-100 ATS compatibility score
+  analysisData: jsonb("analysis_data"), // Full Groq analysis results
+  recommendations: text("recommendations").array(), // ATS improvement suggestions
+  
+  // Metadata
+  fileSize: integer("file_size"), // File size in bytes
+  mimeType: varchar("mime_type"), // application/pdf, etc.
+  lastAnalyzed: timestamp("last_analyzed"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
 // Job applications
 export const jobApplications = pgTable("job_applications", {
   id: serial("id").primaryKey(),
@@ -390,6 +414,14 @@ export type InsertWorkExperience = z.infer<typeof insertWorkExperienceSchema>;
 export type WorkExperience = typeof workExperience.$inferSelect;
 export type InsertEducation = z.infer<typeof insertEducationSchema>;
 export type Education = typeof education.$inferSelect;
+
+export const insertResumeSchema = createInsertSchema(resumes).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+export type InsertResume = z.infer<typeof insertResumeSchema>;
+export type Resume = typeof resumes.$inferSelect;
 export type InsertJobApplication = z.infer<typeof insertJobApplicationSchema>;
 export type JobApplication = typeof jobApplications.$inferSelect;
 export type InsertJobRecommendation = z.infer<typeof insertJobRecommendationSchema>;
