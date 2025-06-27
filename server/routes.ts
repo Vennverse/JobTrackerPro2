@@ -125,26 +125,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Resume management routes
-  app.post('/api/resumes/upload', isAuthenticated, async (req: any, res) => {
+  // Enhanced job recommendations with AI-powered matching
+  app.get('/api/jobs/recommendations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       
-      // For demo user, return mock response
+      // For demo user, return rich mock data based on profile
       if (userId === 'demo-user-id') {
-        return res.json({
-          id: 1,
-          name: "Demo Resume",
-          fileName: "demo_resume.pdf",
-          isActive: true,
-          analysis: {
-            atsScore: 85,
-            recommendations: ["Add more keywords related to the target role", "Include quantified achievements"]
+        const profile = await storage.getUserProfile(userId);
+        const mockJobs = [
+          {
+            id: 1,
+            title: "Senior Software Engineer",
+            company: "TechCorp Inc",
+            location: "San Francisco, CA",
+            description: "We're looking for a Senior Software Engineer to join our team...",
+            requirements: ["5+ years experience", "React", "Node.js", "TypeScript"],
+            matchScore: 94,
+            salaryRange: "$120k - $160k",
+            workMode: "Remote",
+            postedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
+            applicationUrl: "https://techcorp.com/careers/senior-engineer",
+            benefits: ["Health insurance", "Stock options", "Flexible PTO"],
+            isBookmarked: false
+          },
+          {
+            id: 2,
+            title: "Full Stack Developer",
+            company: "StartupXYZ",
+            location: "Austin, TX",
+            description: "Join our fast-growing startup as a Full Stack Developer...",
+            requirements: ["3+ years experience", "React", "Python", "AWS"],
+            matchScore: 87,
+            salaryRange: "$90k - $130k",
+            workMode: "Hybrid",
+            postedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
+            applicationUrl: "https://startupxyz.com/jobs/fullstack",
+            benefits: ["Equity", "Health insurance", "Learning budget"],
+            isBookmarked: true
+          },
+          {
+            id: 3,
+            title: "Frontend Developer",
+            company: "Digital Agency Pro",
+            location: "New York, NY",
+            description: "Looking for a creative Frontend Developer to build amazing UIs...",
+            requirements: ["React", "TypeScript", "CSS", "Design systems"],
+            matchScore: 82,
+            salaryRange: "$80k - $110k",
+            workMode: "Remote",
+            postedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
+            applicationUrl: "https://digitalagencypro.com/careers/frontend",
+            benefits: ["Remote work", "Professional development", "Health benefits"],
+            isBookmarked: false
+          },
+          {
+            id: 4,
+            title: "Software Developer",
+            company: "Enterprise Solutions Ltd",
+            location: "Chicago, IL",
+            description: "Join our enterprise team building scalable solutions...",
+            requirements: ["2+ years experience", "Java", "Spring", "Microservices"],
+            matchScore: 75,
+            salaryRange: "$70k - $95k",
+            workMode: "On-site",
+            postedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
+            applicationUrl: "https://enterprisesolutions.com/jobs/dev",
+            benefits: ["401k", "Health insurance", "Paid training"],
+            isBookmarked: false
           }
+        ];
+        
+        return res.json(mockJobs);
+      }
+      
+      // In real implementation, use AI to match jobs
+      res.json([]);
+    } catch (error) {
+      console.error("Error fetching job recommendations:", error);
+      res.status(500).json({ message: "Failed to fetch job recommendations" });
+    }
+  });
+
+  // Resume management routes
+  app.post('/api/resumes/upload', upload.single('resume'), isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      
+      // Check resume limits based on subscription
+      const user = await storage.getUser(userId);
+      const existingResumes = await storage.getUserResumes?.(userId) || [];
+      
+      // Free users: 2 resumes, Premium: unlimited
+      if (user?.planType !== 'premium' && existingResumes.length >= 2) {
+        return res.status(400).json({ 
+          message: "Free plan allows maximum 2 resumes. Upgrade to Premium for unlimited resumes.",
+          upgradeRequired: true
         });
       }
       
-      // In real implementation, handle file upload and analysis
+      // For demo user, return enhanced mock response
+      if (userId === 'demo-user-id') {
+        return res.json({
+          id: Date.now(),
+          name: req.body.name || "New Resume",
+          fileName: req.file?.originalname || "resume.pdf",
+          isActive: existingResumes.length === 0, // First resume is active by default
+          atsScore: Math.floor(Math.random() * 20) + 75, // Random score 75-95
+          analysis: {
+            atsScore: Math.floor(Math.random() * 20) + 75,
+            recommendations: [
+              "Add more quantified achievements with specific metrics",
+              "Include relevant keywords for ATS optimization",
+              "Improve formatting for better readability",
+              "Add technical skills section with proficiency levels"
+            ],
+            strengths: [
+              "Clear professional experience timeline",
+              "Good use of action verbs",
+              "Relevant educational background"
+            ],
+            improvements: [
+              "Add more specific project details",
+              "Include measurable results and impact",
+              "Optimize keyword density for target roles"
+            ]
+          },
+          uploadedAt: new Date()
+        });
+      }
+      
+      // TODO: Implement real file processing with Groq analysis
       res.json({ message: "Resume uploaded successfully" });
     } catch (error) {
       console.error("Error uploading resume:", error);

@@ -9,10 +9,30 @@ import { ApplicationsTable } from "@/components/applications-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Badge } from "@/components/ui/badge";
+import { Progress } from "@/components/ui/progress";
+import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Separator } from "@/components/ui/separator";
+import { 
+  FileText, 
+  Upload, 
+  TrendingUp, 
+  Star, 
+  AlertCircle, 
+  CheckCircle, 
+  Clock, 
+  Target,
+  Briefcase,
+  BookOpen,
+  Lightbulb,
+  Zap,
+  Crown,
+  Plus
+} from "lucide-react";
 
 export default function Dashboard() {
   const { toast } = useToast();
-  const { isAuthenticated, isLoading } = useAuth();
+  const { user, isAuthenticated, isLoading } = useAuth();
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -36,6 +56,26 @@ export default function Dashboard() {
 
   const { data: applications, isLoading: applicationsLoading } = useQuery({
     queryKey: ["/api/applications"],
+    retry: false,
+  });
+
+  const { data: resumes, isLoading: resumesLoading } = useQuery({
+    queryKey: ["/api/resumes"],
+    retry: false,
+  });
+
+  const { data: profile } = useQuery({
+    queryKey: ["/api/profile"],
+    retry: false,
+  });
+
+  const { data: jobRecommendations, isLoading: recommendationsLoading } = useQuery({
+    queryKey: ["/api/jobs/recommendations"],
+    retry: false,
+  });
+
+  const { data: recentAnalyses } = useQuery({
+    queryKey: ["/api/jobs/analyses"],
     retry: false,
   });
 
@@ -92,15 +132,285 @@ export default function Dashboard() {
 
       {/* Dashboard Content */}
       <section className="py-8 sm:py-16 bg-background">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
           {/* Stats Cards */}
           <StatsCards stats={stats as any} isLoading={statsLoading} />
 
+          {/* Resume Analysis Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            {/* Main Resume Analysis */}
+            <div className="lg:col-span-2">
+              <Card>
+                <CardHeader>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-primary" />
+                      <CardTitle className="text-xl">Resume Analysis</CardTitle>
+                    </div>
+                    <Badge variant={profile?.atsScore >= 80 ? "default" : profile?.atsScore >= 60 ? "secondary" : "destructive"}>
+                      {profile?.atsScore || 0}% ATS Score
+                    </Badge>
+                  </div>
+                </CardHeader>
+                <CardContent className="space-y-6">
+                  {resumesLoading ? (
+                    <div className="space-y-4">
+                      <Skeleton className="h-4 w-full" />
+                      <Skeleton className="h-32 w-full" />
+                    </div>
+                  ) : resumes?.length > 0 ? (
+                    <>
+                      {/* ATS Score Progress */}
+                      <div className="space-y-2">
+                        <div className="flex justify-between items-center">
+                          <span className="text-sm font-medium">ATS Compatibility</span>
+                          <span className="text-sm text-muted-foreground">{profile?.atsScore || 0}/100</span>
+                        </div>
+                        <Progress value={profile?.atsScore || 0} className="h-3" />
+                      </div>
+
+                      {/* Resume Stats Grid */}
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                        <div className="text-center p-3 rounded-lg bg-primary/5">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-primary/10 mx-auto mb-2">
+                            <TrendingUp className="w-4 h-4 text-primary" />
+                          </div>
+                          <div className="text-lg font-bold">{resumes.length}/2</div>
+                          <div className="text-xs text-muted-foreground">Resumes</div>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-green-50 dark:bg-green-900/20">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-green-100 dark:bg-green-900/30 mx-auto mb-2">
+                            <CheckCircle className="w-4 h-4 text-green-600" />
+                          </div>
+                          <div className="text-lg font-bold">{applications?.filter(app => app.status === 'applied').length || 0}</div>
+                          <div className="text-xs text-muted-foreground">Applications</div>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-amber-100 dark:bg-amber-900/30 mx-auto mb-2">
+                            <Clock className="w-4 h-4 text-amber-600" />
+                          </div>
+                          <div className="text-lg font-bold">{applications?.filter(app => app.status === 'interview').length || 0}</div>
+                          <div className="text-xs text-muted-foreground">Interviews</div>
+                        </div>
+                        <div className="text-center p-3 rounded-lg bg-purple-50 dark:bg-purple-900/20">
+                          <div className="flex items-center justify-center w-8 h-8 rounded-full bg-purple-100 dark:bg-purple-900/30 mx-auto mb-2">
+                            <Target className="w-4 h-4 text-purple-600" />
+                          </div>
+                          <div className="text-lg font-bold">{stats?.avgMatchScore || 0}%</div>
+                          <div className="text-xs text-muted-foreground">Match Score</div>
+                        </div>
+                      </div>
+
+                      {/* AI Recommendations */}
+                      {profile?.atsAnalysis && (
+                        <div className="space-y-4">
+                          <h4 className="font-semibold flex items-center gap-2">
+                            <Lightbulb className="w-4 h-4 text-amber-500" />
+                            AI Recommendations
+                          </h4>
+                          <div className="space-y-2">
+                            {(() => {
+                              try {
+                                const analysis = typeof profile.atsAnalysis === 'string' 
+                                  ? JSON.parse(profile.atsAnalysis) 
+                                  : profile.atsAnalysis;
+                                return analysis.recommendations?.slice(0, 3).map((rec: string, idx: number) => (
+                                  <div key={idx} className="flex items-start gap-2 p-3 rounded-lg bg-muted/50">
+                                    <AlertCircle className="w-4 h-4 text-blue-500 mt-0.5 flex-shrink-0" />
+                                    <span className="text-sm">{rec}</span>
+                                  </div>
+                                ));
+                              } catch {
+                                return (
+                                  <div className="p-3 rounded-lg bg-muted/50 text-sm text-muted-foreground">
+                                    AI recommendations will be available after resume analysis
+                                  </div>
+                                );
+                              }
+                            })()}
+                          </div>
+                        </div>
+                      )}
+                    </>
+                  ) : (
+                    <div className="text-center py-8">
+                      <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                      <h3 className="font-semibold mb-2">Upload Your Resume</h3>
+                      <p className="text-muted-foreground mb-4">Get instant ATS analysis and optimization tips</p>
+                      <Button>
+                        <Upload className="w-4 h-4 mr-2" />
+                        Upload Resume
+                      </Button>
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
+            </div>
+
+            {/* Resume Management Sidebar */}
+            <div className="space-y-6">
+              {/* Resume Management */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <FileText className="w-4 h-4" />
+                    My Resumes
+                    {user?.planType !== 'premium' && (
+                      <Badge variant="outline" className="ml-auto">
+                        {resumes?.length || 0}/2 Free
+                      </Badge>
+                    )}
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-3">
+                  {resumesLoading ? (
+                    <div className="space-y-2">
+                      <Skeleton className="h-10 w-full" />
+                      <Skeleton className="h-10 w-full" />
+                    </div>
+                  ) : (
+                    <>
+                      {resumes?.map((resume: any, idx: number) => (
+                        <div key={resume.id} className="flex items-center gap-3 p-3 border rounded-lg">
+                          <FileText className="w-4 h-4 text-muted-foreground" />
+                          <div className="flex-1 min-w-0">
+                            <div className="text-sm font-medium truncate">{resume.name}</div>
+                            <div className="text-xs text-muted-foreground">
+                              ATS: {resume.atsScore || 0}% • {resume.isActive ? 'Active' : 'Inactive'}
+                            </div>
+                          </div>
+                          {resume.isActive && (
+                            <Badge variant="default" className="text-xs">Active</Badge>
+                          )}
+                        </div>
+                      ))}
+                      
+                      {(!resumes || resumes.length < 2 || user?.planType === 'premium') && (
+                        <Button variant="outline" className="w-full" size="sm">
+                          <Plus className="w-4 h-4 mr-2" />
+                          Add Resume
+                        </Button>
+                      )}
+                      
+                      {resumes?.length >= 2 && user?.planType !== 'premium' && (
+                        <Alert>
+                          <Crown className="w-4 h-4" />
+                          <AlertDescription className="text-xs">
+                            Upgrade to Premium for unlimited resumes and advanced features
+                          </AlertDescription>
+                        </Alert>
+                      )}
+                    </>
+                  )}
+                </CardContent>
+              </Card>
+
+              {/* Quick Actions */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg flex items-center gap-2">
+                    <Zap className="w-4 h-4" />
+                    Quick Actions
+                  </CardTitle>
+                </CardHeader>
+                <CardContent className="space-y-2">
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <Briefcase className="w-4 h-4 mr-2" />
+                    Find Jobs
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <BookOpen className="w-4 h-4 mr-2" />
+                    Practice Interview
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <Target className="w-4 h-4 mr-2" />
+                    Job Match Analysis
+                  </Button>
+                  <Button variant="outline" size="sm" className="w-full justify-start">
+                    <Star className="w-4 h-4 mr-2" />
+                    Cover Letter Generator
+                  </Button>
+                </CardContent>
+              </Card>
+
+              {/* Extension Status */}
+              <Card>
+                <CardHeader>
+                  <CardTitle className="text-lg">Chrome Extension</CardTitle>
+                </CardHeader>
+                <CardContent>
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                    <span className="text-sm font-medium">Connected</span>
+                  </div>
+                  <p className="text-xs text-muted-foreground mb-3">
+                    Auto-fill enabled on 50+ job boards including LinkedIn, Indeed, and Workday
+                  </p>
+                  <Button variant="outline" size="sm" className="w-full">
+                    View Extension Stats
+                  </Button>
+                </CardContent>
+              </Card>
+            </div>
+          </div>
+
+          {/* Job Recommendations */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Target className="w-5 h-5 text-primary" />
+                  Recommended Jobs
+                </CardTitle>
+                <Button variant="outline" size="sm">View All</Button>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {recommendationsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="p-4 border rounded-lg">
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-3 w-1/2 mb-3" />
+                      <Skeleton className="h-20 w-full" />
+                    </div>
+                  ))}
+                </div>
+              ) : jobRecommendations?.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {jobRecommendations.slice(0, 4).map((job: any, idx: number) => (
+                    <div key={idx} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-2">
+                        <h4 className="font-semibold text-sm">{job.title}</h4>
+                        <Badge variant="secondary" className="text-xs">
+                          {job.matchScore}% Match
+                        </Badge>
+                      </div>
+                      <p className="text-sm text-muted-foreground mb-2">{job.company}</p>
+                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{job.description}</p>
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">{job.location}</span>
+                        <Button size="sm" variant="outline">Apply</Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <h3 className="font-semibold mb-2">No Recommendations Yet</h3>
+                  <p className="text-muted-foreground text-sm">Complete your profile to get personalized job recommendations</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
           {/* Recent Applications */}
-          <Card className="mt-8 sm:mt-12">
+          <Card>
             <CardHeader>
               <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
-                <CardTitle className="text-lg sm:text-xl">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Clock className="w-5 h-5 text-primary" />
                   Recent Applications
                 </CardTitle>
                 <Button variant="outline" size="sm">
