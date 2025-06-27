@@ -36,14 +36,14 @@ class AutojobrPopup {
   async loadUserProfile() {
     try {
       const response = await this.sendMessage({ action: 'getUserProfile' });
-      if (response.success) {
+      if (response && response.success) {
         this.userProfile = response.data;
       } else {
         this.showProfileError('Please log in to AutoJobr web app first');
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
-      this.showProfileError('Failed to load profile');
+      this.showProfileError('Connection failed - check if you are logged in');
     }
   }
   

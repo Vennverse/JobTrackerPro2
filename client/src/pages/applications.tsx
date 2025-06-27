@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest } from "@/lib/queryClient";
 import { Navbar } from "@/components/navbar";
 import { ApplicationsTable } from "@/components/applications-table";
 import { StatsCards } from "@/components/stats-cards";
@@ -13,6 +14,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { 
   Search, 
   Filter, 
@@ -38,6 +42,18 @@ export default function Applications() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("overview");
+  const [showAddDialog, setShowAddDialog] = useState(false);
+  const [newApplication, setNewApplication] = useState({
+    company: "",
+    jobTitle: "",
+    jobUrl: "",
+    location: "",
+    workMode: "",
+    salary: "",
+    status: "applied",
+    appliedDate: new Date().toISOString().split('T')[0],
+    notes: ""
+  });
   const queryClient = useQueryClient();
 
   // Redirect to home if not authenticated
@@ -69,6 +85,56 @@ export default function Applications() {
     queryKey: ["/api/jobs/analyses"],
     retry: false,
   });
+
+  // Add application mutation
+  const addApplicationMutation = useMutation({
+    mutationFn: async (applicationData: any) => {
+      const response = await apiRequest("POST", "/api/applications", applicationData);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/applications/stats"] });
+      setShowAddDialog(false);
+      setNewApplication({
+        company: "",
+        jobTitle: "",
+        jobUrl: "",
+        location: "",
+        workMode: "",
+        salary: "",
+        status: "applied",
+        appliedDate: new Date().toISOString().split('T')[0],
+        notes: ""
+      });
+      toast({
+        title: "Success",
+        description: "Application added successfully!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to add application",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleAddApplication = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    if (!newApplication.company || !newApplication.jobTitle) {
+      toast({
+        title: "Validation Error",
+        description: "Company and job title are required",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    addApplicationMutation.mutate(newApplication);
+  };
 
   // Mock enhanced stats for demonstration
   const enhancedStats = {
@@ -116,10 +182,140 @@ export default function Applications() {
                   Track and manage all your job applications in one place
                 </p>
               </div>
-              <Button>
-                <Plus className="w-4 h-4 mr-2" />
-                Add Application
-              </Button>
+              <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
+                <DialogTrigger asChild>
+                  <Button>
+                    <Plus className="w-4 h-4 mr-2" />
+                    Add Application
+                  </Button>
+                </DialogTrigger>
+                <DialogContent className="sm:max-w-md">
+                  <DialogHeader>
+                    <DialogTitle>Add Application</DialogTitle>
+                    <DialogDescription>
+                      Manually track a job application you've submitted.
+                    </DialogDescription>
+                  </DialogHeader>
+                  <form onSubmit={handleAddApplication}>
+                    <div className="grid gap-4 py-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="company">Company *</Label>
+                          <Input
+                            id="company"
+                            value={newApplication.company}
+                            onChange={(e) => setNewApplication({...newApplication, company: e.target.value})}
+                            placeholder="Company name"
+                            required
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="jobTitle">Job Title *</Label>
+                          <Input
+                            id="jobTitle"
+                            value={newApplication.jobTitle}
+                            onChange={(e) => setNewApplication({...newApplication, jobTitle: e.target.value})}
+                            placeholder="Position title"
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="jobUrl">Job URL</Label>
+                        <Input
+                          id="jobUrl"
+                          value={newApplication.jobUrl}
+                          onChange={(e) => setNewApplication({...newApplication, jobUrl: e.target.value})}
+                          placeholder="https://..."
+                          type="url"
+                        />
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="location">Location</Label>
+                          <Input
+                            id="location"
+                            value={newApplication.location}
+                            onChange={(e) => setNewApplication({...newApplication, location: e.target.value})}
+                            placeholder="City, Country"
+                          />
+                        </div>
+                        <div>
+                          <Label htmlFor="workMode">Work Mode</Label>
+                          <Select value={newApplication.workMode} onValueChange={(value) => setNewApplication({...newApplication, workMode: value})}>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="remote">Remote</SelectItem>
+                              <SelectItem value="hybrid">Hybrid</SelectItem>
+                              <SelectItem value="onsite">On-site</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 gap-4">
+                        <div>
+                          <Label htmlFor="status">Status</Label>
+                          <Select value={newApplication.status} onValueChange={(value) => setNewApplication({...newApplication, status: value})}>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="applied">Applied</SelectItem>
+                              <SelectItem value="under_review">Under Review</SelectItem>
+                              <SelectItem value="interview">Interview</SelectItem>
+                              <SelectItem value="offer">Offer</SelectItem>
+                              <SelectItem value="rejected">Rejected</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                        <div>
+                          <Label htmlFor="appliedDate">Applied Date</Label>
+                          <Input
+                            id="appliedDate"
+                            type="date"
+                            value={newApplication.appliedDate}
+                            onChange={(e) => setNewApplication({...newApplication, appliedDate: e.target.value})}
+                          />
+                        </div>
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="salary">Salary Range</Label>
+                        <Input
+                          id="salary"
+                          value={newApplication.salary}
+                          onChange={(e) => setNewApplication({...newApplication, salary: e.target.value})}
+                          placeholder="e.g., $80k - $120k"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="notes">Notes</Label>
+                        <Textarea
+                          id="notes"
+                          value={newApplication.notes}
+                          onChange={(e) => setNewApplication({...newApplication, notes: e.target.value})}
+                          placeholder="Additional notes about this application..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                    <DialogFooter>
+                      <Button type="button" variant="outline" onClick={() => setShowAddDialog(false)}>
+                        Cancel
+                      </Button>
+                      <Button type="submit" disabled={addApplicationMutation.isPending}>
+                        {addApplicationMutation.isPending ? "Adding..." : "Add Application"}
+                      </Button>
+                    </DialogFooter>
+                  </form>
+                </DialogContent>
+              </Dialog>
             </div>
 
             {/* Stats Cards */}
