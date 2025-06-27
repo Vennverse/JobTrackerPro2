@@ -210,11 +210,21 @@ export default function Onboarding() {
     } else {
       // Complete onboarding
       await profileMutation.mutateAsync({ ...formData, onboardingCompleted: true });
+      
+      // Invalidate queries to refresh user auth state
+      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/onboarding/status"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      
       toast({
         title: "Onboarding Complete!",
         description: "Your profile is ready for job applications.",
       });
-      setLocation("/");
+      
+      // Small delay to ensure backend is updated before redirect
+      setTimeout(() => {
+        setLocation("/dashboard");
+      }, 500);
     }
   };
 

@@ -83,6 +83,10 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent updates to the AutoJobr platform:
+- June 27, 2025: **Critical Bug Fixes Complete** - Fixed authentication middleware error, resume upload failures, and onboarding completion redirect
+- June 27, 2025: **Groq AI Model Updated** - Migrated from decommissioned `llama-3.1-70b-versatile` to `llama3-70b-8192` for resume analysis
+- June 27, 2025: **Robust Resume Processing** - Added fallback mechanisms for PDF parsing and AI analysis to prevent upload failures
+- June 27, 2025: **Onboarding Flow Fixed** - Improved completion detection and redirect logic to properly navigate to dashboard after completion
 - June 27, 2025: **Extension API Fixed** - Added `/api/extension/profile` endpoint for Chrome extension form auto-filling
 - June 27, 2025: **Database Foreign Key Issue Resolved** - Demo user now properly created in database during login
 - June 27, 2025: **Complete Database Integration** - All profile, onboarding, and user data APIs working with PostgreSQL

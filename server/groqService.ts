@@ -111,7 +111,7 @@ Focus on:
             content: prompt
           }
         ],
-        model: "llama-3.1-70b-versatile",
+        model: "llama3-70b-8192",
         temperature: 0.3,
         max_tokens: 2000,
       });
@@ -225,7 +225,7 @@ Consider:
             content: prompt
           }
         ],
-        model: "llama-3.1-70b-versatile",
+        model: "llama3-70b-8192",
         temperature: 0.2,
         max_tokens: 2500,
       });
