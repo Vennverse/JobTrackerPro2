@@ -795,9 +795,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         professionalTitle: profile.professionalTitle || "",
         yearsExperience: profile.yearsExperience || 0,
         summary: profile.summary || "",
-        skills: [],
-        workExperience: [],
-        education: []
+        skills: [] as any[],
+        workExperience: [] as any[],
+        education: [] as any[]
       };
 
       try {
