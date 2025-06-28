@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -7,6 +7,7 @@ import { Navbar } from "@/components/navbar";
 import { StatsCards } from "@/components/stats-cards";
 import { ApplicationsTable } from "@/components/applications-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -34,6 +35,8 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
+  const [showJobAnalysisDialog, setShowJobAnalysisDialog] = useState(false);
+  const [showCoverLetterDialog, setShowCoverLetterDialog] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -391,19 +394,39 @@ export default function Dashboard() {
                   </CardTitle>
                 </CardHeader>
                 <CardContent className="space-y-2">
-                  <Button variant="outline" size="sm" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start"
+                    onClick={() => window.location.href = '/jobs'}
+                  >
                     <Briefcase className="w-4 h-4 mr-2" />
                     Find Jobs
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start"
+                    onClick={() => window.open('https://www.linkedin.com/interview-prep/', '_blank')}
+                  >
                     <BookOpen className="w-4 h-4 mr-2" />
                     Practice Interview
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start"
+                    onClick={() => setShowJobAnalysisDialog(true)}
+                  >
                     <Target className="w-4 h-4 mr-2" />
                     Job Match Analysis
                   </Button>
-                  <Button variant="outline" size="sm" className="w-full justify-start">
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="w-full justify-start"
+                    onClick={() => setShowCoverLetterDialog(true)}
+                  >
                     <Star className="w-4 h-4 mr-2" />
                     Cover Letter Generator
                   </Button>
