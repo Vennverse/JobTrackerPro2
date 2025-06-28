@@ -784,6 +784,191 @@ export default function Dashboard() {
           </Card>
         </div>
       </section>
+
+      {/* Job Analysis Dialog */}
+      <Dialog open={showJobAnalysisDialog} onOpenChange={setShowJobAnalysisDialog}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>AI Job Match Analysis</DialogTitle>
+            <DialogDescription>
+              Paste a job description to get AI-powered compatibility analysis with your profile.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!analysisResult ? (
+              <>
+                <div>
+                  <Label htmlFor="job-description">Job Description</Label>
+                  <Textarea 
+                    id="job-description"
+                    value={jobDescription}
+                    onChange={(e) => setJobDescription(e.target.value)}
+                    placeholder="Paste the full job description here..."
+                    className="min-h-[200px]"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowJobAnalysisDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleJobAnalysis} disabled={isAnalyzing}>
+                    {isAnalyzing ? "Analyzing..." : "Analyze Match"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div className="text-center">
+                  <div className="text-4xl font-bold text-primary mb-2">
+                    {(analysisResult as any).matchScore}%
+                  </div>
+                  <p className="text-sm text-muted-foreground">Job Match Score</p>
+                </div>
+                
+                {(analysisResult as any).matchingSkills && (analysisResult as any).matchingSkills.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Matching Skills</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(analysisResult as any).matchingSkills.slice(0, 6).map((skill: string, idx: number) => (
+                        <Badge key={idx} variant="outline" className="text-xs border-green-300 text-green-600">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {(analysisResult as any).missingSkills && (analysisResult as any).missingSkills.length > 0 && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Skills to Develop</h4>
+                    <div className="flex flex-wrap gap-2">
+                      {(analysisResult as any).missingSkills.slice(0, 6).map((skill: string, idx: number) => (
+                        <Badge key={idx} variant="outline" className="text-xs border-orange-300 text-orange-600">
+                          {skill}
+                        </Badge>
+                      ))}
+                    </div>
+                  </div>
+                )}
+                
+                {(analysisResult as any).applicationRecommendation && (
+                  <div>
+                    <h4 className="font-semibold mb-2">Recommendation</h4>
+                    <p className="text-sm bg-blue-50 dark:bg-blue-950 p-3 rounded-lg">
+                      {(analysisResult as any).applicationRecommendation}
+                    </p>
+                  </div>
+                )}
+                
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => {
+                    setAnalysisResult(null);
+                    setJobDescription("");
+                  }}>
+                    Analyze Another
+                  </Button>
+                  <Button onClick={() => setShowJobAnalysisDialog(false)}>
+                    Close
+                  </Button>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Cover Letter Dialog */}
+      <Dialog open={showCoverLetterDialog} onOpenChange={setShowCoverLetterDialog}>
+        <DialogContent className="sm:max-w-2xl max-h-[80vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>AI Cover Letter Generator</DialogTitle>
+            <DialogDescription>
+              Generate a personalized cover letter using AI based on your profile and the job description.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {!coverLetterResult ? (
+              <>
+                <div>
+                  <Label htmlFor="company-name">Company Name</Label>
+                  <Input 
+                    id="company-name"
+                    value={companyName}
+                    onChange={(e) => setCompanyName(e.target.value)}
+                    placeholder="e.g. Google, Microsoft, Startup Inc."
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="job-title">Job Title</Label>
+                  <Input 
+                    id="job-title"
+                    value={jobTitle}
+                    onChange={(e) => setJobTitle(e.target.value)}
+                    placeholder="e.g. Software Engineer, Product Manager"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="cover-job-description">Job Description (Optional)</Label>
+                  <Textarea
+                    id="cover-job-description"
+                    value={coverJobDescription}
+                    onChange={(e) => setCoverJobDescription(e.target.value)}
+                    placeholder="Paste job description for better personalization..."
+                    className="min-h-[120px]"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setShowCoverLetterDialog(false)}>
+                    Cancel
+                  </Button>
+                  <Button onClick={handleCoverLetterGeneration} disabled={isGenerating}>
+                    {isGenerating ? "Generating..." : "Generate Cover Letter"}
+                  </Button>
+                </div>
+              </>
+            ) : (
+              <div className="space-y-4">
+                <div>
+                  <h4 className="font-semibold mb-3">Generated Cover Letter</h4>
+                  <div className="bg-gray-50 dark:bg-gray-900 p-4 rounded-lg border">
+                    <div className="whitespace-pre-wrap text-sm leading-relaxed">
+                      {coverLetterResult}
+                    </div>
+                  </div>
+                </div>
+                
+                <div className="flex justify-between gap-2">
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      navigator.clipboard.writeText(coverLetterResult);
+                      toast({
+                        title: "Copied!",
+                        description: "Cover letter copied to clipboard",
+                      });
+                    }}
+                  >
+                    Copy to Clipboard
+                  </Button>
+                  <div className="flex gap-2">
+                    <Button variant="outline" onClick={() => {
+                      setCoverLetterResult("");
+                      setCompanyName("");
+                      setJobTitle("");
+                      setCoverJobDescription("");
+                    }}>
+                      Generate Another
+                    </Button>
+                    <Button onClick={() => setShowCoverLetterDialog(false)}>
+                      Close
+                    </Button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
