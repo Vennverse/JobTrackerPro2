@@ -1388,5 +1388,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test Groq API endpoint
+  app.get("/api/test/groq", isAuthenticated, async (req, res) => {
+    try {
+      const testResult = await groqService.analyzeResume(
+        "Test resume with software engineering experience, JavaScript, React, Node.js skills, and bachelor's degree in Computer Science.",
+        { fullName: "Test User", professionalTitle: "Software Engineer", yearsExperience: 3 }
+      );
+      
+      res.json({
+        status: "success",
+        groqConnected: true,
+        testAnalysis: {
+          atsScore: testResult.atsScore,
+          recommendationsCount: testResult.recommendations?.length || 0,
+          keywordOptimizationAvailable: !!testResult.keywordOptimization,
+          formattingScoreAvailable: !!testResult.formatting?.score
+        }
+      });
+    } catch (error) {
+      console.error("Groq API test failed:", error);
+      res.json({
+        status: "error",
+        groqConnected: false,
+        error: error.message
+      });
+    }
+  });
+
   return httpServer;
 }

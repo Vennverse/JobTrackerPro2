@@ -95,6 +95,7 @@ Recent updates to the AutoJobr platform:
 - June 27, 2025: **Onboarding Flow Fixed** - Improved completion detection and redirect logic to properly navigate to dashboard after completion
 - June 27, 2025: **Extension API Fixed** - Added `/api/extension/profile` endpoint for Chrome extension form auto-filling
 - June 27, 2025: **Database Foreign Key Issue Resolved** - Demo user now properly created in database during login
+- June 28, 2025: **Major Platform Enhancement Complete** - Implemented functional Quick Actions with AI dialogs, external job search via Adzuna API, fixed second resume upload display, Groq AI integration verification, and enhanced Chrome extension connectivity
 - June 27, 2025: **Complete Database Integration** - All profile, onboarding, and user data APIs working with PostgreSQL
 - June 27, 2025: **Database Configuration Fixed** - Switched from Neon to Replit database for development, external PostgreSQL for production
 - June 27, 2025: **Landing Page & Logout Flow** - Fixed routing so landing page is proper entry point and logout destination

@@ -9,6 +9,9 @@ import { ApplicationsTable } from "@/components/applications-table";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import { Textarea } from "@/components/ui/textarea";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
@@ -172,6 +175,80 @@ export default function Dashboard() {
             </CardContent>
           </Card>
         </div>
+
+        {/* Job Analysis Dialog */}
+        <Dialog open={showJobAnalysisDialog} onOpenChange={setShowJobAnalysisDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>AI Job Match Analysis</DialogTitle>
+              <DialogDescription>
+                Paste a job description to get AI-powered compatibility analysis with your profile.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="job-description">Job Description</Label>
+                <Textarea 
+                  id="job-description"
+                  placeholder="Paste the full job description here..."
+                  className="min-h-[200px]"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowJobAnalysisDialog(false)}>
+                  Cancel
+                </Button>
+                <Button>
+                  Analyze Match
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+
+        {/* Cover Letter Dialog */}
+        <Dialog open={showCoverLetterDialog} onOpenChange={setShowCoverLetterDialog}>
+          <DialogContent className="sm:max-w-md">
+            <DialogHeader>
+              <DialogTitle>AI Cover Letter Generator</DialogTitle>
+              <DialogDescription>
+                Generate a personalized cover letter using AI based on your profile and the job description.
+              </DialogDescription>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="company-name">Company Name</Label>
+                <Input 
+                  id="company-name"
+                  placeholder="e.g. Google, Microsoft, Startup Inc."
+                />
+              </div>
+              <div>
+                <Label htmlFor="job-title">Job Title</Label>
+                <Input 
+                  id="job-title"
+                  placeholder="e.g. Software Engineer, Product Manager"
+                />
+              </div>
+              <div>
+                <Label htmlFor="cover-job-description">Job Description (Optional)</Label>
+                <Textarea 
+                  id="cover-job-description"
+                  placeholder="Paste job description for better personalization..."
+                  className="min-h-[120px]"
+                />
+              </div>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setShowCoverLetterDialog(false)}>
+                  Cancel
+                </Button>
+                <Button>
+                  Generate Cover Letter
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
       </div>
     );
   }
