@@ -69,6 +69,10 @@ class AutojobrPopup {
     const fillFormsBtn = document.getElementById('fill-forms');
     fillFormsBtn.addEventListener('click', () => this.fillForms());
     
+    // Generate cover letter button
+    const coverLetterBtn = document.getElementById('generate-cover-letter');
+    coverLetterBtn.addEventListener('click', () => this.generateCoverLetter());
+    
     // Open dashboard link
     const dashboardLink = document.getElementById('open-dashboard');
     dashboardLink.addEventListener('click', () => this.openDashboard());
@@ -319,6 +323,64 @@ class AutojobrPopup {
     } catch (error) {
       console.error('Error filling forms:', error);
       this.showNotification('Failed to fill forms', 'error');
+    }
+  }
+
+  async generateCoverLetter() {
+    if (!this.userProfile) {
+      this.showNotification('Please log in first', 'error');
+      return;
+    }
+
+    try {
+      // Get current page job data
+      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
+      const jobData = await this.sendMessageToActiveTab({ action: 'getJobData' });
+      
+      if (!jobData || !jobData.company || !jobData.title) {
+        // Prompt user for company and job title
+        const company = prompt('Enter the company name:');
+        const jobTitle = prompt('Enter the job title:');
+        
+        if (!company || !jobTitle) {
+          this.showNotification('Company name and job title are required', 'error');
+          return;
+        }
+        
+        jobData.company = company;
+        jobData.title = jobTitle;
+      }
+
+      // Generate cover letter via API
+      const config = new ExtensionConfig();
+      const apiUrl = await config.getApiUrl();
+      
+      const response = await fetch(`${apiUrl}/api/cover-letter/generate`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        credentials: 'include',
+        body: JSON.stringify({
+          companyName: jobData.company,
+          jobTitle: jobData.title,
+          jobDescription: jobData.description || ''
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`API request failed: ${response.status}`);
+      }
+
+      const result = await response.json();
+      
+      // Copy to clipboard and show success
+      await navigator.clipboard.writeText(result.coverLetter);
+      this.showNotification('Cover letter generated and copied to clipboard!');
+      
+    } catch (error) {
+      console.error('Error generating cover letter:', error);
+      this.showNotification('Failed to generate cover letter', 'error');
     }
   }
   

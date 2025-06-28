@@ -668,15 +668,7 @@ export default function Dashboard() {
                     <Briefcase className="w-4 h-4 mr-2" />
                     Find Jobs
                   </Button>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full justify-start"
-                    onClick={() => window.open('https://www.linkedin.com/interview-prep/', '_blank')}
-                  >
-                    <BookOpen className="w-4 h-4 mr-2" />
-                    Practice Interview
-                  </Button>
+
                   <Button 
                     variant="outline" 
                     size="sm" 

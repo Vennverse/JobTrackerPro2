@@ -1714,6 +1714,13 @@
       detectAndFillForms();
       showNotification('Forms filled with your profile data', 'success');
     }
+    
+    if (request.action === 'getJobData') {
+      // Extract job data from current page
+      const jobData = extractJobData();
+      sendResponse(jobData);
+      return true;
+    }
   });
   
 })();
