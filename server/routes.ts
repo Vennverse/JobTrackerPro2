@@ -257,7 +257,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       
-      // Check resume limits based on subscription
+      // For demo user, use global storage to track resumes
+      if (userId === 'demo-user-id') {
+        // Initialize global storage for demo user resumes
+        if (!(global as any).demoUserResumes) {
+          (global as any).demoUserResumes = [{
+            id: 1,
+            name: "Demo Resume",
+            fileName: "demo_resume.pdf",
+            isActive: true,
+            atsScore: 85,
+            uploadedAt: new Date(),
+            analysis: {
+              atsScore: 85,
+              recommendations: ["Add more technical keywords", "Improve formatting"],
+              keywordOptimization: {
+                missingKeywords: ["React", "TypeScript"],
+                overusedKeywords: [],
+                suggestions: ["Include specific technologies"]
+              },
+              formatting: {
+                score: 80,
+                issues: ["Inconsistent spacing"],
+                improvements: ["Use consistent bullet points"]
+              },
+              content: {
+                strengthsFound: ["Strong technical background"],
+                weaknesses: ["Could add more quantified achievements"],
+                suggestions: ["Include metrics and numbers"]
+              }
+            }
+          }];
+        }
+        
+        const existingResumes = (global as any).demoUserResumes;
+        
+        // Check resume limits - Free users: 2 resumes, Premium: unlimited
+        const user = await storage.getUser(userId);
+        if (user?.planType !== 'premium' && existingResumes.length >= 2) {
+          return res.status(400).json({ 
+            message: "Free plan allows maximum 2 resumes. Upgrade to Premium for unlimited resumes.",
+            upgradeRequired: true
+          });
+        }
+        
+        // Generate AI analysis for new resume
+        let resumeText = '';
+        if (req.file && req.file.mimetype === 'application/pdf') {
+          try {
+            const pdfParseModule = await import('pdf-parse');
+            const pdfParse = pdfParseModule.default;
+            const pdfData = await pdfParse(req.file.buffer);
+            resumeText = pdfData.text;
+          } catch (error) {
+            console.error("Error parsing PDF:", error);
+            resumeText = "Sample resume content for analysis";
+          }
+        } else {
+          resumeText = "Sample resume content for analysis";
+        }
+        
+        const mockAnalysis = await groqService.analyzeResume(
+          resumeText,
+          await storage.getUserProfile(userId)
+        );
+        
+        const newResume = {
+          id: Date.now(),
+          name: req.body.name || req.file?.originalname?.replace(/\.[^/.]+$/, "") || "New Resume",
+          fileName: req.file?.originalname || "resume.pdf",
+          isActive: existingResumes.length === 0, // First resume is active by default
+          atsScore: mockAnalysis.atsScore,
+          analysis: mockAnalysis,
+          uploadedAt: new Date(),
+          fileSize: req.file?.size || 150000,
+          fileType: req.file?.mimetype || 'application/pdf'
+        };
+        
+        existingResumes.push(newResume);
+        return res.json(newResume);
+      }
+      
+      // Real implementation for non-demo users
       const user = await storage.getUser(userId);
       const existingResumes = await storage.getUserResumes?.(userId) || [];
       
@@ -266,24 +347,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ 
           message: "Free plan allows maximum 2 resumes. Upgrade to Premium for unlimited resumes.",
           upgradeRequired: true
-        });
-      }
-      
-      // For demo user, return enhanced mock response with realistic AI analysis
-      if (userId === 'demo-user-id') {
-        const mockAnalysis = await groqService.analyzeResume(
-          "Sample resume content for demo analysis",
-          await storage.getUserProfile(userId)
-        );
-        
-        return res.json({
-          id: Date.now(),
-          name: req.body.name || "New Resume",
-          fileName: req.file?.originalname || "resume.pdf",
-          isActive: existingResumes.length === 0, // First resume is active by default
-          atsScore: mockAnalysis.atsScore,
-          analysis: mockAnalysis,
-          uploadedAt: new Date()
         });
       }
       
@@ -300,19 +363,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       
       if (userId === 'demo-user-id') {
-        return res.json([
-          {
+        // Initialize global storage for demo user resumes if not exists
+        if (!(global as any).demoUserResumes) {
+          (global as any).demoUserResumes = [{
             id: 1,
             name: "Demo Resume",
             fileName: "demo_resume.pdf",
             isActive: true,
             atsScore: 85,
-            createdAt: new Date()
-          }
-        ]);
+            uploadedAt: new Date(),
+            analysis: {
+              atsScore: 85,
+              recommendations: ["Add more technical keywords", "Improve formatting"],
+              keywordOptimization: {
+                missingKeywords: ["React", "TypeScript"],
+                overusedKeywords: [],
+                suggestions: ["Include specific technologies"]
+              },
+              formatting: {
+                score: 80,
+                issues: ["Inconsistent spacing"],
+                improvements: ["Use consistent bullet points"]
+              },
+              content: {
+                strengthsFound: ["Strong technical background"],
+                weaknesses: ["Could add more quantified achievements"],
+                suggestions: ["Include metrics and numbers"]
+              }
+            }
+          }];
+        }
+        
+        return res.json((global as any).demoUserResumes);
       }
       
-      res.json([]);
+      // For non-demo users, fetch from database
+      const resumes = await storage.getUserResumes?.(userId) || [];
+      res.json(resumes);
     } catch (error) {
       console.error("Error fetching resumes:", error);
       res.status(500).json({ message: "Failed to fetch resumes" });
@@ -670,33 +757,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced Job Analysis Routes with Groq AI (with usage limit)
-  app.post('/api/jobs/analyze', isAuthenticated, checkUsageLimit('jobAnalyses'), async (req: any, res) => {
+  // Enhanced Job Analysis Routes with Groq AI
+  app.post('/api/jobs/analyze', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const { jobUrl, jobTitle, company, jobDescription, requirements, qualifications, benefits } = req.body;
 
-      if (!jobUrl || !jobTitle || !company || !jobDescription) {
+      // For simple job analysis from dashboard, only jobDescription is required
+      if (!jobDescription) {
         return res.status(400).json({ 
-          message: "Job URL, title, company, and description are required" 
+          message: "Job description is required" 
         });
       }
 
-      // Check if we already have a recent analysis for this job
-      const existingAnalysis = await storage.getJobAnalysisByUrl(userId, jobUrl);
-      const oneHourAgo = new Date(Date.now() - 60 * 60 * 1000);
-      
-      if (existingAnalysis && existingAnalysis.createdAt && existingAnalysis.createdAt > oneHourAgo) {
-        return res.json(existingAnalysis);
-      }
-
-      // Get comprehensive user profile for analysis
-      const [profile, skills, workExperience, education] = await Promise.all([
-        storage.getUserProfile(userId),
-        storage.getUserSkills(userId),
-        storage.getUserWorkExperience(userId),
-        storage.getUserEducation(userId)
-      ]);
+      // Get user profile for analysis
+      const profile = await storage.getUserProfile(userId);
 
       if (!profile) {
         return res.status(400).json({ 
@@ -704,53 +779,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Create simplified job data for analysis
+      const jobData = {
+        title: jobTitle || "Position",
+        company: company || "Company",
+        description: jobDescription,
+        requirements: requirements || "",
+        qualifications: qualifications || "",
+        benefits: benefits || ""
+      };
+
+      // Simplified user profile for analysis
       const userProfile = {
-        skills: skills.map(skill => ({
+        fullName: profile.fullName || "",
+        professionalTitle: profile.professionalTitle || "",
+        yearsExperience: profile.yearsExperience || 0,
+        summary: profile.summary || "",
+        skills: [],
+        workExperience: [],
+        education: []
+      };
+
+      try {
+        // Get skills, work experience, and education if available
+        const [skills, workExperience, education] = await Promise.all([
+          storage.getUserSkills(userId).catch(() => []),
+          storage.getUserWorkExperience(userId).catch(() => []),
+          storage.getUserEducation(userId).catch(() => [])
+        ]);
+
+        userProfile.skills = skills.map(skill => ({
           skillName: skill.skillName,
-          proficiencyLevel: skill.proficiencyLevel || undefined,
-          yearsExperience: skill.yearsExperience || undefined
-        })),
-        workExperience: workExperience.map(exp => ({
+          proficiencyLevel: skill.proficiencyLevel || "intermediate",
+          yearsExperience: skill.yearsExperience || 1
+        }));
+
+        userProfile.workExperience = workExperience.map(exp => ({
           position: exp.position,
           company: exp.company,
-          description: exp.description || undefined
-        })),
-        education: education.map(edu => ({
+          description: exp.description || ""
+        }));
+
+        userProfile.education = education.map(edu => ({
           degree: edu.degree,
-          fieldOfStudy: edu.fieldOfStudy || undefined,
+          fieldOfStudy: edu.fieldOfStudy || "",
           institution: edu.institution
-        })),
-        yearsExperience: profile.yearsExperience || undefined,
-        professionalTitle: profile.professionalTitle || undefined,
-        summary: profile.summary || undefined
-      };
-
-      const jobData = {
-        title: jobTitle,
-        company,
-        description: jobDescription,
-        requirements,
-        qualifications,
-        benefits
-      };
-
-      const startTime = Date.now();
+        }));
+      } catch (error) {
+        console.log("Could not fetch additional profile data:", error);
+      }
       
       // Analyze job match with Groq AI
       const analysis = await groqService.analyzeJobMatch(jobData, userProfile);
-      
-      const processingTime = Date.now() - startTime;
 
-      // Save analysis to database
-      const jobAnalysis = await storage.addJobAnalysis({
-        userId,
-        jobUrl,
-        jobTitle,
-        company,
-        jobDescription,
-        requirements,
-        qualifications,
-        benefits,
+      // Return simplified analysis result for dashboard
+      res.json({
         matchScore: analysis.matchScore,
         matchingSkills: analysis.matchingSkills,
         missingSkills: analysis.missingSkills,
@@ -758,22 +841,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         seniorityLevel: analysis.seniorityLevel,
         workMode: analysis.workMode,
         jobType: analysis.jobType,
-        salaryRange: undefined, // Will be extracted separately
-        location: undefined, // Will be extracted separately
         roleComplexity: analysis.roleComplexity,
         careerProgression: analysis.careerProgression,
         industryFit: analysis.industryFit,
         cultureFit: analysis.cultureFit,
         applicationRecommendation: analysis.applicationRecommendation,
         tailoringAdvice: analysis.tailoringAdvice,
-        interviewPrepTips: analysis.interviewPrepTips,
-        processingTime
+        interviewPrepTips: analysis.interviewPrepTips
       });
-
-      // Track usage after successful analysis
-      await trackUsage(req);
-
-      res.json(jobAnalysis);
     } catch (error) {
       console.error("Error analyzing job:", error);
       res.status(500).json({ message: "Failed to analyze job" });
