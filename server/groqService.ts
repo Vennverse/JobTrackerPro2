@@ -42,7 +42,7 @@ interface JobMatchAnalysis {
 }
 
 class GroqService {
-  private client: Groq;
+  public client: Groq;
 
   constructor() {
     if (!process.env.GROQ_API_KEY) {
