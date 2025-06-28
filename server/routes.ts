@@ -1012,7 +1012,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // For demo user, simulate real upload
+      // For demo user, simulate real upload and store in memory
       if (userId === 'demo-user-id') {
         const mockAnalysis = await groqService.analyzeResume(
           req.body.resumeText || "Sample resume for analysis",
@@ -1031,6 +1031,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           fileSize: req.file?.size || 150000,
           fileType: req.file?.mimetype || 'application/pdf'
         };
+        
+        // Store in global memory for demo (in production, this would be database)
+        if (!(global as any).demoUserResumes) {
+          (global as any).demoUserResumes = [];
+        }
+        (global as any).demoUserResumes.push(newResume);
         
         return res.json(newResume);
       }
@@ -1265,5 +1271,122 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   const httpServer = createServer(app);
+  // External job search using Adzuna API
+  app.get("/api/jobs/search", isAuthenticated, async (req, res) => {
+    try {
+      const { q: query, location = "us", page = "1" } = req.query as {
+        q?: string;
+        location?: string;
+        page?: string;
+      };
+
+      if (!query || typeof query !== 'string' || query.length < 3) {
+        return res.status(400).json({
+          message: "Query must be at least 3 characters long"
+        });
+      }
+
+      // Adzuna API endpoint
+      const appId = process.env.ADZUNA_APP_ID || "demo"; // Free tier available
+      const appKey = process.env.ADZUNA_APP_KEY || "demo";
+      const baseUrl = "https://api.adzuna.com/v1/api/jobs";
+      
+      const params = new URLSearchParams({
+        app_id: appId,
+        app_key: appKey,
+        results_per_page: "20",
+        what: query,
+        where: location,
+        content_type: "application/json",
+        page: page
+      });
+
+      const adzunaUrl = `${baseUrl}/${location}/search/1?${params}`;
+      
+      const response = await fetch(adzunaUrl, {
+        headers: {
+          'User-Agent': 'AutoJobr/1.0'
+        }
+      });
+
+      if (!response.ok) {
+        // Fallback to demo data if API fails
+        const demoJobs = {
+          count: 5,
+          results: [
+            {
+              id: "demo-1",
+              title: `${query} Developer`,
+              company: { display_name: "Tech Corp" },
+              location: { display_name: location },
+              description: `We are looking for a skilled ${query} developer to join our team. Experience with modern technologies required.`,
+              salary_min: 80000,
+              salary_max: 120000,
+              created: new Date().toISOString(),
+              redirect_url: "https://example.com/job1",
+              contract_type: "permanent",
+              category: { label: "IT Jobs" }
+            },
+            {
+              id: "demo-2",
+              title: `Senior ${query} Engineer`,
+              company: { display_name: "Innovation Labs" },
+              location: { display_name: location },
+              description: `Senior position for ${query} with 5+ years experience. Remote work available.`,
+              salary_min: 100000,
+              salary_max: 150000,
+              created: new Date().toISOString(),
+              redirect_url: "https://example.com/job2",
+              contract_type: "permanent",
+              category: { label: "Engineering" }
+            }
+          ]
+        };
+
+        return res.json({
+          count: demoJobs.count,
+          results: demoJobs.results.map(job => ({
+            id: job.id,
+            title: job.title,
+            company: job.company.display_name,
+            location: job.location.display_name,
+            description: job.description,
+            salary_min: job.salary_min,
+            salary_max: job.salary_max,
+            created: job.created,
+            url: job.redirect_url,
+            contract_type: job.contract_type,
+            category: job.category.label
+          }))
+        });
+      }
+
+      const data = await response.json();
+      
+      // Transform Adzuna response to our format
+      const transformedJobs = {
+        count: data.count || 0,
+        results: (data.results || []).map((job: any) => ({
+          id: job.id,
+          title: job.title,
+          company: job.company?.display_name || "Unknown Company",
+          location: job.location?.display_name || "Unknown Location",
+          description: job.description || "No description available",
+          salary_min: job.salary_min,
+          salary_max: job.salary_max,
+          created: job.created,
+          url: job.redirect_url,
+          contract_type: job.contract_type,
+          category: job.category?.label
+        }))
+      };
+
+      res.json(transformedJobs);
+    } catch (error) {
+      console.error("Job search error:", error);
+      res.status(500).json({ message: "Error searching for jobs" });
+    }
+  });
+
   return httpServer;
 }

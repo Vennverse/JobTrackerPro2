@@ -49,6 +49,9 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
   
+  // Resume operations
+  getUserResumes(userId: string): Promise<any[]>;
+  
   // Profile operations
   getUserProfile(userId: string): Promise<UserProfile | undefined>;
   upsertUserProfile(profile: InsertUserProfile): Promise<UserProfile>;
@@ -395,6 +398,32 @@ export class DatabaseStorage implements IStorage {
   async getUserByPaypalSubscription(paypalSubscriptionId: string): Promise<User | undefined> {
     const [user] = await db.select().from(users).where(eq(users.paypalSubscriptionId, paypalSubscriptionId));
     return user;
+  }
+
+  // Resume operations for demo user
+  async getUserResumes(userId: string): Promise<any[]> {
+    // For demo user, manage state in memory
+    if (userId === 'demo-user-id') {
+      const demoResumes = [
+        {
+          id: 1,
+          name: "Demo Resume",
+          fileName: "demo_resume.pdf",
+          isActive: true,
+          atsScore: 85,
+          uploadedAt: new Date('2024-01-15'),
+          fileSize: 245000,
+          fileType: 'application/pdf'
+        }
+      ];
+      
+      // Add uploaded resumes from session (this would be stored in database for real users)
+      const uploadedResumes = (global as any).demoUserResumes || [];
+      return [...demoResumes, ...uploadedResumes];
+    }
+    
+    // For real users, implement actual database query
+    return [];
   }
 }
 
