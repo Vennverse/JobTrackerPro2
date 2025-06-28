@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
+import { apiRequest } from "@/lib/queryClient";
 import { Navbar } from "@/components/navbar";
 import { StatsCards } from "@/components/stats-cards";
 import { ApplicationsTable } from "@/components/applications-table";
@@ -40,6 +41,14 @@ export default function Dashboard() {
   const queryClient = useQueryClient();
   const [showJobAnalysisDialog, setShowJobAnalysisDialog] = useState(false);
   const [showCoverLetterDialog, setShowCoverLetterDialog] = useState(false);
+  const [jobDescription, setJobDescription] = useState("");
+  const [companyName, setCompanyName] = useState("");
+  const [jobTitle, setJobTitle] = useState("");
+  const [coverJobDescription, setCoverJobDescription] = useState("");
+  const [isAnalyzing, setIsAnalyzing] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [analysisResult, setAnalysisResult] = useState(null);
+  const [coverLetterResult, setCoverLetterResult] = useState("");
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -151,6 +160,74 @@ export default function Dashboard() {
     event.target.value = '';
   };
 
+  const handleJobAnalysis = async () => {
+    if (!jobDescription.trim()) {
+      toast({
+        title: "Error",
+        description: "Please enter a job description",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsAnalyzing(true);
+    try {
+      const response = await apiRequest("POST", "/api/jobs/analyze", {
+        jobDescription: jobDescription.trim()
+      });
+      const result = await response.json();
+      setAnalysisResult(result);
+      
+      toast({
+        title: "Analysis Complete",
+        description: `Match Score: ${result.matchScore}% - ${result.applicationRecommendation}`,
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to analyze job match",
+        variant: "destructive",
+      });
+    } finally {
+      setIsAnalyzing(false);
+    }
+  };
+
+  const handleCoverLetterGeneration = async () => {
+    if (!companyName.trim() || !jobTitle.trim()) {
+      toast({
+        title: "Error", 
+        description: "Please enter company name and job title",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsGenerating(true);
+    try {
+      const response = await apiRequest("POST", "/api/cover-letter/generate", {
+        companyName: companyName.trim(),
+        jobTitle: jobTitle.trim(),
+        jobDescription: coverJobDescription.trim()
+      });
+      const result = await response.json();
+      setCoverLetterResult(result.coverLetter);
+      
+      toast({
+        title: "Cover Letter Generated",
+        description: "Your personalized cover letter is ready!",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to generate cover letter",
+        variant: "destructive",
+      });
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
   if (isLoading) {
     return (
       <div className="min-h-screen bg-background">
@@ -190,6 +267,8 @@ export default function Dashboard() {
                 <Label htmlFor="job-description">Job Description</Label>
                 <Textarea 
                   id="job-description"
+                  value={jobDescription}
+                  onChange={(e) => setJobDescription(e.target.value)}
                   placeholder="Paste the full job description here..."
                   className="min-h-[200px]"
                 />
@@ -198,7 +277,7 @@ export default function Dashboard() {
                 <Button variant="outline" onClick={() => setShowJobAnalysisDialog(false)}>
                   Cancel
                 </Button>
-                <Button>
+                <Button onClick={handleJobAnalysis}>
                   Analyze Match
                 </Button>
               </div>
@@ -220,6 +299,8 @@ export default function Dashboard() {
                 <Label htmlFor="company-name">Company Name</Label>
                 <Input 
                   id="company-name"
+                  value={companyName}
+                  onChange={(e) => setCompanyName(e.target.value)}
                   placeholder="e.g. Google, Microsoft, Startup Inc."
                 />
               </div>
@@ -227,6 +308,8 @@ export default function Dashboard() {
                 <Label htmlFor="job-title">Job Title</Label>
                 <Input 
                   id="job-title"
+                  value={jobTitle}
+                  onChange={(e) => setJobTitle(e.target.value)}
                   placeholder="e.g. Software Engineer, Product Manager"
                 />
               </div>
@@ -234,6 +317,8 @@ export default function Dashboard() {
                 <Label htmlFor="cover-job-description">Job Description (Optional)</Label>
                 <Textarea 
                   id="cover-job-description"
+                  value={coverJobDescription}
+                  onChange={(e) => setCoverJobDescription(e.target.value)}
                   placeholder="Paste job description for better personalization..."
                   className="min-h-[120px]"
                 />
@@ -242,8 +327,8 @@ export default function Dashboard() {
                 <Button variant="outline" onClick={() => setShowCoverLetterDialog(false)}>
                   Cancel
                 </Button>
-                <Button>
-                  Generate Cover Letter
+                <Button onClick={handleCoverLetterGeneration} disabled={isGenerating}>
+                  {isGenerating ? "Generating..." : "Generate Cover Letter"}
                 </Button>
               </div>
             </div>
