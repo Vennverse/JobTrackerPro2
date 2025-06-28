@@ -488,7 +488,7 @@ export default function Dashboard() {
                     My Resumes
                     {user?.planType !== 'premium' && (
                       <Badge variant="outline" className="ml-auto">
-                        {resumes?.length || 0}/2 Free
+                        {Array.isArray(resumes) ? resumes.length : 0}/2 Free
                       </Badge>
                     )}
                   </CardTitle>

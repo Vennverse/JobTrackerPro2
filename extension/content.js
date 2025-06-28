@@ -1242,15 +1242,28 @@
   function analyzeJobDescription() {
     try {
       const jobData = extractJobData();
-      if (!jobData || !jobData.description) return;
+      if (!jobData || (!jobData.description && !jobData.title)) {
+        showNotification('No job content found on this page', 'error');
+        return;
+      }
       
       // Only analyze if this is new job data
-      if (currentJobData && currentJobData.description === jobData.description) return;
+      if (currentJobData && currentJobData.description === jobData.description) {
+        showNotification('Job already analyzed', 'info');
+        return;
+      }
       currentJobData = jobData;
+      
+      showNotification('Analyzing job match with AI...', 'info');
       
       // Extract skills and requirements using simple NLP
       const skills = extractSkillsFromText(jobData.description);
       jobData.requiredSkills = skills;
+      
+      // Add page URL for tracking
+      jobData.url = window.location.href;
+      
+      console.log('Sending job data for analysis:', jobData);
       
       // Send to background script for analysis
       chrome.runtime.sendMessage({
@@ -1260,11 +1273,16 @@
         if (response && response.success) {
           console.log('Job analysis completed:', response.data);
           showAnalysisResults(response.data);
+          showNotification(`Job match: ${response.data.matchScore}%`, 'success');
+        } else {
+          console.error('Analysis failed:', response?.error);
+          showNotification(response?.error || 'Failed to analyze job', 'error');
         }
       });
       
     } catch (error) {
       console.error('Error analyzing job description:', error);
+      showNotification('Error analyzing job', 'error');
     }
   }
   

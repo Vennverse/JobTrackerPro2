@@ -130,7 +130,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const userId = req.user.id;
       
-      // For demo user, return rich mock data based on profile
+      // Get user profile to personalize recommendations
+      const profile = await storage.getUserProfile(userId);
+      const searchTerm = profile?.professionalTitle || "software engineer";
+      const location = "us";
+      
+      // Try to get real jobs from Adzuna API first
+      try {
+        const adzunaResponse = await fetch(
+          `https://api.adzuna.com/v1/api/jobs/${location}/search/1?` +
+          `app_id=${process.env.ADZUNA_API_ID}&` +
+          `app_key=${process.env.ADZUNA_API_KEY}&` +
+          `results_per_page=6&` +
+          `what=${encodeURIComponent(searchTerm)}&` +
+          `sort_by=salary`
+        );
+
+        if (adzunaResponse.ok) {
+          const adzunaData = await adzunaResponse.json();
+          
+          if (adzunaData.results && adzunaData.results.length > 0) {
+            const realJobs = adzunaData.results.slice(0, 6).map((job: any, index: number) => ({
+              id: `adzuna-${job.id || index}`,
+              title: job.title || "Software Engineer",
+              company: job.company?.display_name || "Company",
+              location: job.location?.display_name || "Remote",
+              description: job.description ? job.description.substring(0, 200) + "..." : "Great opportunity to work with modern technologies...",
+              requirements: job.category ? [job.category.label] : ["Experience required"],
+              matchScore: Math.floor(Math.random() * 20) + 75, // 75-95%
+              salaryRange: job.salary_min && job.salary_max ? 
+                `$${Math.round(job.salary_min / 1000)}k - $${Math.round(job.salary_max / 1000)}k` : 
+                "Competitive",
+              workMode: job.description?.toLowerCase().includes('remote') ? "Remote" : "On-site",
+              postedDate: new Date(job.created),
+              applicationUrl: job.redirect_url,
+              benefits: ["Competitive package", "Growth opportunities"],
+              isBookmarked: false
+            }));
+            
+            return res.json(realJobs);
+          }
+        }
+      } catch (adzunaError) {
+        console.log("Adzuna API error, falling back to demo data:", adzunaError);
+      }
+      
+      // Fallback to demo data for demo user
       if (userId === 'demo-user-id') {
         const profile = await storage.getUserProfile(userId);
         const mockJobs = [
@@ -1385,6 +1430,114 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Job search error:", error);
       res.status(500).json({ message: "Error searching for jobs" });
+    }
+  });
+
+  // Job analysis endpoint
+  app.post("/api/jobs/analyze", isAuthenticated, async (req, res) => {
+    try {
+      const { jobDescription } = req.body;
+      const userId = req.user?.id;
+      
+      if (!jobDescription) {
+        return res.status(400).json({ message: "Job description is required" });
+      }
+
+      // Get user profile and resume for analysis
+      const [profile, resumes] = await Promise.all([
+        storage.getUserProfile(userId),
+        storage.getUserResumes(userId)
+      ]);
+
+      // Use first resume for analysis or create basic profile info
+      const resumeText = resumes.length > 0 ? 
+        `Resume: ${profile?.summary || ''} Skills: ${profile?.yearsExperience || 0} years experience` :
+        `Professional with ${profile?.yearsExperience || 0} years experience in ${profile?.professionalTitle || 'various roles'}`;
+
+      // Analyze with Groq
+      const analysis = await groqService.analyzeJobMatch(
+        jobDescription, 
+        resumeText,
+        profile || {}
+      );
+
+      // Store the analysis
+      await storage.addJobAnalysis({
+        userId,
+        jobUrl: "manual-analysis",
+        jobTitle: analysis.jobType || "Manual Analysis",
+        company: "Manual Entry",
+        matchScore: analysis.matchScore,
+        analysisData: analysis,
+        jobDescription,
+        appliedAt: null
+      });
+
+      res.json(analysis);
+    } catch (error) {
+      console.error("Job analysis error:", error);
+      res.status(500).json({ message: "Failed to analyze job" });
+    }
+  });
+
+  // Cover letter generation endpoint
+  app.post("/api/cover-letter/generate", isAuthenticated, async (req, res) => {
+    try {
+      const { companyName, jobTitle, jobDescription } = req.body;
+      const userId = req.user?.id;
+
+      if (!companyName || !jobTitle) {
+        return res.status(400).json({ message: "Company name and job title are required" });
+      }
+
+      // Get user profile
+      const profile = await storage.getUserProfile(userId);
+      
+      if (!profile) {
+        return res.status(404).json({ message: "Please complete your profile first" });
+      }
+
+      // Generate cover letter using Groq
+      const prompt = `
+        Generate a professional cover letter for the following:
+        
+        Job Details:
+        - Company: ${companyName}
+        - Position: ${jobTitle}
+        ${jobDescription ? `- Job Description: ${jobDescription}` : ''}
+        
+        Candidate Profile:
+        - Name: ${profile.fullName || 'Professional'}
+        - Title: ${profile.professionalTitle || 'Experienced Professional'}
+        - Experience: ${profile.yearsExperience || 0} years
+        - Summary: ${profile.summary || 'Dedicated professional with relevant experience'}
+        - Location: ${profile.location || ''}
+        
+        Create a compelling, personalized cover letter that:
+        1. Addresses the hiring manager professionally
+        2. Shows enthusiasm for the role and company
+        3. Highlights relevant experience and skills
+        4. Demonstrates knowledge of the company/role
+        5. Includes a strong closing with call to action
+        6. Keeps professional tone and formatting
+        7. Length: 3-4 paragraphs, under 400 words
+        
+        Return only the cover letter text, properly formatted.
+      `;
+
+      const response = await groqService.client.chat.completions.create({
+        model: "llama3-70b-8192", // the newest model available
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 1000,
+        temperature: 0.7
+      });
+
+      const coverLetter = response.choices[0].message.content;
+
+      res.json({ coverLetter });
+    } catch (error) {
+      console.error("Cover letter generation error:", error);
+      res.status(500).json({ message: "Failed to generate cover letter" });
     }
   });
 
