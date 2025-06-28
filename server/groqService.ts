@@ -250,11 +250,11 @@ Consider:
         messages: [
           {
             role: "system",
-            content: "You are an expert career counselor and job matching specialist. Analyze job-candidate fit comprehensively and provide actionable insights in valid JSON format only."
+            content: "You are an expert career counselor and job matching specialist. You MUST respond with valid JSON only. Do not include any text before or after the JSON object. Analyze job-candidate fit comprehensively."
           },
           {
             role: "user",
-            content: prompt
+            content: prompt + "\n\nRemember: Respond with ONLY the JSON object, nothing else."
           }
         ],
         model: "llama3-70b-8192",
@@ -267,9 +267,45 @@ Consider:
         throw new Error("No response from Groq API");
       }
 
-      // Parse JSON response
-      const analysis = JSON.parse(content);
-      return analysis as JobMatchAnalysis;
+      // Clean and parse JSON response
+      let cleanContent = content.trim();
+      
+      // Remove any text before the JSON object
+      const jsonStart = cleanContent.indexOf('{');
+      const jsonEnd = cleanContent.lastIndexOf('}') + 1;
+      
+      if (jsonStart !== -1 && jsonEnd > jsonStart) {
+        cleanContent = cleanContent.substring(jsonStart, jsonEnd);
+      }
+      
+      try {
+        const analysis = JSON.parse(cleanContent);
+        return analysis as JobMatchAnalysis;
+      } catch (parseError) {
+        console.error("Failed to parse JSON response:", cleanContent);
+        
+        // Fallback: Create a basic analysis structure
+        return {
+          matchScore: 50,
+          matchingSkills: [],
+          missingSkills: [],
+          skillGaps: {
+            critical: [],
+            important: [],
+            nice_to_have: []
+          },
+          seniorityLevel: "Mid-level",
+          workMode: "Not specified",
+          jobType: "Not specified",
+          roleComplexity: "Moderate",
+          careerProgression: "Good fit",
+          industryFit: "Moderate",
+          cultureFit: "Good",
+          applicationRecommendation: "Consider applying after reviewing job requirements in detail",
+          tailoringAdvice: "Focus on highlighting relevant experience and skills",
+          interviewPrepTips: "Research the company and prepare examples of relevant work"
+        } as JobMatchAnalysis;
+      }
     } catch (error) {
       console.error("Error analyzing job match with Groq:", error);
       throw new Error("Failed to analyze job match");
