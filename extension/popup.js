@@ -347,6 +347,11 @@ class AutojobrPopup {
           return;
         }
         
+        // Initialize jobData if it's null
+        if (!jobData) {
+          jobData = {};
+        }
+        
         jobData.company = company;
         jobData.title = jobTitle;
       }
