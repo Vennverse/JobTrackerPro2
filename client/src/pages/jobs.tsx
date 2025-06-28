@@ -45,6 +45,28 @@ export default function Jobs() {
 
   const { data: jobsData, isLoading: jobsLoading, error } = useQuery({
     queryKey: ["/api/jobs/search", searchQuery, location, page],
+    queryFn: async () => {
+      if (searchQuery.length < 3) {
+        throw new Error("Search query must be at least 3 characters");
+      }
+      
+      const params = new URLSearchParams({
+        q: searchQuery,
+        location: location || "us",
+        page: page.toString()
+      });
+      
+      const response = await fetch(`/api/jobs/search?${params}`, {
+        credentials: 'include'
+      });
+      
+      if (!response.ok) {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to search jobs");
+      }
+      
+      return response.json();
+    },
     enabled: searchQuery.length > 2,
     retry: false,
   });
@@ -115,7 +137,7 @@ export default function Jobs() {
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Job title, keywords, or company"
+                    placeholder="Job title, keywords, or company (min 3 characters)"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
@@ -134,8 +156,8 @@ export default function Jobs() {
                     onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
-                <Button onClick={handleSearch} disabled={searchQuery.length < 3}>
-                  Search
+                <Button onClick={handleSearch} disabled={jobsLoading || searchQuery.length < 3}>
+                  {jobsLoading ? "Searching..." : "Search"}
                 </Button>
               </div>
             </div>
