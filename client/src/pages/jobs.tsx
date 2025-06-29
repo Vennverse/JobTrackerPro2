@@ -132,7 +132,7 @@ export default function Jobs() {
     setLocation(`/jobs/${jobId}`);
   };
 
-  const appliedJobIds = applications ? applications.map((app: any) => app.jobId) : [];
+  const appliedJobIds = applications ? applications.map((app: any) => app.jobPostingId) : [];
 
   if (!isAuthenticated) {
     return (
