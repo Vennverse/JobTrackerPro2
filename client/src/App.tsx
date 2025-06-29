@@ -18,6 +18,7 @@ import UserTypeSelection from "@/pages/user-type-selection";
 import RecruiterDashboard from "@/pages/recruiter-dashboard";
 import PostJob from "@/pages/post-job";
 import VerifyEmail from "@/pages/verify-email";
+import EmailVerificationPage from "@/pages/email-verification";
 import ViewJob from "@/pages/view-job";
 import EditJob from "@/pages/edit-job";
 
@@ -90,6 +91,7 @@ function Router() {
         <>
           <Route path="/" component={Landing} />
           <Route path="/auth" component={AuthPage} />
+          <Route path="/email-verification" component={() => <EmailVerificationPage />} />
         </>
       )}
       <Route component={NotFound} />
