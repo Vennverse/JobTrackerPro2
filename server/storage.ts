@@ -13,7 +13,6 @@ import {
   chatConversations,
   chatMessages,
   emailVerificationTokens,
-  passwordResetTokens,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -42,8 +41,6 @@ import {
   type InsertChatMessage,
   type EmailVerificationToken,
   type InsertEmailVerificationToken,
-  type PasswordResetToken,
-  type InsertPasswordResetToken,
 } from "@shared/schema";
 import { db } from "./db";
 
@@ -728,44 +725,6 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db
         .update(users)
         .set({ emailVerified: verified, updatedAt: new Date() })
-        .where(eq(users.id, userId))
-        .returning();
-      return user;
-    });
-  }
-
-  // Password reset token management
-  async createPasswordResetToken(tokenData: InsertPasswordResetToken): Promise<PasswordResetToken> {
-    return await handleDbOperation(async () => {
-      const [token] = await db.insert(passwordResetTokens).values(tokenData).returning();
-      return token;
-    });
-  }
-
-  async getPasswordResetToken(token: string): Promise<PasswordResetToken | null> {
-    return await handleDbOperation(async () => {
-      const [tokenRecord] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token));
-      return tokenRecord;
-    });
-  }
-
-  async markPasswordResetTokenUsed(token: string): Promise<void> {
-    await handleDbOperation(async () => {
-      await db.update(passwordResetTokens).set({ used: true }).where(eq(passwordResetTokens.token, token));
-    });
-  }
-
-  async deletePasswordResetTokensByUserId(userId: string): Promise<void> {
-    await handleDbOperation(async () => {
-      await db.delete(passwordResetTokens).where(eq(passwordResetTokens.userId, userId));
-    });
-  }
-
-  async updateUserPassword(userId: string, hashedPassword: string): Promise<User> {
-    return await handleDbOperation(async () => {
-      const [user] = await db
-        .update(users)
-        .set({ password: hashedPassword, updatedAt: new Date() })
         .where(eq(users.id, userId))
         .returning();
       return user;

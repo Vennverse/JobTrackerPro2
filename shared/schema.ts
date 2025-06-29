@@ -391,21 +391,6 @@ export const emailVerificationTokens = pgTable("email_verification_tokens", {
   index("email_verification_tokens_user_id_idx").on(table.userId),
 ]);
 
-// Password reset tokens for users
-export const passwordResetTokens = pgTable("password_reset_tokens", {
-  id: serial("id").primaryKey(),
-  token: varchar("token").notNull().unique(),
-  email: varchar("email").notNull(),
-  userId: varchar("user_id").notNull(),
-  expiresAt: timestamp("expires_at").notNull(),
-  used: boolean("used").default(false),
-  createdAt: timestamp("created_at").defaultNow(),
-}, (table) => [
-  index("password_reset_tokens_token_idx").on(table.token),
-  index("password_reset_tokens_email_idx").on(table.email),
-  index("password_reset_tokens_user_id_idx").on(table.userId),
-]);
-
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -645,11 +630,6 @@ export const insertEmailVerificationTokenSchema = createInsertSchema(emailVerifi
   createdAt: true,
 });
 
-export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTokens).omit({
-  id: true,
-  createdAt: true,
-});
-
 // Types
 export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
 export type DailyUsage = typeof dailyUsage.$inferSelect;
@@ -663,5 +643,3 @@ export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
 export type ChatMessage = typeof chatMessages.$inferSelect;
 export type InsertEmailVerificationToken = z.infer<typeof insertEmailVerificationTokenSchema>;
 export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
-export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
-export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
