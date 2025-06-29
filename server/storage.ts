@@ -59,7 +59,7 @@ async function handleDbOperation<T>(operation: () => Promise<T>, fallback?: T): 
     throw error;
   }
 }
-import { eq, desc, and } from "drizzle-orm";
+import { eq, desc, and, or, ne, sql } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -474,6 +474,226 @@ export class DatabaseStorage implements IStorage {
     
     // For real users, implement actual database query
     return [];
+  }
+
+  // Recruiter operations - Job postings
+  async getJobPostings(recruiterId?: string): Promise<JobPosting[]> {
+    return await handleDbOperation(async () => {
+      if (recruiterId) {
+        return await db.select().from(jobPostings).where(eq(jobPostings.recruiterId, recruiterId)).orderBy(desc(jobPostings.createdAt));
+      }
+      return await db.select().from(jobPostings).where(eq(jobPostings.isActive, true)).orderBy(desc(jobPostings.createdAt));
+    }, []);
+  }
+
+  async getJobPosting(id: number): Promise<JobPosting | undefined> {
+    return await handleDbOperation(async () => {
+      const [jobPosting] = await db.select().from(jobPostings).where(eq(jobPostings.id, id));
+      return jobPosting;
+    });
+  }
+
+  async createJobPosting(jobPostingData: InsertJobPosting): Promise<JobPosting> {
+    return await handleDbOperation(async () => {
+      const [jobPosting] = await db.insert(jobPostings).values(jobPostingData).returning();
+      return jobPosting;
+    });
+  }
+
+  async updateJobPosting(id: number, jobPostingData: Partial<InsertJobPosting>): Promise<JobPosting> {
+    return await handleDbOperation(async () => {
+      const [jobPosting] = await db
+        .update(jobPostings)
+        .set({ ...jobPostingData, updatedAt: new Date() })
+        .where(eq(jobPostings.id, id))
+        .returning();
+      return jobPosting;
+    });
+  }
+
+  async deleteJobPosting(id: number): Promise<void> {
+    await handleDbOperation(async () => {
+      await db.delete(jobPostings).where(eq(jobPostings.id, id));
+    });
+  }
+
+  async incrementJobPostingViews(id: number): Promise<void> {
+    await handleDbOperation(async () => {
+      await db
+        .update(jobPostings)
+        .set({ viewsCount: sql`${jobPostings.viewsCount} + 1` })
+        .where(eq(jobPostings.id, id));
+    });
+  }
+
+  // Job posting applications
+  async getJobPostingApplications(jobPostingId: number): Promise<JobPostingApplication[]> {
+    return await handleDbOperation(async () => {
+      return await db.select().from(jobPostingApplications).where(eq(jobPostingApplications.jobPostingId, jobPostingId)).orderBy(desc(jobPostingApplications.appliedAt));
+    }, []);
+  }
+
+  async getJobPostingApplication(id: number): Promise<JobPostingApplication | undefined> {
+    return await handleDbOperation(async () => {
+      const [application] = await db.select().from(jobPostingApplications).where(eq(jobPostingApplications.id, id));
+      return application;
+    });
+  }
+
+  async getApplicationsForRecruiter(recruiterId: string): Promise<JobPostingApplication[]> {
+    return await handleDbOperation(async () => {
+      return await db
+        .select({
+          id: jobPostingApplications.id,
+          jobPostingId: jobPostingApplications.jobPostingId,
+          applicantId: jobPostingApplications.applicantId,
+          resumeId: jobPostingApplications.resumeId,
+          coverLetter: jobPostingApplications.coverLetter,
+          status: jobPostingApplications.status,
+          matchScore: jobPostingApplications.matchScore,
+          recruiterNotes: jobPostingApplications.recruiterNotes,
+          appliedAt: jobPostingApplications.appliedAt,
+          reviewedAt: jobPostingApplications.reviewedAt,
+          updatedAt: jobPostingApplications.updatedAt,
+        })
+        .from(jobPostingApplications)
+        .innerJoin(jobPostings, eq(jobPostingApplications.jobPostingId, jobPostings.id))
+        .where(eq(jobPostings.recruiterId, recruiterId))
+        .orderBy(desc(jobPostingApplications.appliedAt));
+    }, []);
+  }
+
+  async getApplicationsForJobSeeker(jobSeekerId: string): Promise<JobPostingApplication[]> {
+    return await handleDbOperation(async () => {
+      return await db.select().from(jobPostingApplications).where(eq(jobPostingApplications.applicantId, jobSeekerId)).orderBy(desc(jobPostingApplications.appliedAt));
+    }, []);
+  }
+
+  async createJobPostingApplication(applicationData: InsertJobPostingApplication): Promise<JobPostingApplication> {
+    return await handleDbOperation(async () => {
+      const [application] = await db.insert(jobPostingApplications).values(applicationData).returning();
+      
+      // Increment applications count
+      await db
+        .update(jobPostings)
+        .set({ applicationsCount: sql`${jobPostings.applicationsCount} + 1` })
+        .where(eq(jobPostings.id, applicationData.jobPostingId));
+      
+      return application;
+    });
+  }
+
+  async updateJobPostingApplication(id: number, applicationData: Partial<InsertJobPostingApplication>): Promise<JobPostingApplication> {
+    return await handleDbOperation(async () => {
+      const [application] = await db
+        .update(jobPostingApplications)
+        .set({ ...applicationData, updatedAt: new Date() })
+        .where(eq(jobPostingApplications.id, id))
+        .returning();
+      return application;
+    });
+  }
+
+  async deleteJobPostingApplication(id: number): Promise<void> {
+    await handleDbOperation(async () => {
+      await db.delete(jobPostingApplications).where(eq(jobPostingApplications.id, id));
+    });
+  }
+
+  // Chat system
+  async getChatConversations(userId: string): Promise<ChatConversation[]> {
+    return await handleDbOperation(async () => {
+      return await db
+        .select()
+        .from(chatConversations)
+        .where(
+          or(
+            eq(chatConversations.recruiterId, userId),
+            eq(chatConversations.jobSeekerId, userId)
+          )
+        )
+        .orderBy(desc(chatConversations.lastMessageAt));
+    }, []);
+  }
+
+  async getChatConversation(id: number): Promise<ChatConversation | undefined> {
+    return await handleDbOperation(async () => {
+      const [conversation] = await db.select().from(chatConversations).where(eq(chatConversations.id, id));
+      return conversation;
+    });
+  }
+
+  async createChatConversation(conversationData: InsertChatConversation): Promise<ChatConversation> {
+    return await handleDbOperation(async () => {
+      const [conversation] = await db.insert(chatConversations).values(conversationData).returning();
+      return conversation;
+    });
+  }
+
+  async getChatMessages(conversationId: number): Promise<ChatMessage[]> {
+    return await handleDbOperation(async () => {
+      return await db.select().from(chatMessages).where(eq(chatMessages.conversationId, conversationId)).orderBy(chatMessages.createdAt);
+    }, []);
+  }
+
+  async createChatMessage(messageData: InsertChatMessage): Promise<ChatMessage> {
+    return await handleDbOperation(async () => {
+      const [message] = await db.insert(chatMessages).values(messageData).returning();
+      
+      // Update conversation last message time
+      await db
+        .update(chatConversations)
+        .set({ lastMessageAt: new Date() })
+        .where(eq(chatConversations.id, messageData.conversationId));
+      
+      return message;
+    });
+  }
+
+  async markMessagesAsRead(conversationId: number, userId: string): Promise<void> {
+    await handleDbOperation(async () => {
+      await db
+        .update(chatMessages)
+        .set({ isRead: true })
+        .where(
+          and(
+            eq(chatMessages.conversationId, conversationId),
+            ne(chatMessages.senderId, userId)
+          )
+        );
+    });
+  }
+
+  // Email verification
+  async createEmailVerificationToken(tokenData: InsertEmailVerificationToken): Promise<EmailVerificationToken> {
+    return await handleDbOperation(async () => {
+      const [token] = await db.insert(emailVerificationTokens).values(tokenData).returning();
+      return token;
+    });
+  }
+
+  async getEmailVerificationToken(token: string): Promise<EmailVerificationToken | undefined> {
+    return await handleDbOperation(async () => {
+      const [tokenRecord] = await db.select().from(emailVerificationTokens).where(eq(emailVerificationTokens.token, token));
+      return tokenRecord;
+    });
+  }
+
+  async deleteEmailVerificationToken(token: string): Promise<void> {
+    await handleDbOperation(async () => {
+      await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.token, token));
+    });
+  }
+
+  async updateUserEmailVerification(userId: string, verified: boolean): Promise<User> {
+    return await handleDbOperation(async () => {
+      const [user] = await db
+        .update(users)
+        .set({ emailVerified: verified, updatedAt: new Date() })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    });
   }
 }
 
