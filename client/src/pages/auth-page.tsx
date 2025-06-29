@@ -68,25 +68,7 @@ export default function AuthPage() {
     }
   };
 
-  const handleDemoLogin = async () => {
-    setIsLoading(true);
-    try {
-      const response = await fetch('/api/auth/demo', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
-      
-      if (response.ok) {
-        window.location.href = '/';
-      } else {
-        console.error('Demo login failed');
-        setIsLoading(false);
-      }
-    } catch (error) {
-      console.error('Demo login error:', error);
-      setIsLoading(false);
-    }
-  };
+
 
   const handleEmailLogin = async () => {
     if (!formData.email || !formData.password) {
@@ -221,23 +203,6 @@ export default function AuthPage() {
             </CardDescription>
           </CardHeader>
           <CardContent className="space-y-4">
-            {/* Demo Login Button */}
-            <div className="space-y-3">
-              <Button
-                className="w-full"
-                onClick={handleDemoLogin}
-                disabled={isLoading}
-              >
-                <Mail className="w-4 h-4 mr-2" />
-                Continue with Demo Account
-              </Button>
-              
-              <div className="text-center text-sm text-muted-foreground">
-                Try AutoJobr instantly with a demo account
-              </div>
-            </div>
-
-            <Separator />
 
             {/* Email Login/Signup Tabs */}
             <Tabs defaultValue="login" className="w-full">

@@ -76,12 +76,12 @@ export default function Subscription() {
   });
 
   const handleUpgrade = async () => {
-    // In a real implementation, this would integrate with PayPal's JavaScript SDK
-    // For now, we'll simulate the PayPal flow
-    const paypalOrderId = `ORDER_${Date.now()}`;
-    const paypalSubscriptionId = `SUB_${Date.now()}`;
-    
-    upgradeMutation.mutate({ paypalOrderId, paypalSubscriptionId });
+    // Show message that payment integration is required
+    toast({
+      title: "Payment Integration Required",
+      description: "Please contact support to set up PayPal or Stripe payment integration for premium subscriptions.",
+      variant: "destructive",
+    });
   };
 
   const getUsagePercentage = (used: number, limit: number) => {
