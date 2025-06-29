@@ -115,6 +115,9 @@ export default function Landing() {
               <Button variant="ghost" onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}>
                 Pricing
               </Button>
+              <Button variant="ghost" onClick={() => window.location.href = "/post-job"}>
+                Post Job
+              </Button>
               <Button onClick={handleLogin} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                 Get Started Free
               </Button>
