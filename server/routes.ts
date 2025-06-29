@@ -1843,6 +1843,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get complete applicant profile for application details
+  app.get('/api/recruiter/applicant/:applicantId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const applicantId = req.params.applicantId;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Get complete applicant profile
+      const [applicant, profile, skills, workExperience, education, resumes] = await Promise.all([
+        storage.getUser(applicantId),
+        storage.getUserProfile(applicantId),
+        storage.getUserSkills(applicantId),
+        storage.getUserWorkExperience(applicantId),
+        storage.getUserEducation(applicantId),
+        storage.getUserResumes(applicantId)
+      ]);
+
+      if (!applicant) {
+        return res.status(404).json({ message: "Applicant not found" });
+      }
+
+      res.json({
+        user: {
+          id: applicant.id,
+          email: applicant.email,
+          firstName: applicant.firstName,
+          lastName: applicant.lastName,
+          profileImageUrl: applicant.profileImageUrl,
+          userType: applicant.userType
+        },
+        profile: profile || {},
+        skills: skills || [],
+        workExperience: workExperience || [],
+        education: education || [],
+        resumes: resumes || []
+      });
+    } catch (error) {
+      console.error("Error fetching applicant profile:", error);
+      res.status(500).json({ message: "Failed to fetch applicant profile" });
+    }
+  });
+
   // Recruiter API Routes
   
   // Job Postings CRUD

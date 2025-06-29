@@ -7,7 +7,8 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, Di
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
-import { Plus, Briefcase, Users, MessageSquare, Eye, Calendar, Building, Star, FileText, Mail, CheckCircle, XCircle, Clock } from "lucide-react";
+import { Separator } from "@/components/ui/separator";
+import { Plus, Briefcase, Users, MessageSquare, Eye, Calendar, Building, Star, FileText, Mail, CheckCircle, XCircle, Clock, Download, User, Phone, MapPin, GraduationCap, Award } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
@@ -20,6 +21,7 @@ export default function RecruiterDashboard() {
   const [selectedApplication, setSelectedApplication] = useState<any>(null);
   const [applicationStatus, setApplicationStatus] = useState("");
   const [recruiterNotes, setRecruiterNotes] = useState("");
+  const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(null);
 
   // Fetch recruiter's job postings
   const { data: jobPostings = [], isLoading: jobsLoading } = useQuery({
@@ -34,6 +36,12 @@ export default function RecruiterDashboard() {
   // Fetch chat conversations
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
     queryKey: ['/api/chat/conversations'],
+  });
+
+  // Fetch applicant details when selected
+  const { data: applicantDetails, isLoading: applicantLoading } = useQuery({
+    queryKey: [`/api/recruiter/applicant/${selectedApplicantId}`],
+    enabled: !!selectedApplicantId,
   });
 
   // Mutation for updating application status
@@ -320,65 +328,283 @@ export default function RecruiterDashboard() {
                             )}
                           </div>
                           <div className="flex gap-2">
-                            <Dialog>
+                            <Dialog open={selectedApplicantId === application.applicantId} onOpenChange={(open) => {
+                              if (open) {
+                                setSelectedApplicantId(application.applicantId);
+                              } else {
+                                setSelectedApplicantId(null);
+                              }
+                            }}>
                               <DialogTrigger asChild>
                                 <Button variant="outline" size="sm">
                                   <FileText className="w-4 h-4 mr-1" />
                                   View Details
                                 </Button>
                               </DialogTrigger>
-                              <DialogContent className="max-w-2xl">
+                              <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
                                 <DialogHeader>
-                                  <DialogTitle>Application Details</DialogTitle>
+                                  <DialogTitle>Candidate Profile & Application Details</DialogTitle>
                                   <DialogDescription>
-                                    Review candidate application and update status
+                                    Complete candidate information and application details
                                   </DialogDescription>
                                 </DialogHeader>
-                                <div className="space-y-4">
-                                  <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                      <Label className="text-sm font-medium">Applied Date</Label>
-                                      <p className="text-sm text-gray-600">{new Date(application.appliedAt).toLocaleDateString()}</p>
-                                    </div>
-                                    <div>
-                                      <Label className="text-sm font-medium">Status</Label>
-                                      <Badge variant="outline" className="ml-2">{application.status}</Badge>
-                                    </div>
+                                {applicantLoading ? (
+                                  <div className="flex items-center justify-center py-8">
+                                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                                   </div>
-                                  
-                                  {application.matchScore && (
-                                    <div>
-                                      <Label className="text-sm font-medium">Match Score</Label>
-                                      <div className="flex items-center gap-2 mt-1">
-                                        <div className="flex-1 bg-gray-200 rounded-full h-2">
-                                          <div 
-                                            className="bg-blue-600 h-2 rounded-full" 
-                                            style={{ width: `${application.matchScore}%` }}
-                                          ></div>
+                                ) : applicantDetails ? (
+                                  <div className="space-y-6">
+                                    {/* Basic Info */}
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle className="flex items-center gap-2">
+                                          <User className="w-5 h-5" />
+                                          Candidate Information
+                                        </CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <div className="grid grid-cols-2 gap-4">
+                                          <div>
+                                            <Label className="text-sm font-medium">Full Name</Label>
+                                            <p className="text-sm text-gray-700">
+                                              {applicantDetails.profile?.fullName || 
+                                               `${applicantDetails.user?.firstName || ''} ${applicantDetails.user?.lastName || ''}`.trim() || 
+                                               'Not provided'}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">Email</Label>
+                                            <p className="text-sm text-gray-700">{applicantDetails.user?.email || 'Not provided'}</p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">Phone</Label>
+                                            <p className="text-sm text-gray-700 flex items-center gap-1">
+                                              <Phone className="w-3 h-3" />
+                                              {applicantDetails.profile?.phone || 'Not provided'}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">Location</Label>
+                                            <p className="text-sm text-gray-700 flex items-center gap-1">
+                                              <MapPin className="w-3 h-3" />
+                                              {applicantDetails.profile?.location || 
+                                               `${applicantDetails.profile?.city || ''}, ${applicantDetails.profile?.state || ''}`.replace(/^,\s*/, '') || 
+                                               'Not provided'}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">Professional Title</Label>
+                                            <p className="text-sm text-gray-700">{applicantDetails.profile?.professionalTitle || 'Not provided'}</p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">Years of Experience</Label>
+                                            <p className="text-sm text-gray-700">{applicantDetails.profile?.yearsExperience || 0} years</p>
+                                          </div>
                                         </div>
-                                        <span className="text-sm font-medium">{application.matchScore}%</span>
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {application.coverLetter && (
-                                    <div>
-                                      <Label className="text-sm font-medium">Cover Letter</Label>
-                                      <div className="mt-1 p-3 bg-gray-50 rounded-md text-sm">
-                                        {application.coverLetter}
-                                      </div>
-                                    </div>
-                                  )}
-                                  
-                                  {application.recruiterNotes && (
-                                    <div>
-                                      <Label className="text-sm font-medium">Previous Notes</Label>
-                                      <div className="mt-1 p-3 bg-gray-50 rounded-md text-sm">
-                                        {application.recruiterNotes}
-                                      </div>
-                                    </div>
-                                  )}
-                                </div>
+                                      </CardContent>
+                                    </Card>
+
+                                    {/* Application Details */}
+                                    <Card>
+                                      <CardHeader>
+                                        <CardTitle>Application Information</CardTitle>
+                                      </CardHeader>
+                                      <CardContent>
+                                        <div className="grid grid-cols-2 gap-4 mb-4">
+                                          <div>
+                                            <Label className="text-sm font-medium">Applied Date</Label>
+                                            <p className="text-sm text-gray-600">{new Date(application.appliedAt).toLocaleDateString()}</p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">Status</Label>
+                                            <Badge variant="outline" className="ml-2">{application.status}</Badge>
+                                          </div>
+                                        </div>
+                                        
+                                        {application.matchScore && (
+                                          <div className="mb-4">
+                                            <Label className="text-sm font-medium">Match Score</Label>
+                                            <div className="flex items-center gap-2 mt-1">
+                                              <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                                <div 
+                                                  className="bg-blue-600 h-2 rounded-full" 
+                                                  style={{ width: `${application.matchScore}%` }}
+                                                ></div>
+                                              </div>
+                                              <span className="text-sm font-medium">{application.matchScore}%</span>
+                                            </div>
+                                          </div>
+                                        )}
+                                        
+                                        {application.coverLetter && (
+                                          <div>
+                                            <Label className="text-sm font-medium">Cover Letter</Label>
+                                            <div className="mt-1 p-3 bg-gray-50 rounded-md text-sm">
+                                              {application.coverLetter}
+                                            </div>
+                                          </div>
+                                        )}
+                                      </CardContent>
+                                    </Card>
+
+                                    {/* Resume */}
+                                    {applicantDetails.resumes && applicantDetails.resumes.length > 0 && (
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle className="flex items-center gap-2">
+                                            <FileText className="w-5 h-5" />
+                                            Resume & Documents
+                                          </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="space-y-3">
+                                            {applicantDetails.resumes.map((resume: any, index: number) => (
+                                              <div key={resume.id} className="flex items-center justify-between p-3 border rounded-lg">
+                                                <div>
+                                                  <p className="font-medium">{resume.filename || `Resume ${index + 1}`}</p>
+                                                  <p className="text-sm text-gray-600">
+                                                    {resume.atsScore && `ATS Score: ${resume.atsScore}/100`}
+                                                  </p>
+                                                </div>
+                                                <Button 
+                                                  variant="outline" 
+                                                  size="sm"
+                                                  onClick={() => {
+                                                    // Download resume functionality
+                                                    if (resume.fileUrl) {
+                                                      window.open(resume.fileUrl, '_blank');
+                                                    }
+                                                  }}
+                                                >
+                                                  <Download className="w-4 h-4 mr-1" />
+                                                  Download
+                                                </Button>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {/* Skills */}
+                                    {applicantDetails.skills && applicantDetails.skills.length > 0 && (
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle className="flex items-center gap-2">
+                                            <Award className="w-5 h-5" />
+                                            Skills & Expertise
+                                          </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="flex flex-wrap gap-2">
+                                            {applicantDetails.skills.map((skill: any) => (
+                                              <Badge key={skill.id} variant="secondary">
+                                                {skill.skillName} 
+                                                {skill.proficiencyLevel && ` (${skill.proficiencyLevel})`}
+                                              </Badge>
+                                            ))}
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {/* Work Experience */}
+                                    {applicantDetails.workExperience && applicantDetails.workExperience.length > 0 && (
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle>Work Experience</CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="space-y-4">
+                                            {applicantDetails.workExperience.map((exp: any) => (
+                                              <div key={exp.id} className="border-l-2 border-blue-200 pl-4">
+                                                <h4 className="font-semibold">{exp.jobTitle}</h4>
+                                                <p className="text-sm text-gray-600">{exp.company}</p>
+                                                <p className="text-xs text-gray-500">
+                                                  {exp.startDate && new Date(exp.startDate).toLocaleDateString()} - 
+                                                  {exp.endDate ? new Date(exp.endDate).toLocaleDateString() : 'Present'}
+                                                </p>
+                                                {exp.description && (
+                                                  <p className="text-sm mt-2">{exp.description}</p>
+                                                )}
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {/* Education */}
+                                    {applicantDetails.education && applicantDetails.education.length > 0 && (
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle className="flex items-center gap-2">
+                                            <GraduationCap className="w-5 h-5" />
+                                            Education
+                                          </CardTitle>
+                                        </CardHeader>
+                                        <CardContent>
+                                          <div className="space-y-4">
+                                            {applicantDetails.education.map((edu: any) => (
+                                              <div key={edu.id} className="border-l-2 border-green-200 pl-4">
+                                                <h4 className="font-semibold">{edu.degree}</h4>
+                                                <p className="text-sm text-gray-600">{edu.institution}</p>
+                                                <p className="text-xs text-gray-500">
+                                                  {edu.fieldOfStudy && `Field: ${edu.fieldOfStudy}`}
+                                                  {edu.gpa && ` • GPA: ${edu.gpa}`}
+                                                </p>
+                                                <p className="text-xs text-gray-500">
+                                                  {edu.startDate && new Date(edu.startDate).toLocaleDateString()} - 
+                                                  {edu.endDate ? new Date(edu.endDate).toLocaleDateString() : 'Present'}
+                                                </p>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </CardContent>
+                                      </Card>
+                                    )}
+
+                                    {/* Additional Profile Info */}
+                                    {(applicantDetails.profile?.summary || applicantDetails.profile?.workAuthorization) && (
+                                      <Card>
+                                        <CardHeader>
+                                          <CardTitle>Additional Information</CardTitle>
+                                        </CardHeader>
+                                        <CardContent className="space-y-3">
+                                          {applicantDetails.profile?.summary && (
+                                            <div>
+                                              <Label className="text-sm font-medium">Professional Summary</Label>
+                                              <p className="text-sm text-gray-700 mt-1">{applicantDetails.profile.summary}</p>
+                                            </div>
+                                          )}
+                                          {applicantDetails.profile?.workAuthorization && (
+                                            <div>
+                                              <Label className="text-sm font-medium">Work Authorization</Label>
+                                              <p className="text-sm text-gray-700">{applicantDetails.profile.workAuthorization}</p>
+                                            </div>
+                                          )}
+                                          {applicantDetails.profile?.linkedinUrl && (
+                                            <div>
+                                              <Label className="text-sm font-medium">LinkedIn</Label>
+                                              <a 
+                                                href={applicantDetails.profile.linkedinUrl} 
+                                                target="_blank" 
+                                                rel="noopener noreferrer"
+                                                className="text-sm text-blue-600 hover:underline"
+                                              >
+                                                {applicantDetails.profile.linkedinUrl}
+                                              </a>
+                                            </div>
+                                          )}
+                                        </CardContent>
+                                      </Card>
+                                    )}
+                                  </div>
+                                ) : (
+                                  <div className="text-center py-8">
+                                    <p className="text-gray-600">Failed to load candidate details</p>
+                                  </div>
+                                )}
                               </DialogContent>
                             </Dialog>
                             
