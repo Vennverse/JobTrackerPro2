@@ -53,7 +53,7 @@ function Router() {
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={Subscription} />
             </>
-          ) : (
+          ) : user?.userType === 'job_seeker' ? (
             <>
               {/* Job seeker routes */}
               {!user?.onboardingCompleted ? (
@@ -68,9 +68,21 @@ function Router() {
                   <Route path="/profile" component={Profile} />
                   <Route path="/applications" component={Applications} />
                   <Route path="/jobs" component={Jobs} />
+                  <Route path="/jobs/:id" component={ViewJob} />
                   <Route path="/subscription" component={Subscription} />
                 </>
               )}
+            </>
+          ) : (
+            <>
+              {/* Default to dashboard for users without explicit type */}
+              <Route path="/" component={Dashboard} />
+              <Route path="/onboarding" component={Onboarding} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/applications" component={Applications} />
+              <Route path="/jobs" component={Jobs} />
+              <Route path="/jobs/:id" component={ViewJob} />
+              <Route path="/subscription" component={Subscription} />
             </>
           )}
         </>

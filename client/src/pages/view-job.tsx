@@ -7,12 +7,14 @@ import { ArrowLeft, Building, MapPin, DollarSign, Users, Clock, Briefcase, Eye, 
 import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/use-auth";
+import { useToast } from "@/hooks/use-toast";
 
 export default function ViewJob() {
   const params = useParams();
   const jobId = params.id;
   const [location, setLocation] = useLocation();
   const { user } = useAuth();
+  const { toast } = useToast();
 
   const { data: job, isLoading } = useQuery({
     queryKey: [`/api/recruiter/jobs/${jobId}`],
@@ -233,8 +235,8 @@ export default function ViewJob() {
                 </CardContent>
               </Card>
 
-              {/* Action Buttons for Recruiters */}
-              {user?.userType === 'recruiter' && (
+              {/* Action Buttons */}
+              {user?.userType === 'recruiter' ? (
                 <Card>
                   <CardHeader>
                     <CardTitle>Manage Job</CardTitle>
@@ -252,6 +254,58 @@ export default function ViewJob() {
                       onClick={() => setLocation('/recruiter-dashboard')}
                     >
                       View Applications
+                    </Button>
+                  </CardContent>
+                </Card>
+              ) : (
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Apply to this Job</CardTitle>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    <Button 
+                      className="w-full" 
+                      onClick={() => {
+                        // Apply to job functionality
+                        if (job.id) {
+                          fetch(`/api/jobs/postings/${job.id}/apply`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json' },
+                            credentials: 'include',
+                          })
+                          .then(response => response.json())
+                          .then(data => {
+                            if (data.id) {
+                              toast({
+                                title: "Application Submitted",
+                                description: "Your application has been submitted successfully!",
+                              });
+                            } else {
+                              toast({
+                                title: "Application Failed",
+                                description: data.message || "Failed to submit application",
+                                variant: "destructive",
+                              });
+                            }
+                          })
+                          .catch(error => {
+                            toast({
+                              title: "Application Failed",
+                              description: "An error occurred while submitting your application",
+                              variant: "destructive",
+                            });
+                          });
+                        }
+                      }}
+                    >
+                      Apply Now
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      className="w-full"
+                      onClick={() => setLocation('/')}
+                    >
+                      Back to Dashboard
                     </Button>
                   </CardContent>
                 </Card>
