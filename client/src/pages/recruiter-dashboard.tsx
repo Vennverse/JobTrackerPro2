@@ -471,21 +471,8 @@ export default function RecruiterDashboard() {
                                                   size="sm"
                                                   onClick={() => {
                                                     // Download resume functionality
-                                                    const application = selectedApplication;
-                                                    if (application?.id) {
-                                                      const downloadUrl = `/api/applications/${application.id}/resume/download`;
-                                                      const link = document.createElement('a');
-                                                      link.href = downloadUrl;
-                                                      link.download = resume.fileName || `${resume.name || 'resume'}.pdf`;
-                                                      document.body.appendChild(link);
-                                                      link.click();
-                                                      document.body.removeChild(link);
-                                                    } else {
-                                                      toast({
-                                                        title: "Download Error",
-                                                        description: "Unable to download resume. Application not found.",
-                                                        variant: "destructive",
-                                                      });
+                                                    if (resume.fileUrl) {
+                                                      window.open(resume.fileUrl, '_blank');
                                                     }
                                                   }}
                                                 >

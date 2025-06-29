@@ -1,51 +1,50 @@
 import { useState, useEffect } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useQuery } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
-import { apiRequest } from "@/lib/queryClient";
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Separator } from "@/components/ui/separator";
 import { 
   Search, 
   MapPin, 
   Building2, 
   Clock, 
+  ExternalLink,
+  Filter,
+  SlidersHorizontal,
   Briefcase,
-  Eye,
-  CheckCircle
+  Star,
+  BookmarkPlus
 } from "lucide-react";
 
-interface JobPosting {
-  id: number;
+interface Job {
+  id: string;
   title: string;
-  companyName: string;
+  company: string;
   location: string;
   description: string;
-  salary?: string;
-  workMode: string;
-  jobType: string;
-  createdAt: string;
-  skillsRequired: string[];
-  benefits?: string[];
-  isActive: boolean;
-  applicationsCount?: number;
+  salary_min?: number;
+  salary_max?: number;
+  created?: string;
+  url: string;
+  contract_type?: string;
+  category?: string;
 }
 
 export default function Jobs() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
-  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [filteredJobs, setFilteredJobs] = useState<JobPosting[]>([]);
+  const [location, setLocation] = useState("");
+  const [page, setPage] = useState(1);
 
-  // Fetch all job postings from recruiters
-  const { data: allJobs, isLoading: jobsLoading, error } = useQuery({
-    queryKey: ["/api/jobs/postings"],
+  const { data: jobsData, isLoading: jobsLoading, error } = useQuery({
+    queryKey: ["/api/jobs/postings", searchQuery, location],
     queryFn: async () => {
       const response = await fetch(`/api/jobs/postings`, {
         credentials: 'include'
@@ -56,86 +55,71 @@ export default function Jobs() {
         throw new Error(errorData.message || "Failed to fetch jobs");
       }
       
-      return await response.json() as JobPosting[];
+      const jobs = await response.json();
+      
+      // Filter jobs based on search query and location if provided
+      let filteredJobs = jobs;
+      if (searchQuery.length >= 1) {
+        filteredJobs = jobs.filter((job: any) => 
+          job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          job.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          job.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+      if (location) {
+        filteredJobs = filteredJobs.filter((job: any) => 
+          job.location?.toLowerCase().includes(location.toLowerCase())
+        );
+      }
+      
+      return filteredJobs;
     },
     retry: false,
   });
 
-  // Get user's applications to show applied status
-  const { data: userApplications } = useQuery({
-    queryKey: ["/api/jobs/my-applications"],
+  const { data: profile } = useQuery({
+    queryKey: ["/api/profile"],
     retry: false,
   });
 
-  // Filter jobs based on search criteria
-  useEffect(() => {
-    if (!allJobs) {
-      setFilteredJobs([]);
-      return;
-    }
-
-    let filtered = allJobs.filter((job: JobPosting) => job.isActive);
-
-    if (searchQuery.trim()) {
-      const query = searchQuery.toLowerCase();
-      filtered = filtered.filter((job: JobPosting) => 
-        job.title.toLowerCase().includes(query) ||
-        job.companyName.toLowerCase().includes(query) ||
-        job.description.toLowerCase().includes(query) ||
-        job.skillsRequired.some(skill => skill.toLowerCase().includes(query))
-      );
-    }
-
-    if (locationFilter.trim()) {
-      const location = locationFilter.toLowerCase();
-      filtered = filtered.filter((job: JobPosting) => 
-        job.location?.toLowerCase().includes(location) ||
-        job.workMode.toLowerCase().includes(location)
-      );
-    }
-
-    setFilteredJobs(filtered);
-  }, [allJobs, searchQuery, locationFilter]);
-
-  // Application mutation
-  const applyToJobMutation = useMutation({
-    mutationFn: async ({ jobId }: { jobId: number }) => {
-      return await apiRequest("POST", `/api/jobs/postings/${jobId}/apply`, {});
-    },
-    onSuccess: () => {
+  const handleSearch = () => {
+    if (searchQuery.length < 3) {
       toast({
-        title: "Application Submitted",
-        description: "Your application has been sent to the recruiter.",
-      });
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs/my-applications"] });
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Application Failed",
-        description: error.message || "Failed to submit application. Please try again.",
-        variant: "destructive",
-      });
-    },
-  });
-
-  const handleApplyJob = (jobId: number) => {
-    if (!isAuthenticated) {
-      toast({
-        title: "Authentication Required",
-        description: "Please sign in to apply for jobs.",
-        variant: "destructive",
+        title: "Search too short",
+        description: "Please enter at least 3 characters to search",
+        variant: "destructive"
       });
       return;
     }
-    applyToJobMutation.mutate({ jobId });
+    setPage(1);
   };
 
-  const handleViewJob = (jobId: number) => {
-    window.open(`/jobs/${jobId}`, '_blank');
+  const handleApplyJob = (job: Job) => {
+    window.open(job.url, '_blank');
+    
+    // Track application
+    fetch('/api/applications', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      credentials: 'include',
+      body: JSON.stringify({
+        jobTitle: job.title,
+        company: job.company,
+        jobUrl: job.url,
+        location: job.location,
+        status: 'applied',
+        source: 'job_search'
+      })
+    }).catch(console.error);
   };
 
-  const isJobApplied = (jobId: number) => {
-    return Array.isArray(userApplications) && userApplications.some((app: any) => app.jobPostingId === jobId);
+  const formatSalary = (min?: number, max?: number) => {
+    if (!min && !max) return "Salary not specified";
+    if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
+    if (min) return `From $${min.toLocaleString()}`;
+    if (max) return `Up to $${max.toLocaleString()}`;
   };
 
   return (
@@ -147,7 +131,7 @@ export default function Jobs() {
         <div className="mb-8">
           <h1 className="text-3xl font-bold mb-2">Find Your Next Job</h1>
           <p className="text-muted-foreground">
-            Discover job opportunities posted by recruiters on our platform
+            Search thousands of jobs from top companies worldwide
           </p>
         </div>
 
@@ -159,21 +143,28 @@ export default function Jobs() {
                 <div className="relative">
                   <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
                   <Input
-                    placeholder="Job title, keywords, company, or skills"
+                    placeholder="Job title, keywords, or company (min 3 characters)"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                     className="pl-10"
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
                   />
                 </div>
               </div>
-              <div className="relative">
-                <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Location or remote"
-                  value={locationFilter}
-                  onChange={(e) => setLocationFilter(e.target.value)}
-                  className="pl-10"
-                />
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <MapPin className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
+                  <Input
+                    placeholder="Location"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="pl-10"
+                    onKeyPress={(e) => e.key === 'Enter' && handleSearch()}
+                  />
+                </div>
+                <Button onClick={handleSearch} disabled={jobsLoading || searchQuery.length < 3}>
+                  {jobsLoading ? "Searching..." : "Search"}
+                </Button>
               </div>
             </div>
           </CardContent>
@@ -195,7 +186,10 @@ export default function Jobs() {
                     key={term}
                     variant="outline"
                     size="sm"
-                    onClick={() => setSearchQuery(term)}
+                    onClick={() => {
+                      setSearchQuery(term);
+                      handleSearch();
+                    }}
                   >
                     {term}
                   </Button>
@@ -232,7 +226,7 @@ export default function Jobs() {
             <CardContent className="p-6 text-center">
               <div className="text-muted-foreground mb-4">
                 <Briefcase className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <h3 className="font-semibold mb-2">Error Loading Jobs</h3>
+                <h3 className="font-semibold mb-2">Search Error</h3>
                 <p>Unable to fetch jobs at this time. Please try again later.</p>
               </div>
               <Button variant="outline" onClick={() => window.location.reload()}>
@@ -243,132 +237,126 @@ export default function Jobs() {
         )}
 
         {/* No Results */}
-        {!jobsLoading && filteredJobs.length === 0 && allJobs && allJobs.length === 0 && (
-          <Card>
-            <CardContent className="p-6 text-center">
-              <div className="text-muted-foreground mb-4">
-                <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
-                <h3 className="font-semibold mb-2">No Jobs Available</h3>
-                <p>There are currently no job postings from recruiters. Check back later!</p>
-              </div>
-            </CardContent>
-          </Card>
-        )}
-
-        {/* Filtered No Results */}
-        {!jobsLoading && filteredJobs.length === 0 && allJobs && allJobs.length > 0 && (
+        {jobsData && jobsData.results?.length === 0 && (
           <Card>
             <CardContent className="p-6 text-center">
               <div className="text-muted-foreground mb-4">
                 <Search className="w-12 h-12 mx-auto mb-3 opacity-50" />
                 <h3 className="font-semibold mb-2">No Jobs Found</h3>
-                <p>Try adjusting your search terms or location filters</p>
+                <p>Try adjusting your search terms or location</p>
               </div>
-              <Button variant="outline" onClick={() => {
-                setSearchQuery("");
-                setLocationFilter("");
-              }}>
-                Clear Filters
-              </Button>
             </CardContent>
           </Card>
         )}
 
         {/* Job Results */}
-        {!jobsLoading && filteredJobs.length > 0 && (
+        {jobsData?.results && jobsData.results.length > 0 && (
           <div className="space-y-6">
             <div className="flex items-center justify-between">
               <h2 className="text-xl font-semibold">
-                {filteredJobs.length} job{filteredJobs.length !== 1 ? 's' : ''} found
+                {jobsData.count} jobs found
               </h2>
+              <div className="flex items-center gap-2">
+                <Button variant="outline" size="sm">
+                  <SlidersHorizontal className="w-4 h-4 mr-2" />
+                  Filters
+                </Button>
+              </div>
             </div>
 
             <div className="space-y-4">
-              {filteredJobs.map((job: JobPosting) => (
-                <Card key={job.id} className="hover:shadow-md transition-shadow">
+              {jobsData.results.map((job: Job, index: number) => (
+                <Card key={job.id || index} className="hover:shadow-md transition-shadow">
                   <CardContent className="p-6">
                     <div className="flex justify-between items-start mb-4">
                       <div className="flex-1">
                         <h3 className="text-lg font-semibold mb-2 text-primary hover:underline cursor-pointer"
-                            onClick={() => handleViewJob(job.id)}>
+                            onClick={() => window.open(job.url, '_blank')}>
                           {job.title}
                         </h3>
                         <div className="flex items-center gap-4 text-sm text-muted-foreground mb-2">
                           <span className="flex items-center gap-1">
                             <Building2 className="w-4 h-4" />
-                            {job.companyName}
+                            {job.company}
                           </span>
                           <span className="flex items-center gap-1">
                             <MapPin className="w-4 h-4" />
                             {job.location}
                           </span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="w-4 h-4" />
-                            {new Date(job.createdAt).toLocaleDateString()}
-                          </span>
+                          {job.created && (
+                            <span className="flex items-center gap-1">
+                              <Clock className="w-4 h-4" />
+                              {new Date(job.created).toLocaleDateString()}
+                            </span>
+                          )}
                         </div>
                         <div className="flex items-center gap-2 mb-3">
-                          <Badge variant="secondary">{job.workMode}</Badge>
-                          <Badge variant="outline">{job.jobType}</Badge>
-                          {job.salary && <Badge variant="outline">{job.salary}</Badge>}
+                          {job.contract_type && (
+                            <Badge variant="secondary">{job.contract_type}</Badge>
+                          )}
+                          {job.category && (
+                            <Badge variant="outline">{job.category}</Badge>
+                          )}
+                          <Badge variant="outline">
+                            {formatSalary(job.salary_min, job.salary_max)}
+                          </Badge>
                         </div>
                       </div>
-                    </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-4 line-clamp-2">
-                      {job.description}
-                    </p>
-                    
-                    {job.skillsRequired && job.skillsRequired.length > 0 && (
-                      <div className="flex flex-wrap gap-1 mb-4">
-                        {job.skillsRequired.slice(0, 5).map((skill, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            {skill}
-                          </Badge>
-                        ))}
-                        {job.skillsRequired.length > 5 && (
-                          <Badge variant="outline" className="text-xs">
-                            +{job.skillsRequired.length - 5} more
-                          </Badge>
-                        )}
-                      </div>
-                    )}
-                    
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                        {job.applicationsCount !== undefined && (
-                          <span>{job.applicationsCount} applications</span>
-                        )}
-                      </div>
-                      <div className="flex gap-2">
-                        <Button 
-                          variant="outline" 
+                      <div className="flex gap-2 ml-4">
+                        <Button
+                          variant="outline"
                           size="sm"
-                          onClick={() => handleViewJob(job.id)}
+                          onClick={() => {
+                            // Add to bookmarks
+                            toast({
+                              title: "Job bookmarked",
+                              description: "Added to your saved jobs"
+                            });
+                          }}
                         >
-                          <Eye className="w-4 h-4 mr-1" />
-                          View Job
+                          <BookmarkPlus className="w-4 h-4" />
                         </Button>
-                        {isJobApplied(job.id) ? (
-                          <Button variant="secondary" size="sm" disabled>
-                            <CheckCircle className="w-4 h-4 mr-1" />
-                            Applied
-                          </Button>
-                        ) : (
-                          <Button 
-                            size="sm"
-                            onClick={() => handleApplyJob(job.id)}
-                            disabled={applyToJobMutation.isPending}
-                          >
-                            {applyToJobMutation.isPending ? "Applying..." : "Apply"}
-                          </Button>
-                        )}
+                        <Button
+                          onClick={() => handleApplyJob(job)}
+                          size="sm"
+                        >
+                          Apply Now
+                          <ExternalLink className="w-4 h-4 ml-2" />
+                        </Button>
                       </div>
+                    </div>
+                    <div className="text-sm text-muted-foreground">
+                      <p className="line-clamp-3">
+                        {job.description}
+                      </p>
                     </div>
                   </CardContent>
                 </Card>
               ))}
             </div>
+
+            {/* Pagination */}
+            {jobsData.count > 20 && (
+              <div className="flex justify-center gap-2 mt-8">
+                <Button
+                  variant="outline"
+                  onClick={() => setPage(Math.max(1, page - 1))}
+                  disabled={page <= 1}
+                >
+                  Previous
+                </Button>
+                <span className="flex items-center px-4 text-sm text-muted-foreground">
+                  Page {page} of {Math.ceil(jobsData.count / 20)}
+                </span>
+                <Button
+                  variant="outline"
+                  onClick={() => setPage(page + 1)}
+                  disabled={page >= Math.ceil(jobsData.count / 20)}
+                >
+                  Next
+                </Button>
+              </div>
+            )}
           </div>
         )}
       </div>
