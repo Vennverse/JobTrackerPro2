@@ -90,9 +90,36 @@ export default function Dashboard() {
     retry: false,
   });
 
+  // Fetch recruiter-posted jobs
+  const { data: jobPostings, isLoading: jobPostingsLoading } = useQuery({
+    queryKey: ["/api/jobs/postings"],
+    retry: false,
+  });
+
   const { data: recentAnalyses } = useQuery({
     queryKey: ["/api/jobs/analyses"],
     retry: false,
+  });
+
+  // Job application mutation
+  const applyToJobMutation = useMutation({
+    mutationFn: async ({ jobId, coverLetter }: { jobId: number; coverLetter?: string }) => {
+      return await apiRequest("POST", `/api/jobs/postings/${jobId}/apply`, { coverLetter });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Application Submitted",
+        description: "Your application has been sent to the recruiter.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/my-applications"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Application Failed",
+        description: error.message || "Failed to submit application. Please try again.",
+        variant: "destructive",
+      });
+    },
   });
 
   // Resume upload mutation
@@ -757,6 +784,92 @@ export default function Dashboard() {
                   <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                   <h3 className="font-semibold mb-2">No Recommendations Yet</h3>
                   <p className="text-muted-foreground text-sm">Complete your profile to get personalized job recommendations</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Job Postings from Recruiters */}
+          <Card>
+            <CardHeader>
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-xl flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-primary" />
+                  Latest Job Openings
+                </CardTitle>
+                <Badge variant="secondary" className="text-xs">
+                  {Array.isArray(jobPostings) ? jobPostings.length : 0} Available
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {jobPostingsLoading ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {[...Array(4)].map((_, i) => (
+                    <div key={i} className="p-4 border rounded-lg">
+                      <Skeleton className="h-4 w-3/4 mb-2" />
+                      <Skeleton className="h-3 w-1/2 mb-3" />
+                      <Skeleton className="h-20 w-full mb-3" />
+                      <Skeleton className="h-8 w-24" />
+                    </div>
+                  ))}
+                </div>
+              ) : Array.isArray(jobPostings) && jobPostings.length > 0 ? (
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  {jobPostings.slice(0, 6).map((job: any) => (
+                    <div key={job.id} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
+                      <div className="flex items-start justify-between mb-3">
+                        <div className="flex-1">
+                          <h4 className="font-semibold text-sm mb-1">{job.title}</h4>
+                          <p className="text-sm text-muted-foreground">{job.companyName}</p>
+                        </div>
+                        {job.skills?.slice(0, 2).map((skill: string, idx: number) => (
+                          <Badge key={idx} variant="outline" className="text-xs ml-1">
+                            {skill}
+                          </Badge>
+                        ))}
+                      </div>
+                      
+                      <div className="space-y-2 mb-3">
+                        <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                          <span>{job.location || 'Remote'}</span>
+                          <span>•</span>
+                          <span>{job.workMode}</span>
+                          <span>•</span>
+                          <span>{job.jobType}</span>
+                        </div>
+                        
+                        {job.minSalary && job.maxSalary && (
+                          <div className="text-xs text-green-600 font-medium">
+                            ${job.minSalary.toLocaleString()} - ${job.maxSalary.toLocaleString()} {job.currency}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">
+                        {job.description}
+                      </p>
+                      
+                      <div className="flex items-center justify-between">
+                        <span className="text-xs text-muted-foreground">
+                          {job.applicationsCount} applications
+                        </span>
+                        <Button 
+                          size="sm" 
+                          onClick={() => applyToJobMutation.mutate({ jobId: job.id })}
+                          disabled={applyToJobMutation.isPending}
+                        >
+                          {applyToJobMutation.isPending ? "Applying..." : "Apply Now"}
+                        </Button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-6">
+                  <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
+                  <h3 className="font-semibold mb-2">No Job Openings Yet</h3>
+                  <p className="text-muted-foreground text-sm">Check back later for new opportunities from recruiters</p>
                 </div>
               )}
             </CardContent>
