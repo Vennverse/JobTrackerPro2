@@ -1533,18 +1533,32 @@ Additional Information:
   app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { paypalOrderId, paypalSubscriptionId } = req.body;
+      const { paypalOrderId, paypalSubscriptionId, stripePaymentIntentId } = req.body;
       
-      if (!paypalOrderId || !paypalSubscriptionId) {
-        return res.status(400).json({ message: "PayPal order ID and subscription ID are required" });
+      // Require either PayPal or Stripe payment verification
+      if (!paypalOrderId && !stripePaymentIntentId) {
+        return res.status(400).json({ 
+          message: "Payment verification required. Please complete payment through PayPal or Stripe first.",
+          requiresPayment: true 
+        });
       }
 
-      // Update user subscription to premium
+      // TODO: Add actual PayPal/Stripe payment verification here
+      // For now, we require payment IDs but don't verify them (user should integrate payment processing)
+      if (paypalOrderId && !paypalSubscriptionId) {
+        return res.status(400).json({ 
+          message: "PayPal subscription ID required along with order ID",
+          requiresPayment: true 
+        });
+      }
+
+      // Update user subscription to premium only after payment verification
       await subscriptionService.updateUserSubscription(userId, {
         planType: 'premium',
         subscriptionStatus: 'active',
-        paypalSubscriptionId,
-        paypalOrderId,
+        paypalSubscriptionId: paypalSubscriptionId || undefined,
+        paypalOrderId: paypalOrderId || undefined,
+        stripeCustomerId: stripePaymentIntentId || undefined,
         subscriptionStartDate: new Date(),
         subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
       });

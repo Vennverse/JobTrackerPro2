@@ -550,6 +550,9 @@ export default function Dashboard() {
       {/* Dashboard Content */}
       <section className="py-8 sm:py-16 bg-background">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 space-y-8">
+          {/* Upgrade Prompt */}
+          <UpgradePrompt userPlan={user?.planType || 'free'} />
+
           {/* Stats Cards */}
           <StatsCards stats={stats as any} isLoading={statsLoading} />
 

@@ -76,7 +76,7 @@ export default function Subscription() {
   });
 
   const handleUpgrade = async () => {
-    // Show message that payment integration is required
+    // Show message that proper payment integration is required
     toast({
       title: "Payment Integration Required",
       description: "Please contact support to set up PayPal or Stripe payment integration for premium subscriptions.",
