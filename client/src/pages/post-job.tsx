@@ -21,6 +21,7 @@ export default function PostJob() {
   const { user, isAuthenticated } = useAuth();
   
   const [currentStep, setCurrentStep] = useState<'auth' | 'verify' | 'post'>('auth');
+  const [emailSent, setEmailSent] = useState(false);
   const [verificationData, setVerificationData] = useState({
     email: "",
     companyName: "",
@@ -67,11 +68,11 @@ export default function PostJob() {
       return await apiRequest("POST", "/api/auth/send-verification", data);
     },
     onSuccess: () => {
+      setEmailSent(true);
       toast({
         title: "Verification Email Sent",
         description: "Check your email and click the verification link to complete setup.",
       });
-      setLocation("/verify-email");
     },
     onError: (error: any) => {
       toast({
@@ -183,6 +184,54 @@ export default function PostJob() {
 
   // Email verification step
   if (currentStep === 'verify') {
+    if (emailSent) {
+      return (
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+          <Card className="w-full max-w-md">
+            <CardHeader className="text-center">
+              <CardTitle className="flex items-center justify-center gap-2">
+                <CheckCircle className="w-8 h-8 text-green-600" />
+                Email Sent Successfully
+              </CardTitle>
+              <CardDescription>
+                Check your email inbox for the verification link
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-4 text-center">
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <p className="text-sm text-green-700 dark:text-green-300">
+                  We've sent a verification link to <strong>{verificationData.email}</strong>
+                </p>
+                <p className="text-xs text-green-600 dark:text-green-400 mt-2">
+                  Click the link in your email to verify your company email and start posting jobs.
+                </p>
+              </div>
+              <div className="space-y-2">
+                <Button 
+                  onClick={() => {
+                    setEmailSent(false);
+                    verificationMutation.mutate(verificationData);
+                  }}
+                  variant="outline"
+                  className="w-full"
+                  disabled={verificationMutation.isPending}
+                >
+                  {verificationMutation.isPending ? "Sending..." : "Resend Email"}
+                </Button>
+                <Button 
+                  variant="link" 
+                  onClick={() => setLocation('/')}
+                  className="text-sm"
+                >
+                  Back to Home
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      );
+    }
+
     return (
       <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
         <Card className="w-full max-w-md">
