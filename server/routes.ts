@@ -1,5 +1,6 @@
 import type { Express } from "express";
 import { createServer, type Server } from "http";
+import { WebSocketServer, WebSocket } from 'ws';
 import path from "path";
 import fs from "fs";
 import multer from "multer";
@@ -2587,6 +2588,112 @@ Additional Information:
       console.error("Error marking messages as read:", error);
       res.status(500).json({ message: "Failed to mark messages as read" });
     }
+  });
+
+  // WebSocket server for real-time chat
+  const wss = new WebSocketServer({ server: httpServer, path: '/ws' });
+  
+  // Store active WebSocket connections by user ID
+  const connectedUsers = new Map<string, WebSocket>();
+  
+  wss.on('connection', (ws: WebSocket, req) => {
+    console.log('New WebSocket connection');
+    
+    let userId: string | null = null;
+    
+    ws.on('message', async (data) => {
+      try {
+        const message = JSON.parse(data.toString());
+        
+        if (message.type === 'authenticate') {
+          userId = message.userId;
+          if (userId) {
+            connectedUsers.set(userId, ws);
+            console.log(`User ${userId} connected to WebSocket`);
+            
+            ws.send(JSON.stringify({
+              type: 'authenticated',
+              userId: userId
+            }));
+          }
+        }
+        
+        if (message.type === 'sendMessage' && userId) {
+          const { conversationId, messageText } = message;
+          
+          // Save message to database
+          const messageData = {
+            conversationId: parseInt(conversationId),
+            senderId: userId,
+            message: messageText,
+            messageType: 'text',
+          };
+          
+          const savedMessage = await storage.createChatMessage(messageData);
+          
+          // Get conversation details to find recipient
+          const conversation = await storage.getChatConversation(parseInt(conversationId));
+          if (!conversation) {
+            ws.send(JSON.stringify({
+              type: 'error',
+              message: 'Conversation not found'
+            }));
+            return;
+          }
+          const recipientId = conversation.recruiterId === userId ? conversation.jobSeekerId : conversation.recruiterId;
+          
+          // Send to recipient if they're connected
+          const recipientWs = connectedUsers.get(recipientId);
+          if (recipientWs && recipientWs.readyState === WebSocket.OPEN) {
+            recipientWs.send(JSON.stringify({
+              type: 'newMessage',
+              message: savedMessage,
+              conversationId: conversationId
+            }));
+          }
+          
+          // Send confirmation back to sender
+          ws.send(JSON.stringify({
+            type: 'messageSent',
+            message: savedMessage,
+            conversationId: conversationId
+          }));
+        }
+        
+        if (message.type === 'joinConversation' && userId) {
+          const { conversationId } = message;
+          
+          // Mark messages as read
+          await storage.markMessagesAsRead(parseInt(conversationId), userId);
+          
+          ws.send(JSON.stringify({
+            type: 'joinedConversation',
+            conversationId: conversationId
+          }));
+        }
+        
+      } catch (error) {
+        console.error('WebSocket message error:', error);
+        ws.send(JSON.stringify({
+          type: 'error',
+          message: 'Failed to process message'
+        }));
+      }
+    });
+    
+    ws.on('close', () => {
+      if (userId) {
+        connectedUsers.delete(userId);
+        console.log(`User ${userId} disconnected from WebSocket`);
+      }
+    });
+    
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      if (userId) {
+        connectedUsers.delete(userId);
+      }
+    });
   });
 
   return httpServer;
