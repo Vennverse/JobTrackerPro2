@@ -982,11 +982,52 @@ Additional Information:
         analysis: profile.atsAnalysis,
         recommendations: profile.atsRecommendations,
         lastAnalysis: profile.lastResumeAnalysis,
-        hasResume: !!profile.resumeText
+        hasResume: !!profile.resumeText,
+        fileName: profile.resumeFileName
       });
     } catch (error) {
       console.error("Error fetching resume analysis:", error);
       res.status(500).json({ message: "Failed to fetch resume analysis" });
+    }
+  });
+
+  // Resume download route for recruiters - access applicant resumes
+  app.get('/api/resume/download/:applicantId', isAuthenticated, async (req: any, res) => {
+    try {
+      const recruiterId = req.user.id;
+      const applicantId = req.params.applicantId;
+      
+      // Verify this recruiter can access this applicant's resume
+      // Check if there's an application from this applicant to this recruiter's job
+      const applications = await storage.getApplicationsForRecruiter(recruiterId);
+      const hasAccess = applications.some((app: any) => app.userId === applicantId);
+      
+      if (!hasAccess) {
+        return res.status(403).json({ message: "You don't have permission to access this resume" });
+      }
+      
+      // Get the applicant's profile with resume data
+      const applicantProfile = await storage.getUserProfile(applicantId);
+      
+      if (!applicantProfile?.resumeData) {
+        return res.status(404).json({ message: "Resume not found for this applicant" });
+      }
+      
+      // Convert base64 back to buffer
+      const resumeBuffer = Buffer.from(applicantProfile.resumeData, 'base64');
+      const fileName = applicantProfile.resumeFileName || `resume_${applicantId}.pdf`;
+      const mimeType = applicantProfile.resumeMimeType || 'application/pdf';
+      
+      // Set headers for file download
+      res.setHeader('Content-Type', mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${fileName}"`);
+      res.setHeader('Content-Length', resumeBuffer.length);
+      
+      // Send the file
+      res.send(resumeBuffer);
+    } catch (error) {
+      console.error("Error downloading resume:", error);
+      res.status(500).json({ message: "Failed to download resume" });
     }
   });
 

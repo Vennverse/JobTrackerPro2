@@ -448,7 +448,7 @@ export default function RecruiterDashboard() {
                                     </Card>
 
                                     {/* Resume */}
-                                    {applicantDetails.resumes && applicantDetails.resumes.length > 0 && (
+                                    {(applicantDetails.profile?.resumeFileName || applicantDetails.profile?.resumeText) && (
                                       <Card>
                                         <CardHeader>
                                           <CardTitle className="flex items-center gap-2">
@@ -458,29 +458,49 @@ export default function RecruiterDashboard() {
                                         </CardHeader>
                                         <CardContent>
                                           <div className="space-y-3">
-                                            {applicantDetails.resumes.map((resume: any, index: number) => (
-                                              <div key={resume.id} className="flex items-center justify-between p-3 border rounded-lg">
-                                                <div>
-                                                  <p className="font-medium">{resume.filename || `Resume ${index + 1}`}</p>
-                                                  <p className="text-sm text-gray-600">
-                                                    {resume.atsScore && `ATS Score: ${resume.atsScore}/100`}
-                                                  </p>
-                                                </div>
-                                                <Button 
-                                                  variant="outline" 
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    // Download resume functionality
-                                                    if (resume.fileUrl) {
-                                                      window.open(resume.fileUrl, '_blank');
-                                                    }
-                                                  }}
-                                                >
-                                                  <Download className="w-4 h-4 mr-1" />
-                                                  Download
-                                                </Button>
+                                            <div className="flex items-center justify-between p-3 border rounded-lg">
+                                              <div className="flex-1">
+                                                <p className="font-medium">
+                                                  {applicantDetails.profile?.resumeFileName || 'Resume.pdf'}
+                                                </p>
+                                                <p className="text-sm text-gray-600">
+                                                  {applicantDetails.profile?.atsScore && `ATS Score: ${applicantDetails.profile.atsScore}/100`}
+                                                  {applicantDetails.profile?.lastResumeAnalysis && 
+                                                    ` • Uploaded ${new Date(applicantDetails.profile.lastResumeAnalysis).toLocaleDateString()}`
+                                                  }
+                                                </p>
                                               </div>
-                                            ))}
+                                              <div className="flex gap-2">
+                                                {applicantDetails.profile?.resumeData && (
+                                                  <Button 
+                                                    variant="outline" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                      // Download resume functionality
+                                                      const downloadUrl = `/api/resume/download/${applicantDetails.user?.id}`;
+                                                      window.open(downloadUrl, '_blank');
+                                                    }}
+                                                  >
+                                                    <Download className="w-4 h-4 mr-1" />
+                                                    Download
+                                                  </Button>
+                                                )}
+                                                {applicantDetails.profile?.resumeText && (
+                                                  <Button 
+                                                    variant="ghost" 
+                                                    size="sm"
+                                                    onClick={() => {
+                                                      // Show resume preview modal
+                                                      setResumePreview(applicantDetails.profile?.resumeText || '');
+                                                      setShowResumePreview(true);
+                                                    }}
+                                                  >
+                                                    <Eye className="w-4 h-4 mr-1" />
+                                                    Preview
+                                                  </Button>
+                                                )}
+                                              </div>
+                                            </div>
                                           </div>
                                         </CardContent>
                                       </Card>

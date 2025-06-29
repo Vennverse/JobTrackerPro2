@@ -100,6 +100,8 @@ export const userProfiles = pgTable("user_profiles", {
   resumeUrl: varchar("resume_url"),
   resumeText: text("resume_text"),
   resumeFileName: varchar("resume_file_name"),
+  resumeData: text("resume_data"), // Base64 encoded file data for persistence
+  resumeMimeType: varchar("resume_mime_type"), // MIME type of uploaded file
   summary: text("summary"),
   yearsExperience: integer("years_experience"),
   
