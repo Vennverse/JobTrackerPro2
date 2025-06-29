@@ -8,6 +8,8 @@ import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { groqService } from "./groqService";
 import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
+import { sendEmail, generateVerificationEmail } from "./emailService";
+import crypto from "crypto";
 import { 
   insertUserProfileSchema,
   insertUserSkillSchema,
@@ -116,25 +118,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Email and company name are required" });
       }
 
+      // Validate company email (no Gmail, Yahoo, etc.)
+      const emailDomain = email.split('@')[1].toLowerCase();
+      const blockedDomains = ['gmail.com', 'yahoo.com', 'hotmail.com', 'outlook.com', 'aol.com'];
+      
+      if (blockedDomains.includes(emailDomain)) {
+        return res.status(400).json({ 
+          message: 'Please use a company email address. Personal email addresses are not allowed for recruiter accounts.' 
+        });
+      }
+
       // Generate verification token
-      const token = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
-      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
       // Save verification token
       await storage.createEmailVerificationToken({
-        userId: `temp-${email}`, // Temporary user ID until verification
-        token,
         email,
+        companyName,
+        companyWebsite,
+        token,
         expiresAt,
       });
 
-      // For demo purposes, just return success - in production you'd send email here
-      console.log(`Verification link: ${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${token}`);
+      // Send actual email with Resend
+      const emailHtml = generateVerificationEmail(token, companyName);
+      const emailSent = await sendEmail({
+        to: email,
+        subject: `Verify your company email - ${companyName}`,
+        html: emailHtml,
+      });
+
+      if (!emailSent) {
+        return res.status(500).json({ message: 'Failed to send verification email' });
+      }
       
       res.json({ 
-        message: "Verification email sent",
-        // For demo, include the verification link
-        verificationLink: `${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${token}`
+        message: "Verification email sent successfully. Please check your email and click the verification link."
       });
     } catch (error) {
       console.error("Error sending verification:", error);
@@ -164,6 +184,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         email: tokenRecord.email,
         userType: "recruiter",
         emailVerified: true,
+        companyName: tokenRecord.companyName,
+        companyWebsite: tokenRecord.companyWebsite,
       });
 
       // Delete used token

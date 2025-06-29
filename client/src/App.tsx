@@ -17,6 +17,7 @@ import Landing from "@/pages/landing";
 import UserTypeSelection from "@/pages/user-type-selection";
 import RecruiterDashboard from "@/pages/recruiter-dashboard";
 import PostJob from "@/pages/post-job";
+import VerifyEmail from "@/pages/verify-email";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -33,6 +34,7 @@ function Router() {
     <Switch>
       <Route path="/auth" component={AuthPage} />
       <Route path="/user-type" component={UserTypeSelection} />
+      <Route path="/verify-email" component={VerifyEmail} />
       {isAuthenticated ? (
         <>
           {/* Handle different user types */}
