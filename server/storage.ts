@@ -13,6 +13,7 @@ import {
   chatConversations,
   chatMessages,
   emailVerificationTokens,
+  passwordResetTokens,
   type User,
   type UpsertUser,
   type UserProfile,
