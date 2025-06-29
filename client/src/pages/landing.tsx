@@ -32,6 +32,9 @@ export default function Landing() {
     window.location.href = "/auth";
   };
 
+  // Update document title with viral keywords for maximum SEO impact
+  document.title = "AutoJobr - #1 AI Job Search Platform 2025 | Get Hired 10x Faster | Free Automation";
+
   const features = [
     {
       icon: Bot,
