@@ -5,7 +5,7 @@ import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Rocket, Moon, Sun, User, Settings, LogOut, BarChart3, FileText, Briefcase, Crown, Menu, X, Plus } from "lucide-react";
+import { Rocket, Moon, Sun, User, Settings, LogOut, BarChart3, FileText, Briefcase, Crown, Menu, X, Plus, MessageCircle } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
@@ -37,6 +37,7 @@ export function Navbar() {
     { href: "/applications", label: "Applications", icon: FileText },
     { href: "/profile", label: "Profile", icon: User },
     { href: "/jobs", label: "Jobs", icon: Briefcase },
+    { href: "/chat", label: "Messages", icon: MessageCircle },
     { href: "/post-job", label: "Post Job", icon: Plus },
     { href: "/subscription", label: "Subscription", icon: Crown },
   ];
