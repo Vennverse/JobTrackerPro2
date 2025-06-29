@@ -610,32 +610,34 @@ Additional Information:
       const userId = req.user.id;
       const resumeId = parseInt(req.params.id);
       
+      console.log(`[DEBUG] Resume download request for user: ${userId}, resumeId: ${resumeId}`);
+      
+      let resume;
+      
+      // Find resume in appropriate storage
       if (userId === 'demo-user-id') {
-        // For demo user, return demo file
-        const resume = (global as any).demoUserResumes?.find((r: any) => r.id === resumeId);
-        if (!resume) {
-          return res.status(404).json({ message: "Resume not found" });
-        }
-        
-        // Create a sample PDF buffer for demo purposes
-        const samplePdfContent = Buffer.from(
-          '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n100 700 Td\n(Demo Resume Content) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000206 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n299\n%%EOF'
-        );
-        
-        res.setHeader('Content-Type', 'application/pdf');
-        res.setHeader('Content-Disposition', `attachment; filename="${resume.fileName}"`);
-        return res.send(samplePdfContent);
+        resume = (global as any).demoUserResumes?.find((r: any) => r.id === resumeId);
+      } else {
+        const userResumes = (global as any).userResumes?.[userId] || [];
+        resume = userResumes.find((r: any) => r.id === resumeId);
       }
       
-      // For non-demo users, implement real file retrieval
-      const resumeFile = await storage.getResumeFile?.(userId, resumeId);
-      if (!resumeFile) {
-        return res.status(404).json({ message: "Resume file not found" });
+      if (!resume) {
+        console.log(`[DEBUG] Resume not found for user ${userId}, resumeId ${resumeId}`);
+        return res.status(404).json({ message: "Resume not found" });
       }
       
-      res.setHeader('Content-Type', resumeFile.contentType);
-      res.setHeader('Content-Disposition', `attachment; filename="${resumeFile.filename}"`);
-      res.send(resumeFile.data);
+      console.log(`[DEBUG] Found resume: ${resume.fileName}, fileType: ${resume.fileType}`);
+      
+      // Convert base64 file data back to buffer
+      const fileBuffer = Buffer.from(resume.fileData, 'base64');
+      
+      res.setHeader('Content-Type', resume.fileType || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${resume.fileName}"`);
+      res.setHeader('Content-Length', fileBuffer.length.toString());
+      
+      console.log(`[DEBUG] Sending file: ${resume.fileName}, size: ${fileBuffer.length} bytes`);
+      return res.send(fileBuffer);
     } catch (error) {
       console.error("Error downloading resume:", error);
       res.status(500).json({ message: "Failed to download resume" });
@@ -2179,6 +2181,8 @@ Additional Information:
       const { resumeId, coverLetter } = req.body;
       const user = await storage.getUser(userId);
       
+      console.log(`[DEBUG] Job application: User ${userId} applying to job ${jobId} with resume ${resumeId}`);
+      
       if (user?.userType !== 'job_seeker') {
         return res.status(403).json({ message: "Access denied. Job seeker account required." });
       }
@@ -2191,14 +2195,41 @@ Additional Information:
         return res.status(400).json({ message: "You have already applied to this job" });
       }
 
+      // Get resume data to include with application
+      let resumeData = null;
+      if (resumeId) {
+        let resume;
+        if (userId === 'demo-user-id') {
+          resume = (global as any).demoUserResumes?.find((r: any) => r.id === parseInt(resumeId));
+        } else {
+          const userResumes = (global as any).userResumes?.[userId] || [];
+          resume = userResumes.find((r: any) => r.id === parseInt(resumeId));
+        }
+        
+        if (resume) {
+          resumeData = {
+            id: resume.id,
+            name: resume.name,
+            fileName: resume.fileName,
+            atsScore: resume.atsScore,
+            fileData: resume.fileData, // Store complete resume data for recruiter access
+            fileType: resume.fileType,
+            uploadedAt: resume.uploadedAt
+          };
+          console.log(`[DEBUG] Found resume data: ${resume.fileName}, ATS Score: ${resume.atsScore}`);
+        }
+      }
+
       const application = await storage.createJobPostingApplication({
         jobPostingId: jobId,
         applicantId: userId,
         resumeId: resumeId || null,
+        resumeData: resumeData, // Include full resume data
         coverLetter: coverLetter || null,
         status: 'pending'
       });
 
+      console.log(`[DEBUG] Application created successfully with ID: ${application.id}`);
       res.status(201).json(application);
     } catch (error) {
       console.error("Error applying to job:", error);
@@ -2215,6 +2246,72 @@ Additional Information:
     } catch (error) {
       console.error("Error fetching applications:", error);
       res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
+  // Download resume from job application (for recruiters)
+  app.get('/api/applications/:applicationId/resume/download', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const applicationId = parseInt(req.params.applicationId);
+      const user = await storage.getUser(userId);
+      
+      console.log(`[DEBUG] Resume download from application ${applicationId} by user ${userId}`);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Get the application and verify it belongs to this recruiter's job posting
+      const application = await storage.getJobPostingApplication(applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Get job posting to verify recruiter owns it
+      const jobPosting = await storage.getJobPosting(application.jobPostingId);
+      if (!jobPosting || jobPosting.recruiterId !== userId) {
+        return res.status(403).json({ message: "Access denied. You can only download resumes from your job postings." });
+      }
+
+      // Check if resume data is stored in the application
+      if (application.resumeData) {
+        const resumeData = application.resumeData as any;
+        const fileBuffer = Buffer.from(resumeData.fileData, 'base64');
+        
+        res.setHeader('Content-Type', resumeData.fileType || 'application/octet-stream');
+        res.setHeader('Content-Disposition', `attachment; filename="${resumeData.fileName}"`);
+        res.setHeader('Content-Length', fileBuffer.length.toString());
+        
+        console.log(`[DEBUG] Sending resume: ${resumeData.fileName}, size: ${fileBuffer.length} bytes`);
+        return res.send(fileBuffer);
+      }
+
+      // Fallback: try to get resume from user's stored resumes
+      const applicantId = application.applicantId;
+      let resume;
+      
+      if (applicantId === 'demo-user-id') {
+        resume = (global as any).demoUserResumes?.find((r: any) => r.id === application.resumeId);
+      } else {
+        const userResumes = (global as any).userResumes?.[applicantId] || [];
+        resume = userResumes.find((r: any) => r.id === application.resumeId);
+      }
+
+      if (!resume) {
+        return res.status(404).json({ message: "Resume file not found" });
+      }
+
+      const fileBuffer = Buffer.from(resume.fileData, 'base64');
+      res.setHeader('Content-Type', resume.fileType || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${resume.fileName}"`);
+      res.setHeader('Content-Length', fileBuffer.length.toString());
+      
+      console.log(`[DEBUG] Sending fallback resume: ${resume.fileName}, size: ${fileBuffer.length} bytes`);
+      return res.send(fileBuffer);
+    } catch (error) {
+      console.error("Error downloading application resume:", error);
+      res.status(500).json({ message: "Failed to download resume" });
     }
   });
 
