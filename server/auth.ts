@@ -63,9 +63,9 @@ export async function setupAuth(app: Express) {
   passport.deserializeUser(async (id: string, done) => {
     try {
       const [user] = await db.select().from(users).where(eq(users.id, id));
-      done(null, user);
+      done(null, user || false);
     } catch (error) {
-      done(error, null);
+      done(error, false);
     }
   });
 
@@ -153,7 +153,7 @@ export async function setupAuth(app: Express) {
         
         return done(null, user);
       } catch (error) {
-        return done(error, null);
+        return done(error, false);
       }
     }));
   }
