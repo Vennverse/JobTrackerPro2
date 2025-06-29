@@ -141,13 +141,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         expiresAt,
       });
 
-      // Generate verification URL for demo
-      const baseUrl = process.env.NODE_ENV === 'production' 
-        ? `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}` 
-        : 'http://localhost:5000';
-      const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
-
-      // Try to send actual email with Resend
+      // Send actual email with Resend
       const emailHtml = generateVerificationEmail(token, companyName);
       const emailSent = await sendEmail({
         to: email,
@@ -155,21 +149,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
         html: emailHtml,
       });
 
-      if (emailSent) {
-        res.json({ 
-          message: "Verification email sent successfully. Please check your email and click the verification link."
-        });
-      } else {
-        // For demo/development - show the verification link if email sending fails
-        console.log(`Verification email would be sent to ${email}`);
-        console.log(`Verification link: ${verificationUrl}`);
-        
-        res.json({ 
-          message: "Demo mode: Click the verification link below (in production, this would be sent via email)",
-          verificationUrl: verificationUrl,
-          note: "In production, verify your domain at resend.com/domains to send emails to any recipient"
-        });
+      if (!emailSent) {
+        return res.status(500).json({ message: 'Failed to send verification email' });
       }
+      
+      res.json({ 
+        message: "Verification email sent successfully. Please check your email and click the verification link."
+      });
     } catch (error) {
       console.error("Error sending verification:", error);
       res.status(500).json({ message: "Failed to send verification email" });
