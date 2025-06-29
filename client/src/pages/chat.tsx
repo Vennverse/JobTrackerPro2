@@ -1,7 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
-import { useWebSocket } from '@/hooks/useWebSocket';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -60,227 +59,222 @@ export default function ChatPage() {
     enabled: !!selectedConversation,
   });
 
-  // WebSocket connection (temporarily disabled to fix connection issues)
-  const isConnected = false;
-  const sendWebSocketMessage = () => false;
-
   // Send message mutation
   const sendMessageMutation = useMutation({
-    mutationFn: async ({ conversationId, message }: { conversationId: number; message: string }) => {
-      return apiRequest(`/api/chat/conversations/${conversationId}/messages`, {
+    mutationFn: async (messageData: { message: string }) => {
+      return apiRequest(`/api/chat/conversations/${selectedConversation}/messages`, {
         method: 'POST',
-        body: { message }
+        body: JSON.stringify({ message: messageData.message }),
+        headers: { 'Content-Type': 'application/json' },
       });
     },
     onSuccess: () => {
-      setNewMessage('');
-      // Refresh messages and conversations
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations', selectedConversation, 'messages'] });
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
-    }
+      setNewMessage('');
+    },
   });
 
-  // Create new conversation mutation
+  // Create conversation mutation
   const createConversationMutation = useMutation({
-    mutationFn: async (data: { jobSeekerId?: string; recruiterId?: string; jobPostingId?: number; applicationId?: number }) => {
+    mutationFn: async (conversationData: {
+      jobSeekerId?: string;
+      recruiterId?: string;
+      jobPostingId?: number;
+      applicationId?: number;
+    }) => {
       return apiRequest('/api/chat/conversations', {
         method: 'POST',
-        body: data
+        body: JSON.stringify(conversationData),
+        headers: { 'Content-Type': 'application/json' },
       });
     },
-    onSuccess: (newConversation) => {
+    onSuccess: (response: any) => {
+      setSelectedConversation(response.id);
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
-      setSelectedConversation(newConversation.id);
-    }
+    },
   });
 
-  // Update messages when conversation changes
+  // Mark messages as read mutation
+  const markAsReadMutation = useMutation({
+    mutationFn: async (conversationId: number) => {
+      return apiRequest(`/api/chat/conversations/${conversationId}/read`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
+    },
+  });
+
+  // Update messages when conversation messages change
   useEffect(() => {
     if (conversationMessages) {
       setMessages(conversationMessages);
     }
   }, [conversationMessages]);
 
-  // Scroll to bottom when messages change
+  // Mark messages as read when selecting conversation
+  useEffect(() => {
+    if (selectedConversation && user?.id) {
+      markAsReadMutation.mutate(selectedConversation);
+    }
+  }, [selectedConversation, user?.id]);
+
+  // Auto-scroll to bottom when new messages arrive
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
-  // Mark messages as read when conversation is selected
-  useEffect(() => {
-    if (selectedConversation && user?.id) {
-      // Join conversation via WebSocket
-      sendWebSocketMessage({
-        type: 'joinConversation',
-        conversationId: selectedConversation
-      });
-
-      // Mark as read via API
-      apiRequest(`/api/chat/conversations/${selectedConversation}/read`, {
-        method: 'POST'
-      }).then(() => {
-        queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
-      });
-    }
-  }, [selectedConversation, user?.id, sendWebSocketMessage, queryClient]);
-
   const handleSendMessage = () => {
-    if (!newMessage.trim() || !selectedConversation) return;
+    if (!newMessage.trim() || !selectedConversation || sendMessageMutation.isPending) {
+      return;
+    }
 
-    // Send via WebSocket for real-time delivery
-    const sent = sendWebSocketMessage({
-      type: 'sendMessage',
-      conversationId: selectedConversation,
-      messageText: newMessage.trim()
-    });
+    sendMessageMutation.mutate({ message: newMessage });
+  };
 
-    if (!sent) {
-      // Fallback to API if WebSocket not connected
-      sendMessageMutation.mutate({
-        conversationId: selectedConversation,
-        message: newMessage.trim()
-      });
-    } else {
-      setNewMessage('');
+  const handleKeyPress = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      handleSendMessage();
     }
   };
 
-  const getOtherParticipantName = (conversation: ChatConversation) => {
-    if (user?.userType === 'recruiter') {
+  const formatMessageTime = (timestamp: string) => {
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
+  };
+
+  const getUserDisplayName = (conversation: any) => {
+    if (!user) return '';
+    
+    if (user.userType === 'recruiter') {
       return conversation.jobSeekerName || 'Job Seeker';
     } else {
       return conversation.recruiterName || 'Recruiter';
     }
   };
 
-  const getUserInitials = (name: string) => {
-    return name.split(' ').map(n => n[0]).join('').toUpperCase();
+  const getConversationTitle = (conversation: any) => {
+    const displayName = getUserDisplayName(conversation);
+    const jobTitle = conversation.jobTitle ? ` - ${conversation.jobTitle}` : '';
+    return `${displayName}${jobTitle}`;
   };
 
+  if (conversationsLoading) {
+    return (
+      <div className="container mx-auto p-6">
+        <div className="flex items-center justify-center h-64">
+          <div className="text-center">
+            <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+            <p className="text-muted-foreground">Loading conversations...</p>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground">Messages</h1>
-        <p className="text-muted-foreground mt-2">
-          Communicate with {user?.userType === 'recruiter' ? 'job seekers' : 'recruiters'} about opportunities
-        </p>
+    <div className="container mx-auto p-6">
+      <div className="flex items-center gap-2 mb-6">
+        <MessageCircle className="h-6 w-6" />
+        <h1 className="text-2xl font-bold">Messages</h1>
+        <Badge variant="secondary" className="ml-2">
+          {Array.isArray(conversations) ? conversations.length : 0} conversations
+        </Badge>
       </div>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[700px]">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-[calc(100vh-200px)]">
         {/* Conversations List */}
         <Card className="lg:col-span-1">
-          <CardHeader className="pb-3">
+          <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <MessageCircle className="w-5 h-5" />
+              <Users className="h-5 w-5" />
               Conversations
-              {!isConnected && (
-                <Badge variant="secondary" className="text-xs">
-                  Offline
-                </Badge>
-              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="p-0">
-            <ScrollArea className="h-[600px]">
-              {conversationsLoading ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  Loading conversations...
-                </div>
-              ) : conversations.length === 0 ? (
-                <div className="p-4 text-center text-muted-foreground">
-                  <MessageCircle className="w-8 h-8 mx-auto mb-2 opacity-50" />
-                  <p>No conversations yet</p>
-                  <p className="text-sm">Start a conversation from a job application</p>
-                </div>
-              ) : (
-                conversations.map((conversation: ChatConversation) => (
+            <ScrollArea className="h-[calc(100vh-320px)]">
+              {Array.isArray(conversations) && conversations.length > 0 ? (
+                conversations.map((conversation: any) => (
                   <div
                     key={conversation.id}
-                    className={`p-4 border-b border-border cursor-pointer hover:bg-muted/50 transition-colors ${
-                      selectedConversation === conversation.id ? 'bg-primary/10 border-l-4 border-l-primary' : ''
+                    className={`p-4 border-b cursor-pointer hover:bg-muted/50 transition-colors ${
+                      selectedConversation === conversation.id ? 'bg-muted' : ''
                     }`}
                     onClick={() => setSelectedConversation(conversation.id)}
                   >
-                    <div className="flex items-start gap-3">
-                      <Avatar className="w-10 h-10">
-                        <AvatarImage src="" />
-                        <AvatarFallback>
-                          {getUserInitials(getOtherParticipantName(conversation))}
-                        </AvatarFallback>
-                      </Avatar>
+                    <div className="flex items-start justify-between">
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
-                          <h4 className="font-medium text-sm truncate">
-                            {getOtherParticipantName(conversation)}
-                          </h4>
-                          {conversation.unreadCount > 0 && (
-                            <Badge variant="default" className="text-xs">
-                              {conversation.unreadCount}
-                            </Badge>
-                          )}
-                        </div>
-                        {conversation.jobTitle && (
-                          <p className="text-xs text-muted-foreground truncate">
-                            {conversation.jobTitle}
-                          </p>
-                        )}
-                        <div className="flex items-center gap-1 mt-1">
-                          <Clock className="w-3 h-3 text-muted-foreground" />
+                        <p className="font-medium truncate">
+                          {getConversationTitle(conversation)}
+                        </p>
+                        <div className="flex items-center gap-2 mt-1">
+                          <Clock className="h-3 w-3 text-muted-foreground" />
                           <span className="text-xs text-muted-foreground">
-                            {formatDistanceToNow(new Date(conversation.lastMessageAt), { addSuffix: true })}
+                            {formatMessageTime(conversation.lastMessageAt)}
                           </span>
                         </div>
                       </div>
+                      {conversation.unreadCount > 0 && (
+                        <Badge variant="destructive" className="text-xs">
+                          {conversation.unreadCount}
+                        </Badge>
+                      )}
                     </div>
                   </div>
                 ))
+              ) : (
+                <div className="p-8 text-center">
+                  <MessageCircle className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
+                  <p className="text-muted-foreground">No conversations yet</p>
+                  <p className="text-sm text-muted-foreground mt-2">
+                    Start a conversation by applying to jobs or posting positions
+                  </p>
+                </div>
               )}
             </ScrollArea>
           </CardContent>
         </Card>
 
-        {/* Chat Area */}
+        {/* Chat Messages */}
         <Card className="lg:col-span-2">
           {selectedConversation ? (
             <>
-              <CardHeader className="pb-3">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Users className="w-5 h-5" />
-                    {conversations.find((c: ChatConversation) => c.id === selectedConversation)?.jobTitle || 'Conversation'}
-                  </CardTitle>
-                  <div className="flex items-center gap-2">
-                    <div className={`w-2 h-2 rounded-full ${isConnected ? 'bg-green-500' : 'bg-gray-400'}`} />
-                    <span className="text-xs text-muted-foreground">
-                      {isConnected ? 'Online' : 'Offline'}
-                    </span>
-                  </div>
-                </div>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageCircle className="h-5 w-5" />
+                  {Array.isArray(conversations) && conversations.find((c: any) => c.id === selectedConversation) && 
+                    getConversationTitle(conversations.find((c: any) => c.id === selectedConversation))
+                  }
+                </CardTitle>
               </CardHeader>
-              <Separator />
-              <CardContent className="p-0 flex flex-col h-[600px]">
+              <CardContent className="flex flex-col h-[calc(100vh-380px)]">
                 {/* Messages */}
-                <ScrollArea className="flex-1 p-4">
-                  <div className="space-y-4">
+                <ScrollArea className="flex-1 mb-4">
+                  <div className="space-y-4 p-4">
                     {messages.map((message) => (
                       <div
                         key={message.id}
-                        className={`flex ${message.senderId === user?.id ? 'justify-end' : 'justify-start'}`}
+                        className={`flex ${
+                          message.senderId === user?.id ? 'justify-end' : 'justify-start'
+                        }`}
                       >
                         <div
-                          className={`max-w-[70%] p-3 rounded-lg ${
+                          className={`max-w-[70%] rounded-lg px-4 py-2 ${
                             message.senderId === user?.id
                               ? 'bg-primary text-primary-foreground'
-                              : 'bg-muted text-muted-foreground'
+                              : 'bg-muted'
                           }`}
                         >
                           <p className="text-sm">{message.message}</p>
-                          <div className="flex items-center justify-end gap-1 mt-1">
+                          <div className="flex items-center gap-1 mt-1">
                             <span className="text-xs opacity-70">
-                              {formatDistanceToNow(new Date(message.createdAt), { addSuffix: true })}
+                              {formatMessageTime(message.createdAt)}
                             </span>
                             {message.senderId === user?.id && message.isRead && (
-                              <CheckCheck className="w-3 h-3 opacity-70" />
+                              <CheckCheck className="h-3 w-3 opacity-70" />
                             )}
                           </div>
                         </div>
@@ -291,37 +285,31 @@ export default function ChatPage() {
                 </ScrollArea>
 
                 {/* Message Input */}
-                <div className="p-4 border-t border-border">
-                  <div className="flex gap-2">
-                    <Input
-                      value={newMessage}
-                      onChange={(e) => setNewMessage(e.target.value)}
-                      placeholder="Type a message..."
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' && !e.shiftKey) {
-                          e.preventDefault();
-                          handleSendMessage();
-                        }
-                      }}
-                      disabled={sendMessageMutation.isPending}
-                    />
-                    <Button
-                      onClick={handleSendMessage}
-                      disabled={!newMessage.trim() || sendMessageMutation.isPending}
-                      size="icon"
-                    >
-                      <Send className="w-4 h-4" />
-                    </Button>
-                  </div>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Type your message..."
+                    value={newMessage}
+                    onChange={(e) => setNewMessage(e.target.value)}
+                    onKeyDown={handleKeyPress}
+                    className="flex-1"
+                  />
+                  <Button 
+                    onClick={handleSendMessage}
+                    disabled={!newMessage.trim() || sendMessageMutation.isPending}
+                  >
+                    <Send className="h-4 w-4" />
+                  </Button>
                 </div>
               </CardContent>
             </>
           ) : (
             <CardContent className="flex items-center justify-center h-full">
-              <div className="text-center text-muted-foreground">
-                <MessageCircle className="w-12 h-12 mx-auto mb-4 opacity-50" />
+              <div className="text-center">
+                <MessageCircle className="h-16 w-16 text-muted-foreground mx-auto mb-4" />
                 <h3 className="text-lg font-medium mb-2">Select a conversation</h3>
-                <p>Choose a conversation from the list to start messaging</p>
+                <p className="text-muted-foreground">
+                  Choose a conversation from the left to start messaging
+                </p>
               </div>
             </CardContent>
           )}
