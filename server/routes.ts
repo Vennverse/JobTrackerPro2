@@ -830,16 +830,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Extract text from PDF
       if (req.file.mimetype === 'application/pdf') {
         try {
-          // Use dynamic import for pdf-parse
-          const pdfParseModule = await import('pdf-parse');
-          const pdfParse = pdfParseModule.default;
+          // Import pdf-parse dynamically and safely
+          const { default: pdfParse } = await import('pdf-parse');
+          
+          if (!req.file.buffer || req.file.buffer.length === 0) {
+            throw new Error("Empty PDF file");
+          }
           
           const pdfData = await pdfParse(req.file.buffer);
-          resumeText = pdfData.text;
+          resumeText = pdfData.text || "";
+          
+          if (!resumeText.trim()) {
+            resumeText = "PDF uploaded successfully but text content could not be extracted for analysis.";
+          }
         } catch (error) {
           console.error("Error parsing PDF:", error);
-          // For demo purposes, allow upload without text extraction
-          resumeText = "PDF content could not be extracted for analysis.";
+          // Use fallback text for PDF files
+          resumeText = `PDF file "${req.file.originalname}" uploaded successfully. Text extraction failed but file is stored for future processing.`;
         }
       } else {
         // For DOC/DOCX files, we'll need additional processing

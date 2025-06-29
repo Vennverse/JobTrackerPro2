@@ -379,8 +379,12 @@ export async function setupAuth(app: Express) {
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
         };
 
-        // Redirect to app
-        res.redirect('/?verified=true');
+        // Redirect based on user type: recruiters go to post-job, regular users go to auth
+        if (user.userType === 'recruiter') {
+          res.redirect('/post-job?verified=true');
+        } else {
+          res.redirect('/auth?verified=true');
+        }
       } else {
         return res.status(400).json({ message: 'User not found' });
       }
