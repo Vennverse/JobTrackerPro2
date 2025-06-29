@@ -463,22 +463,42 @@ export class DatabaseStorage implements IStorage {
   async getUserResumes(userId: string): Promise<any[]> {
     // For demo user, manage state in memory
     if (userId === 'demo-user-id') {
-      const demoResumes = [
-        {
-          id: 1,
-          name: "Demo Resume",
-          fileName: "demo_resume.pdf",
-          isActive: true,
-          atsScore: 85,
-          uploadedAt: new Date('2024-01-15'),
-          fileSize: 245000,
-          fileType: 'application/pdf'
-        }
-      ];
+      // Initialize with demo resume if no uploads exist
+      if (!(global as any).demoUserResumes) {
+        (global as any).demoUserResumes = [
+          {
+            id: 1,
+            name: "Demo Resume",
+            fileName: "demo_resume.pdf",
+            isActive: true,
+            atsScore: 85,
+            uploadedAt: new Date('2024-01-15'),
+            fileSize: 245000,
+            fileType: 'application/pdf',
+            analysis: {
+              atsScore: 85,
+              recommendations: ["Add more technical keywords", "Improve formatting"],
+              keywordOptimization: {
+                missingKeywords: ["React", "TypeScript"],
+                overusedKeywords: [],
+                suggestions: ["Include specific technologies"]
+              },
+              formatting: {
+                score: 80,
+                issues: ["Inconsistent spacing"],
+                improvements: ["Use consistent bullet points"]
+              },
+              content: {
+                strengthsFound: ["Strong technical background"],
+                weaknesses: ["Could add more quantified achievements"],
+                suggestions: ["Include metrics and numbers"]
+              }
+            }
+          }
+        ];
+      }
       
-      // Add uploaded resumes from session (this would be stored in database for real users)
-      const uploadedResumes = (global as any).demoUserResumes || [];
-      return [...demoResumes, ...uploadedResumes];
+      return (global as any).demoUserResumes;
     }
     
     // For real users, implement actual database query

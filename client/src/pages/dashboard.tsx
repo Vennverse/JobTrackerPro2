@@ -653,10 +653,21 @@ export default function Dashboard() {
                       <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
                       <h3 className="font-semibold mb-2">Upload Your Resume</h3>
                       <p className="text-muted-foreground mb-4">Get instant ATS analysis and optimization tips</p>
-                      <Button>
-                        <Upload className="w-4 h-4 mr-2" />
-                        Upload Resume
-                      </Button>
+                      <label htmlFor="resume-upload-empty" className="inline-block">
+                        <Button asChild>
+                          <div className="cursor-pointer">
+                            <Upload className="w-4 h-4 mr-2" />
+                            Upload Resume
+                          </div>
+                        </Button>
+                        <input
+                          id="resume-upload-empty"
+                          type="file"
+                          accept=".pdf,.doc,.docx"
+                          className="hidden"
+                          onChange={handleResumeUpload}
+                        />
+                      </label>
                     </div>
                   )}
                 </CardContent>
