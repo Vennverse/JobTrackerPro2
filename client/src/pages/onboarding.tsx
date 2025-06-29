@@ -168,6 +168,7 @@ export default function Onboarding() {
       const response = await fetch('/api/resumes/upload', {
         method: 'POST',
         body: formData,
+        credentials: 'include',
       });
 
       if (!response.ok) {
@@ -183,7 +184,7 @@ export default function Onboarding() {
       });
 
       // Refresh queries
-      queryClient.invalidateQueries({ queryKey: ["/api/resume/analysis"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
       queryClient.invalidateQueries({ queryKey: ["/api/onboarding/status"] });
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
       
