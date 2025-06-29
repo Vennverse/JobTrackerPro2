@@ -154,27 +154,72 @@ export default function Landing() {
           <div className="text-center">
             <Badge variant="secondary" className="mb-6 px-4 py-2 text-sm font-medium animate-pulse">
               <Sparkles className="w-4 h-4 mr-2" />
-              🔥 #1 VIRAL AI Job Search Platform 2025 - GET HIRED 10X FASTER
+              🔥 #1 AI Job Platform - 500K+ Users
             </Badge>
-            <h1 className="text-4xl sm:text-5xl md:text-7xl font-bold text-foreground mb-6 leading-tight">
+            <h1 className="text-4xl sm:text-5xl md:text-6xl font-bold text-foreground mb-6 leading-tight">
               Get Hired 10x Faster with{" "}
               <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                AI Job Automation
-              </span>
-              <br />
-              <span className="text-3xl sm:text-4xl md:text-5xl bg-gradient-to-r from-emerald-600 to-cyan-600 bg-clip-text text-transparent">
-                500K+ Success Stories
+                AI Automation
               </span>
             </h1>
-            <p className="text-xl sm:text-2xl text-muted-foreground mb-8 max-w-4xl mx-auto leading-relaxed">
-              <strong className="text-foreground">AutoJobr</strong> is the world's most viral AI job search platform that automates applications, 
-              optimizes resumes for ATS systems, generates cover letters, and tracks interviews across 50+ job boards. 
-              Join 500,000+ professionals who landed their dream jobs using our AI-powered automation.
-              <br />
-              <span className="text-emerald-600 font-semibold">
-                ✅ Free Forever Plan • ✅ Works on LinkedIn, Indeed, Workday • ✅ 85% Success Rate
-              </span>
+            <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
+              AutoJobr automates job applications across 50+ boards with AI-powered matching and ATS optimization.
             </p>
+            
+            {/* Visual Dashboard Preview */}
+            <div className="mb-8 relative max-w-4xl mx-auto">
+              <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-2xl p-8 shadow-2xl border border-blue-200/20">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  {/* ATS Score Widget */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg p-4 shadow-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      <span className="text-xs font-medium text-green-600 bg-green-100 px-2 py-1 rounded">85% ATS</span>
+                    </div>
+                    <div className="text-sm font-semibold mb-2">Resume Analysis</div>
+                    <div className="w-full bg-gray-200 rounded-full h-2">
+                      <div className="bg-gradient-to-r from-blue-500 to-green-500 h-2 rounded-full w-4/5"></div>
+                    </div>
+                  </div>
+                  
+                  {/* Applications Widget */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg p-4 shadow-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <Target className="w-5 h-5 text-purple-600" />
+                      <span className="text-xs font-medium text-purple-600 bg-purple-100 px-2 py-1 rounded">+2.4k</span>
+                    </div>
+                    <div className="text-sm font-semibold mb-2">Applications</div>
+                    <div className="text-2xl font-bold text-purple-600">47</div>
+                  </div>
+                  
+                  {/* Interviews Widget */}
+                  <div className="bg-white dark:bg-gray-900 rounded-lg p-4 shadow-lg">
+                    <div className="flex items-center justify-between mb-3">
+                      <Users className="w-5 h-5 text-emerald-600" />
+                      <span className="text-xs font-medium text-emerald-600 bg-emerald-100 px-2 py-1 rounded">↗ 12</span>
+                    </div>
+                    <div className="text-sm font-semibold mb-2">Interviews</div>
+                    <div className="text-2xl font-bold text-emerald-600">8</div>
+                  </div>
+                </div>
+                
+                {/* Chrome Extension Preview */}
+                <div className="mt-6 bg-white dark:bg-gray-900 rounded-lg p-4 shadow-lg">
+                  <div className="flex items-center gap-3 mb-3">
+                    <Chrome className="w-5 h-5 text-blue-600" />
+                    <span className="text-sm font-medium">AutoJobr Extension Active</span>
+                    <Badge className="bg-green-100 text-green-700 text-xs">LinkedIn</Badge>
+                  </div>
+                  <div className="text-xs text-muted-foreground mb-2">Auto-filling Senior Software Engineer position...</div>
+                  <div className="flex gap-2">
+                    <div className="w-full bg-gray-200 rounded h-2">
+                      <div className="bg-blue-500 h-2 rounded w-3/4 animate-pulse"></div>
+                    </div>
+                    <span className="text-xs text-blue-600 font-medium">75%</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <div className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Button size="lg" onClick={handleLogin} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-8 py-4 animate-pulse">
                 <Rocket className="w-5 h-5 mr-2" />
@@ -221,293 +266,130 @@ export default function Landing() {
       </section>
 
       {/* Features Section */}
-      <section id="features" className="py-20 bg-muted/30">
+      <section id="features" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              <Zap className="w-4 h-4 mr-2" />
-              Powerful Features
-            </Badge>
             <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Everything You Need to Land Your Dream Job
+              AI-Powered Job Search Tools
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              AutoJobr combines cutting-edge AI technology with seamless automation to transform your job search experience.
+            <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
+              Everything you need to land your dream job faster
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
-            {features.map((feature, index) => (
-              <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm relative">
-                <CardHeader>
-                  <div className="flex items-center justify-between mb-4">
-                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                      <feature.icon className="w-6 h-6 text-white" />
-                    </div>
-                    {feature.highlight && (
-                      <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-blue-100 text-emerald-700 border-emerald-200">
-                        {feature.highlight}
-                      </Badge>
-                    )}
-                  </div>
-                  <CardTitle className="text-xl font-semibold">{feature.title}</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <p className="text-muted-foreground leading-relaxed">{feature.description}</p>
-                </CardContent>
-              </Card>
-            ))}
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Feature Card 1 */}
+            <div className="group relative">
+              <div className="bg-gradient-to-br from-blue-50 to-blue-100 dark:from-blue-950/20 dark:to-blue-900/20 rounded-2xl p-6 h-full transition-all duration-300 group-hover:scale-105">
+                <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mb-4">
+                  <Bot className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">AI Auto-Fill</h3>
+                <p className="text-sm text-muted-foreground">50+ job boards</p>
+              </div>
+            </div>
+
+            {/* Feature Card 2 */}
+            <div className="group relative">
+              <div className="bg-gradient-to-br from-purple-50 to-purple-100 dark:from-purple-950/20 dark:to-purple-900/20 rounded-2xl p-6 h-full transition-all duration-300 group-hover:scale-105">
+                <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mb-4">
+                  <FileText className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">ATS Optimizer</h3>
+                <p className="text-sm text-muted-foreground">85% pass rate</p>
+              </div>
+            </div>
+
+            {/* Feature Card 3 */}
+            <div className="group relative">
+              <div className="bg-gradient-to-br from-emerald-50 to-emerald-100 dark:from-emerald-950/20 dark:to-emerald-900/20 rounded-2xl p-6 h-full transition-all duration-300 group-hover:scale-105">
+                <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center mb-4">
+                  <Target className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Smart Matching</h3>
+                <p className="text-sm text-muted-foreground">AI job scoring</p>
+              </div>
+            </div>
+
+            {/* Feature Card 4 */}
+            <div className="group relative">
+              <div className="bg-gradient-to-br from-orange-50 to-orange-100 dark:from-orange-950/20 dark:to-orange-900/20 rounded-2xl p-6 h-full transition-all duration-300 group-hover:scale-105">
+                <div className="w-12 h-12 bg-orange-600 rounded-xl flex items-center justify-center mb-4">
+                  <BarChart3 className="w-6 h-6 text-white" />
+                </div>
+                <h3 className="text-lg font-semibold mb-2">Track Everything</h3>
+                <p className="text-sm text-muted-foreground">Unified dashboard</p>
+              </div>
+            </div>
           </div>
         </div>
       </section>
 
       {/* How It Works Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-foreground mb-4">
+              Get hired in 3 steps
+            </h2>
+          </div>
+          
+          <div className="grid md:grid-cols-3 gap-8">
+            <div className="text-center">
+              <div className="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-lg font-bold text-white">1</span>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Upload Resume</h3>
+              <p className="text-sm text-muted-foreground">AI optimizes for ATS systems</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-12 h-12 bg-purple-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-lg font-bold text-white">2</span>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Install Extension</h3>
+              <p className="text-sm text-muted-foreground">Works on 50+ job boards</p>
+            </div>
+            
+            <div className="text-center">
+              <div className="w-12 h-12 bg-emerald-600 rounded-xl flex items-center justify-center mx-auto mb-4">
+                <span className="text-lg font-bold text-white">3</span>
+              </div>
+              <h3 className="text-lg font-semibold mb-2">Apply Automatically</h3>
+              <p className="text-sm text-muted-foreground">AI matches and applies for you</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Social Proof Section */}
       <section className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              <Play className="w-4 h-4 mr-2" />
-              How It Works
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Get Started in 3 Simple Steps
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-foreground mb-8">
+              Trusted by 500K+ professionals
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Start automating your job applications in minutes with our intuitive setup process.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-green-500 to-emerald-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">1</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Create Your Profile</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Upload your resume and complete your professional profile. Our AI will analyze and optimize your information for maximum impact.
-              </p>
-            </div>
             
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-blue-500 to-cyan-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">2</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Install Extension</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Add our Chrome extension to automatically fill job applications across 50+ job boards and ATS platforms with one click.
-              </p>
-            </div>
-            
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-br from-purple-500 to-violet-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <span className="text-2xl font-bold text-white">3</span>
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Apply with AI</h3>
-              <p className="text-muted-foreground leading-relaxed">
-                Let AI analyze job matches, generate cover letters, and track your applications while you focus on interview preparation.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Testimonials Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              <Star className="w-4 h-4 mr-2" />
-              Success Stories
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Loved by Job Seekers Worldwide
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Join thousands of professionals who have landed their dream jobs using AutoJobr.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-3 gap-8">
-            {testimonials.map((testimonial, index) => (
-              <Card key={index} className="border-0 shadow-sm bg-card/50 backdrop-blur-sm">
-                <CardHeader>
-                  <div className="flex items-center gap-1 mb-2">
-                    {[...Array(testimonial.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-yellow-400 text-yellow-400" />
-                    ))}
-                  </div>
-                  <p className="text-muted-foreground leading-relaxed italic">
-                    "{testimonial.content}"
-                  </p>
-                </CardHeader>
-                <CardContent>
-                  <div className="font-semibold">{testimonial.name}</div>
-                  <div className="text-sm text-muted-foreground">
-                    {testimonial.role} at {testimonial.company}
-                  </div>
-                </CardContent>
-              </Card>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* Tools & Features Section */}
-      <section className="py-20 bg-muted/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              <Monitor className="w-4 h-4 mr-2" />
-              Complete Toolkit
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Everything You Need in One Platform
-            </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Access our comprehensive suite of job search tools, all powered by advanced AI and designed for maximum efficiency.
-            </p>
-          </div>
-          
-          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Web Dashboard */}
-            <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-3">
-                  <Monitor className="w-5 h-5 text-white" />
-                </div>
-                <CardTitle className="text-lg">Web Dashboard</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Complete application tracking</li>
-                  <li>• Resume management & analysis</li>
-                  <li>• Job recommendations</li>
-                  <li>• Performance analytics</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Chrome Extension */}
-            <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mb-3">
-                  <Chrome className="w-5 h-5 text-white" />
-                </div>
-                <CardTitle className="text-lg">Chrome Extension</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Auto-fill job applications</li>
-                  <li>• Real-time job analysis</li>
-                  <li>• 50+ job board support</li>
-                  <li>• One-click application</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* AI Tools */}
-            <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-lg flex items-center justify-center mb-3">
-                  <Brain className="w-5 h-5 text-white" />
-                </div>
-                <CardTitle className="text-lg">AI-Powered Tools</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Groq AI job matching</li>
-                  <li>• Cover letter generation</li>
-                  <li>• Resume optimization</li>
-                  <li>• ATS scoring & analysis</li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            {/* Recruiter Platform */}
-            <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
-              <CardHeader>
-                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mb-3">
-                  <Users className="w-5 h-5 text-white" />
-                </div>
-                <CardTitle className="text-lg">Recruiter Tools</CardTitle>
-              </CardHeader>
-              <CardContent>
-                <ul className="text-sm text-muted-foreground space-y-1">
-                  <li>• Job posting management</li>
-                  <li>• Candidate screening</li>
-                  <li>• Application tracking</li>
-                  <li>• Real-time messaging</li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Detailed Feature List */}
-          <div className="mt-16 grid md:grid-cols-2 gap-12">
-            <div>
-              <h3 className="text-2xl font-bold mb-6 text-foreground">For Job Seekers</h3>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">Smart Resume Management</h4>
-                    <p className="text-sm text-muted-foreground">Upload multiple resumes, get ATS optimization, and detailed scoring analysis</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">Unified Application Tracking</h4>
-                    <p className="text-sm text-muted-foreground">Track applications from both web platform and Chrome extension in one dashboard</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">AI Job Matching</h4>
-                    <p className="text-sm text-muted-foreground">Get match scores, skill gap analysis, and personalized recommendations</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">Advanced Analytics</h4>
-                    <p className="text-sm text-muted-foreground">Performance metrics, response rates, and optimization insights</p>
-                  </div>
+            {/* Company Logos Grid */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-8 items-center opacity-60">
+              <div className="flex items-center justify-center">
+                <div className="w-32 h-16 bg-gradient-to-r from-blue-600 to-blue-700 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">Google</span>
                 </div>
               </div>
-            </div>
-            
-            <div>
-              <h3 className="text-2xl font-bold mb-6 text-foreground">For Recruiters</h3>
-              <div className="space-y-4">
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">Job Posting Management</h4>
-                    <p className="text-sm text-muted-foreground">Create, edit, and manage job postings with advanced filtering and categorization</p>
-                  </div>
+              <div className="flex items-center justify-center">
+                <div className="w-32 h-16 bg-gradient-to-r from-gray-800 to-gray-900 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">Meta</span>
                 </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">Candidate Communication</h4>
-                    <p className="text-sm text-muted-foreground">Built-in messaging system for seamless candidate interaction</p>
-                  </div>
+              </div>
+              <div className="flex items-center justify-center">
+                <div className="w-32 h-16 bg-gradient-to-r from-purple-600 to-purple-700 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">Microsoft</span>
                 </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">Application Review</h4>
-                    <p className="text-sm text-muted-foreground">Streamlined application review with candidate profile integration</p>
-                  </div>
-                </div>
-                <div className="flex items-start gap-3">
-                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
-                  <div>
-                    <h4 className="font-semibold text-foreground">Email Verification</h4>
-                    <p className="text-sm text-muted-foreground">Corporate email verification for verified recruiter accounts</p>
-                  </div>
+              </div>
+              <div className="flex items-center justify-center">
+                <div className="w-32 h-16 bg-gradient-to-r from-orange-500 to-orange-600 rounded-lg flex items-center justify-center">
+                  <span className="text-white font-bold text-lg">Amazon</span>
                 </div>
               </div>
             </div>
@@ -516,133 +398,91 @@ export default function Landing() {
       </section>
 
       {/* Pricing Section */}
-      <section id="pricing" className="py-20">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-16">
-            <Badge variant="outline" className="mb-4">
-              <Award className="w-4 h-4 mr-2" />
-              Simple Pricing
-            </Badge>
-            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
-              Choose Your Plan
+      <section id="pricing" className="py-20 bg-muted/30">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-12">
+            <h2 className="text-3xl font-bold text-foreground mb-4">
+              Simple pricing
             </h2>
-            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
-              Start free and upgrade as you land more interviews. No hidden fees.
+            <p className="text-lg text-muted-foreground">
+              Start free, upgrade when you need more
             </p>
           </div>
           
-          <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 max-w-5xl mx-auto">
+          <div className="grid md:grid-cols-2 gap-6">
             {/* Free Plan */}
-            <Card className="border-2 border-muted">
-              <CardHeader>
-                <CardTitle className="text-2xl">Free</CardTitle>
-                <div className="text-4xl font-bold">$0<span className="text-lg text-muted-foreground">/month</span></div>
-                <p className="text-muted-foreground">Perfect for getting started</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">2 resume uploads</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">5 job analyses per day</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Basic auto-fill</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Application tracking</span>
-                  </div>
-                </div>
-                <Button className="w-full" variant="outline" onClick={handleLogin}>
-                  Get Started Free
-                </Button>
-              </CardContent>
-            </Card>
+            <div className="bg-white dark:bg-gray-900 rounded-2xl p-6 shadow-lg">
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold mb-2">Free</h3>
+                <div className="text-3xl font-bold">$0</div>
+                <p className="text-sm text-muted-foreground">Forever free</p>
+              </div>
+              <ul className="space-y-3 mb-6 text-sm">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  2 resumes
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  5 applications/day
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  Basic auto-fill
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  Application tracking
+                </li>
+              </ul>
+              <Button className="w-full" variant="outline" onClick={handleLogin}>
+                Get Started
+              </Button>
+            </div>
 
             {/* Premium Plan */}
-            <Card className="border-2 border-primary relative">
+            <div className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 rounded-2xl p-6 shadow-lg border-2 border-blue-200 relative">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1">
+                <Badge className="bg-blue-600 text-white px-3 py-1">
                   Most Popular
                 </Badge>
               </div>
-              <CardHeader>
-                <CardTitle className="text-2xl">Premium</CardTitle>
-                <div className="text-4xl font-bold">$10<span className="text-lg text-muted-foreground">/month</span></div>
-                <p className="text-muted-foreground">Perfect for active job seekers</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Unlimited resume uploads</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Unlimited AI job analysis</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">AI cover letter generation</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Advanced auto-fill features</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Enhanced analytics</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Priority support</span>
-                  </div>
-                </div>
-                <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" onClick={handleLogin}>
-                  Upgrade to Premium
-                </Button>
-              </CardContent>
-            </Card>
-
-            {/* Enterprise Plan */}
-            <Card className="border-2 border-muted">
-              <CardHeader>
-                <CardTitle className="text-2xl">Enterprise</CardTitle>
-                <div className="text-4xl font-bold">$49<span className="text-lg text-muted-foreground">/month</span></div>
-                <p className="text-muted-foreground">For career coaches & teams</p>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div className="space-y-2">
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Everything in Pro</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Team management</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Custom integrations</span>
-                  </div>
-                  <div className="flex items-center gap-2">
-                    <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Dedicated support</span>
-                  </div>
-                </div>
-                <Button className="w-full" variant="outline" onClick={handleLogin}>
-                  Contact Sales
-                </Button>
-              </CardContent>
-            </Card>
+              <div className="text-center mb-6">
+                <h3 className="text-xl font-semibold mb-2">Premium</h3>
+                <div className="text-3xl font-bold">$10<span className="text-lg font-normal">/mo</span></div>
+                <p className="text-sm text-muted-foreground">Get hired 10x faster</p>
+              </div>
+              <ul className="space-y-3 mb-6 text-sm">
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  Unlimited resumes
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  Unlimited applications
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  AI cover letters
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  Advanced analytics
+                </li>
+                <li className="flex items-center gap-2">
+                  <CheckCircle className="w-4 h-4 text-green-500" />
+                  Priority support
+                </li>
+              </ul>
+              <Button className="w-full bg-blue-600 hover:bg-blue-700 text-white" onClick={handleLogin}>
+                Upgrade Now
+              </Button>
+            </div>
           </div>
         </div>
       </section>
+
+
 
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 via-purple-600 to-emerald-600 relative overflow-hidden">
