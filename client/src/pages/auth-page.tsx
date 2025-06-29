@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Input } from "@/components/ui/input";
@@ -9,6 +9,26 @@ import { FcGoogle } from "react-icons/fc";
 
 export default function AuthPage() {
   const [isLoading, setIsLoading] = useState(false);
+  const [availableProviders, setAvailableProviders] = useState({
+    google: false,
+    github: false,
+    linkedin: false
+  });
+
+  useEffect(() => {
+    // Check which OAuth providers are configured
+    const checkProviders = async () => {
+      try {
+        const response = await fetch('/api/auth/providers');
+        const data = await response.json();
+        setAvailableProviders(data);
+      } catch (error) {
+        console.error('Failed to check provider availability:', error);
+      }
+    };
+    
+    checkProviders();
+  }, []);
 
   const handleSocialLogin = async (provider: string) => {
     setIsLoading(true);
@@ -89,33 +109,39 @@ export default function AuthPage() {
                 variant="outline"
                 className="w-full"
                 onClick={() => handleSocialLogin('google')}
-                disabled={isLoading}
+                disabled={isLoading || !availableProviders.google}
               >
                 <FcGoogle className="w-4 h-4 mr-2" />
                 Continue with Google
-                <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
+                {!availableProviders.google && (
+                  <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
+                )}
               </Button>
               
               <Button
                 variant="outline"
                 className="w-full"
                 onClick={() => handleSocialLogin('github')}
-                disabled={isLoading}
+                disabled={isLoading || !availableProviders.github}
               >
                 <Github className="w-4 h-4 mr-2" />
                 Continue with GitHub
-                <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
+                {!availableProviders.github && (
+                  <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
+                )}
               </Button>
               
               <Button
                 variant="outline"
                 className="w-full"
                 onClick={() => handleSocialLogin('linkedin')}
-                disabled={isLoading}
+                disabled={isLoading || !availableProviders.linkedin}
               >
                 <Linkedin className="w-4 h-4 mr-2" />
                 Continue with LinkedIn
-                <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
+                {!availableProviders.linkedin && (
+                  <span className="ml-auto text-xs text-muted-foreground">Setup Required</span>
+                )}
               </Button>
             </div>
 
