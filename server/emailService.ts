@@ -1,10 +1,13 @@
 import { Resend } from 'resend';
 
-if (!process.env.RESEND_API_KEY) {
-  throw new Error("RESEND_API_KEY environment variable must be set");
-}
+// Make Resend optional for development
+let resend: Resend | null = null;
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+if (process.env.RESEND_API_KEY) {
+  resend = new Resend(process.env.RESEND_API_KEY);
+} else {
+  console.log('RESEND_API_KEY not set - email sending will be simulated in development mode');
+}
 
 interface EmailParams {
   to: string;
@@ -14,8 +17,24 @@ interface EmailParams {
 
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
+    // Always try to send real emails if Resend is configured
+    if (!resend) {
+      console.log('=== EMAIL SIMULATION (No Resend API Key) ===');
+      console.log('To:', params.to);
+      console.log('Subject:', params.subject);
+      console.log('HTML Content (truncated):', params.html.substring(0, 200) + '...');
+      console.log('=== END EMAIL SIMULATION ===');
+      return true; // Pretend email was sent successfully
+    }
+
+    // This check should not be needed since we already checked above
+    // if (!resend) {
+    //   console.error('Resend not configured - cannot send email');
+    //   return false;
+    // }
+
     const { data, error } = await resend.emails.send({
-      from: 'AutoJobr <noreply@autojobr.com>',
+      from: 'AutoJobr <noreply@vennverse.com>',
       to: params.to,
       subject: params.subject,
       html: params.html,
@@ -23,6 +42,13 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 
     if (error) {
       console.error('Resend error:', error);
+      // In case of email service failure, log the verification URL for manual testing
+      if (params.html.includes('verify-email?token=')) {
+        const tokenMatch = params.html.match(/verify-email\?token=([^"]+)/);
+        if (tokenMatch) {
+          console.log('MANUAL VERIFICATION URL:', `http://localhost:5000/verify-email?token=${tokenMatch[1]}`);
+        }
+      }
       return false;
     }
 

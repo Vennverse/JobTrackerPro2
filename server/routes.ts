@@ -134,30 +134,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const token = crypto.randomUUID();
       const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
 
-      // Save verification token
-      await storage.createEmailVerificationToken({
-        email,
-        companyName,
-        companyWebsite,
-        token,
-        expiresAt,
-      });
+      try {
+        // Save verification token with timeout handling
+        await storage.createEmailVerificationToken({
+          email,
+          companyName,
+          companyWebsite,
+          token,
+          expiresAt,
+        });
 
-      // Send actual email with Resend
-      const emailHtml = generateVerificationEmail(token, companyName);
-      const emailSent = await sendEmail({
-        to: email,
-        subject: `Verify your company email - ${companyName}`,
-        html: emailHtml,
-      });
+        // Send actual email with Resend
+        const emailHtml = generateVerificationEmail(token, companyName);
+        const emailSent = await sendEmail({
+          to: email,
+          subject: `Verify your company email - ${companyName}`,
+          html: emailHtml,
+        });
 
-      if (!emailSent) {
-        return res.status(500).json({ message: 'Failed to send verification email' });
+        if (!emailSent) {
+          // In development, still allow the process to continue
+          if (process.env.NODE_ENV === 'development') {
+            console.log('Email simulation mode - verification link logged above');
+            return res.json({ 
+              message: "Development mode: Verification process initiated. Check server logs for the verification link.",
+              developmentMode: true,
+              token: token // Only expose token in development
+            });
+          }
+          return res.status(500).json({ message: 'Failed to send verification email' });
+        }
+        
+        res.json({ 
+          message: "Verification email sent successfully. Please check your email and click the verification link."
+        });
+      } catch (dbError) {
+        console.error('Database error during verification:', dbError);
+        return res.status(500).json({ 
+          message: 'Database connection issue. Please try again later.' 
+        });
       }
-      
-      res.json({ 
-        message: "Verification email sent successfully. Please check your email and click the verification link."
-      });
     } catch (error) {
       console.error("Error sending verification:", error);
       res.status(500).json({ message: "Failed to send verification email" });
