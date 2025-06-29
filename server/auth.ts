@@ -163,7 +163,29 @@ export async function setupAuth(app: Express) {
         });
       }
 
-      // For real users, try database (with fallback)
+      // For real users, fetch from database
+      try {
+        const { storage } = await import("./storage");
+        const fullUser = await storage.getUser(sessionUser.id);
+        if (fullUser) {
+          return res.json({
+            id: fullUser.id,
+            email: fullUser.email,
+            name: sessionUser.name,
+            firstName: fullUser.firstName,
+            lastName: fullUser.lastName,
+            userType: fullUser.userType,
+            emailVerified: fullUser.emailVerified,
+            companyName: fullUser.companyName,
+            companyWebsite: fullUser.companyWebsite,
+            onboardingCompleted,
+          });
+        }
+      } catch (error) {
+        console.error("Error fetching full user data:", error);
+      }
+
+      // Fallback to session data if database fetch fails
       res.json({
         id: sessionUser.id,
         email: sessionUser.email,
