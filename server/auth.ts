@@ -6,6 +6,8 @@ import { storage } from "./storage";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { Express, RequestHandler } from "express";
+import { sendEmail, generatePasswordResetEmail } from "./emailService";
+import crypto from "crypto";
 
 // Simple auth configuration
 const authConfig = {
@@ -425,6 +427,99 @@ export async function setupAuth(app: Express) {
     } catch (error) {
       console.error('Resend verification error:', error);
       res.status(500).json({ message: 'Failed to resend verification email' });
+    }
+  });
+
+  // Forgot password endpoint
+  app.post('/api/auth/forgot-password', async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Find user by email
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      if (!user) {
+        // For security, don't reveal if email exists or not
+        return res.json({ 
+          message: 'If an account with this email exists, you will receive a password reset email shortly.' 
+        });
+      }
+
+      // Generate reset token
+      const resetToken = crypto.randomBytes(32).toString('hex');
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 1); // 1 hour expiry
+
+      // Store reset token
+      await storage.createPasswordResetToken({
+        userId: user.id,
+        token: resetToken,
+        expiresAt,
+        used: false,
+      });
+
+      // Send reset email
+      const resetEmailHtml = generatePasswordResetEmail(resetToken, user.email!);
+      const emailSent = await sendEmail({
+        to: user.email!,
+        subject: 'Reset Your AutoJobr Password',
+        html: resetEmailHtml,
+      });
+
+      if (emailSent) {
+        res.json({ 
+          message: 'If an account with this email exists, you will receive a password reset email shortly.' 
+        });
+      } else {
+        res.status(500).json({ 
+          message: 'Failed to send password reset email. Please try again later.' 
+        });
+      }
+    } catch (error) {
+      console.error('Forgot password error:', error);
+      res.status(500).json({ message: 'Failed to process password reset request' });
+    }
+  });
+
+  // Reset password endpoint
+  app.post('/api/auth/reset-password', async (req, res) => {
+    try {
+      const { token, newPassword } = req.body;
+
+      if (!token || !newPassword) {
+        return res.status(400).json({ message: 'Token and new password are required' });
+      }
+
+      if (newPassword.length < 6) {
+        return res.status(400).json({ message: 'Password must be at least 6 characters long' });
+      }
+
+      // Get token from database
+      const tokenRecord = await storage.getPasswordResetToken(token);
+      
+      if (!tokenRecord || tokenRecord.used || tokenRecord.expiresAt < new Date()) {
+        return res.status(400).json({ message: 'Invalid or expired reset token' });
+      }
+
+      // Hash new password
+      const hashedPassword = await bcrypt.hash(newPassword, 12);
+
+      // Update user's password
+      await storage.updateUserPassword(tokenRecord.userId, hashedPassword);
+
+      // Mark token as used
+      await storage.markPasswordResetTokenAsUsed(token);
+
+      // Clean up expired tokens
+      await storage.deleteExpiredPasswordResetTokens();
+
+      res.json({ message: 'Password reset successfully' });
+    } catch (error) {
+      console.error('Reset password error:', error);
+      res.status(500).json({ message: 'Failed to reset password' });
     }
   });
 

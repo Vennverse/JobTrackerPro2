@@ -42,6 +42,8 @@ import {
   type InsertChatMessage,
   type EmailVerificationToken,
   type InsertEmailVerificationToken,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
 } from "@shared/schema";
 import { db } from "./db";
 
@@ -60,7 +62,7 @@ async function handleDbOperation<T>(operation: () => Promise<T>, fallback?: T): 
     throw error;
   }
 }
-import { eq, desc, and, or, ne, sql } from "drizzle-orm";
+import { eq, desc, and, or, ne, sql, lt } from "drizzle-orm";
 
 // Interface for storage operations
 export interface IStorage {
@@ -726,6 +728,55 @@ export class DatabaseStorage implements IStorage {
       const [user] = await db
         .update(users)
         .set({ emailVerified: verified, updatedAt: new Date() })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    });
+  }
+
+  // Password Reset Token methods
+  async createPasswordResetToken(tokenData: InsertPasswordResetToken): Promise<PasswordResetToken> {
+    return await handleDbOperation(async () => {
+      const [token] = await db.insert(passwordResetTokens).values(tokenData).returning();
+      return token;
+    });
+  }
+
+  async getPasswordResetToken(token: string): Promise<PasswordResetToken | undefined> {
+    return await handleDbOperation(async () => {
+      const [tokenRecord] = await db.select().from(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+      return tokenRecord;
+    });
+  }
+
+  async deletePasswordResetToken(token: string): Promise<void> {
+    await handleDbOperation(async () => {
+      await db.delete(passwordResetTokens).where(eq(passwordResetTokens.token, token));
+    });
+  }
+
+  async markPasswordResetTokenAsUsed(token: string): Promise<void> {
+    await handleDbOperation(async () => {
+      await db
+        .update(passwordResetTokens)
+        .set({ used: true })
+        .where(eq(passwordResetTokens.token, token));
+    });
+  }
+
+  async deleteExpiredPasswordResetTokens(): Promise<void> {
+    await handleDbOperation(async () => {
+      await db
+        .delete(passwordResetTokens)
+        .where(lt(passwordResetTokens.expiresAt, new Date()));
+    });
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<User> {
+    return await handleDbOperation(async () => {
+      const [user] = await db
+        .update(users)
+        .set({ password: hashedPassword, updatedAt: new Date() })
         .where(eq(users.id, userId))
         .returning();
       return user;
