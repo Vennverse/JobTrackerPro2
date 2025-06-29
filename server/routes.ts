@@ -739,13 +739,33 @@ Additional Information:
     try {
       const userId = req.user.id;
       
-      // For demo user, return empty array or sample data
-      if (userId === 'demo-user-id') {
-        return res.json([]);
-      }
+      // Get applications from job postings (new system)
+      const applications = await storage.getApplicationsForJobSeeker(userId);
       
-      const applications = await storage.getUserApplications(userId);
-      res.json(applications);
+      // Transform the data to match the expected format for the frontend
+      const formattedApplications = await Promise.all(applications.map(async (app) => {
+        // Get job posting details
+        const jobPosting = await storage.getJobPosting(app.jobPostingId);
+        
+        return {
+          id: app.id,
+          jobTitle: jobPosting?.title || 'Unknown Job',
+          company: jobPosting?.companyName || 'Unknown Company',
+          location: jobPosting?.location || '',
+          status: app.status || 'pending',
+          matchScore: app.matchScore || 0,
+          appliedDate: app.appliedAt?.toISOString() || new Date().toISOString(),
+          jobType: jobPosting?.jobType || '',
+          workMode: jobPosting?.workMode || '',
+          salaryRange: jobPosting?.minSalary && jobPosting?.maxSalary 
+            ? `${jobPosting.currency || 'USD'} ${jobPosting.minSalary?.toLocaleString()}-${jobPosting.maxSalary?.toLocaleString()}`
+            : '',
+          jobUrl: null, // Job postings don't have external URLs since they're internal
+          jobPostingId: app.jobPostingId, // Add this for reference
+        };
+      }));
+      
+      res.json(formattedApplications);
     } catch (error) {
       console.error("Error fetching applications:", error);
       res.status(500).json({ message: "Failed to fetch applications" });
