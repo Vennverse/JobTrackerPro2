@@ -734,21 +734,23 @@ Additional Information:
     }
   });
 
-  // Job applications routes
+  // Job applications routes - Combined view (Web app + Extension)
   app.get('/api/applications', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       
-      // Get applications from job postings (new system)
-      const applications = await storage.getApplicationsForJobSeeker(userId);
+      // Get applications from job postings (recruiter-posted jobs)
+      const jobPostingApplications = await storage.getApplicationsForJobSeeker(userId);
       
-      // Transform the data to match the expected format for the frontend
-      const formattedApplications = await Promise.all(applications.map(async (app) => {
-        // Get job posting details
+      // Get applications from extension (external job sites)
+      const extensionApplications = await storage.getUserApplications(userId);
+      
+      // Transform job posting applications
+      const formattedJobPostingApps = await Promise.all(jobPostingApplications.map(async (app) => {
         const jobPosting = await storage.getJobPosting(app.jobPostingId);
         
         return {
-          id: app.id,
+          id: `jp-${app.id}`, // Prefix to distinguish from extension apps
           jobTitle: jobPosting?.title || 'Unknown Job',
           company: jobPosting?.companyName || 'Unknown Company',
           location: jobPosting?.location || '',
@@ -760,12 +762,34 @@ Additional Information:
           salaryRange: jobPosting?.minSalary && jobPosting?.maxSalary 
             ? `${jobPosting.currency || 'USD'} ${jobPosting.minSalary?.toLocaleString()}-${jobPosting.maxSalary?.toLocaleString()}`
             : '',
-          jobUrl: null, // Job postings don't have external URLs since they're internal
-          jobPostingId: app.jobPostingId, // Add this for reference
+          jobUrl: null, // Internal job postings
+          jobPostingId: app.jobPostingId,
+          source: 'internal', // Mark as internal platform job
         };
       }));
       
-      res.json(formattedApplications);
+      // Transform extension applications
+      const formattedExtensionApps = extensionApplications.map(app => ({
+        id: `ext-${app.id}`, // Prefix to distinguish from job posting apps
+        jobTitle: app.jobTitle,
+        company: app.company,
+        location: app.location || '',
+        status: app.status,
+        matchScore: app.matchScore || 0,
+        appliedDate: app.appliedDate?.toISOString() || new Date().toISOString(),
+        jobType: app.jobType || '',
+        workMode: app.workMode || '',
+        salaryRange: app.salaryRange || '',
+        jobUrl: app.jobUrl, // External job URLs
+        source: 'extension', // Mark as extension-tracked job
+        notes: app.notes,
+      }));
+      
+      // Combine and sort by application date (newest first)
+      const allApplications = [...formattedJobPostingApps, ...formattedExtensionApps]
+        .sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime());
+      
+      res.json(allApplications);
     } catch (error) {
       console.error("Error fetching applications:", error);
       res.status(500).json({ message: "Failed to fetch applications" });
@@ -807,32 +831,47 @@ Additional Information:
     }
   });
 
-  // Application statistics
+  // Application statistics - Combined from both systems
   app.get('/api/applications/stats', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       
-      // Get applications from job postings (new system)
-      const applications = await storage.getApplicationsForJobSeeker(userId);
+      // Get applications from both sources
+      const jobPostingApplications = await storage.getApplicationsForJobSeeker(userId);
+      const extensionApplications = await storage.getUserApplications(userId);
       
-      // Calculate stats
-      const totalApplications = applications.length;
-      const interviews = applications.filter(app => 
+      // Combine all applications
+      const allApplications = [...jobPostingApplications, ...extensionApplications];
+      
+      // Calculate combined stats
+      const totalApplications = allApplications.length;
+      
+      const interviews = allApplications.filter(app => 
         app.status === 'interviewed' || app.status === 'interview'
       ).length;
-      const responses = applications.filter(app => 
+      
+      const responses = allApplications.filter(app => 
         app.status !== 'pending' && app.status !== 'applied'
       ).length;
+      
       const responseRate = totalApplications > 0 ? Math.round((responses / totalApplications) * 100) : 0;
-      const avgMatchScore = applications.length > 0 
-        ? Math.round(applications.reduce((sum, app) => sum + (app.matchScore || 0), 0) / applications.length)
+      
+      // Calculate average match score (only from apps that have scores)
+      const appsWithScores = allApplications.filter(app => app.matchScore && app.matchScore > 0);
+      const avgMatchScore = appsWithScores.length > 0 
+        ? Math.round(appsWithScores.reduce((sum, app) => sum + (app.matchScore || 0), 0) / appsWithScores.length)
         : 0;
       
       res.json({
         totalApplications,
         interviews,
         responseRate,
-        avgMatchScore
+        avgMatchScore,
+        // Additional breakdown stats
+        breakdown: {
+          internalJobs: jobPostingApplications.length,
+          externalJobs: extensionApplications.length
+        }
       });
     } catch (error) {
       console.error("Error fetching application stats:", error);

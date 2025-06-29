@@ -3,12 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Progress } from "@/components/ui/progress";
 import { Skeleton } from "@/components/ui/skeleton";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Building, MapPin, MoreHorizontal, ExternalLink, Edit, Trash2 } from "lucide-react";
+import { Building, MapPin, MoreHorizontal, ExternalLink, Edit, Trash2, Zap, Globe } from "lucide-react";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 
 interface Application {
-  id: number;
+  id: string;
   jobTitle: string;
   company: string;
   location?: string;
@@ -19,6 +19,8 @@ interface Application {
   workMode?: string;
   salaryRange?: string;
   jobUrl?: string;
+  source?: 'internal' | 'extension';
+  jobPostingId?: number;
 }
 
 interface ApplicationsTableProps {
@@ -84,6 +86,26 @@ export function ApplicationsTable({ applications, isLoading, showActions = false
     if (score >= 75) return "bg-blue-500";
     if (score >= 60) return "bg-amber-500";
     return "bg-red-500";
+  };
+
+  const getSourceBadge = (source?: 'internal' | 'extension') => {
+    if (source === 'internal') {
+      return (
+        <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200 dark:bg-blue-950 dark:text-blue-300 dark:border-blue-800">
+          <Zap className="w-3 h-3 mr-1" />
+          Platform
+        </Badge>
+      );
+    }
+    if (source === 'extension') {
+      return (
+        <Badge variant="outline" className="text-xs bg-green-50 text-green-700 border-green-200 dark:bg-green-950 dark:text-green-300 dark:border-green-800">
+          <Globe className="w-3 h-3 mr-1" />
+          Extension
+        </Badge>
+      );
+    }
+    return null;
   };
 
   return (
