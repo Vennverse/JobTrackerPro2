@@ -37,10 +37,7 @@ export default function UserTypeSelection({ onComplete }: UserTypeSelectionProps
 
   const sendVerificationMutation = useMutation({
     mutationFn: async (data: { email: string; companyName: string; companyWebsite: string }) => {
-      return await apiRequest("/api/auth/send-verification", {
-        method: "POST",
-        body: JSON.stringify(data),
-      });
+      return await apiRequest("/api/auth/send-verification", "POST", data);
     },
     onSuccess: () => {
       setVerificationSent(true);

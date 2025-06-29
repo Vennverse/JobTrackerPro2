@@ -14,6 +14,9 @@ import Jobs from "@/pages/jobs";
 import Subscription from "@/pages/subscription";
 import Onboarding from "@/pages/onboarding";
 import Landing from "@/pages/landing";
+import UserTypeSelection from "@/pages/user-type-selection";
+import RecruiterDashboard from "@/pages/recruiter-dashboard";
+import PostJob from "@/pages/post-job";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -29,22 +32,36 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
+      <Route path="/user-type" component={UserTypeSelection} />
       {isAuthenticated ? (
         <>
-          {/* Redirect to onboarding if not completed */}
-          {!user?.onboardingCompleted ? (
+          {/* Handle different user types */}
+          {user?.userType === 'recruiter' ? (
             <>
-              <Route path="/onboarding" component={Onboarding} />
-              <Route path="/" component={Onboarding} />
+              <Route path="/" component={RecruiterDashboard} />
+              <Route path="/recruiter/dashboard" component={RecruiterDashboard} />
+              <Route path="/recruiter/post-job" component={PostJob} />
+              <Route path="/profile" component={Profile} />
+              <Route path="/subscription" component={Subscription} />
             </>
           ) : (
             <>
-              <Route path="/" component={Dashboard} />
-              <Route path="/onboarding" component={Onboarding} />
-              <Route path="/profile" component={Profile} />
-              <Route path="/applications" component={Applications} />
-              <Route path="/jobs" component={Jobs} />
-              <Route path="/subscription" component={Subscription} />
+              {/* Job seeker routes */}
+              {!user?.onboardingCompleted ? (
+                <>
+                  <Route path="/onboarding" component={Onboarding} />
+                  <Route path="/" component={Onboarding} />
+                </>
+              ) : (
+                <>
+                  <Route path="/" component={Dashboard} />
+                  <Route path="/onboarding" component={Onboarding} />
+                  <Route path="/profile" component={Profile} />
+                  <Route path="/applications" component={Applications} />
+                  <Route path="/jobs" component={Jobs} />
+                  <Route path="/subscription" component={Subscription} />
+                </>
+              )}
             </>
           )}
         </>

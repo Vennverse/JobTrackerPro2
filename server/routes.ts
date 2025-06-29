@@ -107,6 +107,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Email verification for recruiters
+  app.post('/api/auth/send-verification', async (req, res) => {
+    try {
+      const { email, companyName, companyWebsite } = req.body;
+      
+      if (!email || !companyName) {
+        return res.status(400).json({ message: "Email and company name are required" });
+      }
+
+      // Generate verification token
+      const token = Math.random().toString(36).substring(2) + Math.random().toString(36).substring(2);
+      const expiresAt = new Date(Date.now() + 24 * 60 * 60 * 1000); // 24 hours
+
+      // Save verification token
+      await storage.createEmailVerificationToken({
+        userId: `temp-${email}`, // Temporary user ID until verification
+        token,
+        email,
+        expiresAt,
+      });
+
+      // For demo purposes, just return success - in production you'd send email here
+      console.log(`Verification link: ${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${token}`);
+      
+      res.json({ 
+        message: "Verification email sent",
+        // For demo, include the verification link
+        verificationLink: `${req.protocol}://${req.get('host')}/api/auth/verify-email?token=${token}`
+      });
+    } catch (error) {
+      console.error("Error sending verification:", error);
+      res.status(500).json({ message: "Failed to send verification email" });
+    }
+  });
+
+  app.get('/api/auth/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+      
+      if (!token) {
+        return res.status(400).json({ message: "Verification token is required" });
+      }
+
+      // Get token from database
+      const tokenRecord = await storage.getEmailVerificationToken(token as string);
+      
+      if (!tokenRecord || tokenRecord.expiresAt < new Date()) {
+        return res.status(400).json({ message: "Invalid or expired verification token" });
+      }
+
+      // Create verified recruiter user
+      const userId = `recruiter-${Date.now()}`;
+      await storage.upsertUser({
+        id: userId,
+        email: tokenRecord.email,
+        userType: "recruiter",
+        emailVerified: true,
+      });
+
+      // Delete used token
+      await storage.deleteEmailVerificationToken(token as string);
+
+      // Redirect to success page or login
+      res.redirect('/?verified=true');
+    } catch (error) {
+      console.error("Error verifying email:", error);
+      res.status(500).json({ message: "Failed to verify email" });
+    }
+  });
+
   // Complete onboarding
   app.post('/api/user/complete-onboarding', isAuthenticated, async (req: any, res) => {
     try {
@@ -1687,6 +1757,292 @@ export async function registerRoutes(app: Express): Promise<Server> {
         groqConnected: false,
         error: error.message
       });
+    }
+  });
+
+  // Recruiter API Routes
+  
+  // Job Postings CRUD
+  app.get('/api/recruiter/jobs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      const jobPostings = await storage.getJobPostings(userId);
+      res.json(jobPostings);
+    } catch (error) {
+      console.error("Error fetching job postings:", error);
+      res.status(500).json({ message: "Failed to fetch job postings" });
+    }
+  });
+
+  app.post('/api/recruiter/jobs', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      const jobPostingData = { ...req.body, recruiterId: userId };
+      const jobPosting = await storage.createJobPosting(jobPostingData);
+      res.status(201).json(jobPosting);
+    } catch (error) {
+      console.error("Error creating job posting:", error);
+      res.status(500).json({ message: "Failed to create job posting" });
+    }
+  });
+
+  app.put('/api/recruiter/jobs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Verify ownership
+      const existingJob = await storage.getJobPosting(jobId);
+      if (!existingJob || existingJob.recruiterId !== userId) {
+        return res.status(404).json({ message: "Job posting not found" });
+      }
+
+      const updatedJob = await storage.updateJobPosting(jobId, req.body);
+      res.json(updatedJob);
+    } catch (error) {
+      console.error("Error updating job posting:", error);
+      res.status(500).json({ message: "Failed to update job posting" });
+    }
+  });
+
+  app.delete('/api/recruiter/jobs/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Verify ownership
+      const existingJob = await storage.getJobPosting(jobId);
+      if (!existingJob || existingJob.recruiterId !== userId) {
+        return res.status(404).json({ message: "Job posting not found" });
+      }
+
+      await storage.deleteJobPosting(jobId);
+      res.json({ message: "Job posting deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting job posting:", error);
+      res.status(500).json({ message: "Failed to delete job posting" });
+    }
+  });
+
+  // Job Applications for Recruiters
+  app.get('/api/recruiter/applications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      const applications = await storage.getApplicationsForRecruiter(userId);
+      res.json(applications);
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+      res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
+  app.get('/api/recruiter/jobs/:jobId/applications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobId = parseInt(req.params.jobId);
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Verify job ownership
+      const job = await storage.getJobPosting(jobId);
+      if (!job || job.recruiterId !== userId) {
+        return res.status(404).json({ message: "Job posting not found" });
+      }
+
+      const applications = await storage.getJobPostingApplications(jobId);
+      res.json(applications);
+    } catch (error) {
+      console.error("Error fetching job applications:", error);
+      res.status(500).json({ message: "Failed to fetch job applications" });
+    }
+  });
+
+  app.put('/api/recruiter/applications/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const applicationId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      const updatedApplication = await storage.updateJobPostingApplication(applicationId, req.body);
+      res.json(updatedApplication);
+    } catch (error) {
+      console.error("Error updating application:", error);
+      res.status(500).json({ message: "Failed to update application" });
+    }
+  });
+
+  // Job Seeker API Routes for Job Postings
+  
+  // Get all active job postings for job seekers
+  app.get('/api/jobs/postings', isAuthenticated, async (req: any, res) => {
+    try {
+      const jobPostings = await storage.getJobPostings(); // No recruiterId = get all active
+      res.json(jobPostings);
+    } catch (error) {
+      console.error("Error fetching job postings:", error);
+      res.status(500).json({ message: "Failed to fetch job postings" });
+    }
+  });
+
+  // Apply to a job posting
+  app.post('/api/jobs/postings/:jobId/apply', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobId = parseInt(req.params.jobId);
+      const { resumeId, coverLetter } = req.body;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'job_seeker') {
+        return res.status(403).json({ message: "Access denied. Job seeker account required." });
+      }
+
+      // Check if already applied
+      const existingApplications = await storage.getApplicationsForJobSeeker(userId);
+      const alreadyApplied = existingApplications.some(app => app.jobPostingId === jobId);
+      
+      if (alreadyApplied) {
+        return res.status(400).json({ message: "You have already applied to this job" });
+      }
+
+      const application = await storage.createJobPostingApplication({
+        jobPostingId: jobId,
+        applicantId: userId,
+        resumeId: resumeId || null,
+        coverLetter: coverLetter || null,
+        status: 'pending'
+      });
+
+      res.status(201).json(application);
+    } catch (error) {
+      console.error("Error applying to job:", error);
+      res.status(500).json({ message: "Failed to apply to job" });
+    }
+  });
+
+  // Get job seeker's applications
+  app.get('/api/jobs/my-applications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const applications = await storage.getApplicationsForJobSeeker(userId);
+      res.json(applications);
+    } catch (error) {
+      console.error("Error fetching applications:", error);
+      res.status(500).json({ message: "Failed to fetch applications" });
+    }
+  });
+
+  // Chat System API Routes
+  
+  app.get('/api/chat/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const conversations = await storage.getChatConversations(userId);
+      res.json(conversations);
+    } catch (error) {
+      console.error("Error fetching conversations:", error);
+      res.status(500).json({ message: "Failed to fetch conversations" });
+    }
+  });
+
+  app.post('/api/chat/conversations', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { jobSeekerId, recruiterId, jobPostingId, applicationId } = req.body;
+      
+      const conversationData = {
+        recruiterId,
+        jobSeekerId,
+        jobPostingId: jobPostingId || null,
+        applicationId: applicationId || null,
+        isActive: true
+      };
+
+      const conversation = await storage.createChatConversation(conversationData);
+      res.status(201).json(conversation);
+    } catch (error) {
+      console.error("Error creating conversation:", error);
+      res.status(500).json({ message: "Failed to create conversation" });
+    }
+  });
+
+  app.get('/api/chat/conversations/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const conversationId = parseInt(req.params.id);
+      const messages = await storage.getChatMessages(conversationId);
+      res.json(messages);
+    } catch (error) {
+      console.error("Error fetching messages:", error);
+      res.status(500).json({ message: "Failed to fetch messages" });
+    }
+  });
+
+  app.post('/api/chat/conversations/:id/messages', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const conversationId = parseInt(req.params.id);
+      const { message } = req.body;
+
+      const messageData = {
+        conversationId,
+        senderId: userId,
+        message,
+        messageType: 'text',
+        isRead: false
+      };
+
+      const newMessage = await storage.createChatMessage(messageData);
+      res.status(201).json(newMessage);
+    } catch (error) {
+      console.error("Error sending message:", error);
+      res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  app.put('/api/chat/conversations/:id/read', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const conversationId = parseInt(req.params.id);
+      
+      await storage.markMessagesAsRead(conversationId, userId);
+      res.json({ message: "Messages marked as read" });
+    } catch (error) {
+      console.error("Error marking messages as read:", error);
+      res.status(500).json({ message: "Failed to mark messages as read" });
     }
   });
 
