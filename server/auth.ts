@@ -134,7 +134,6 @@ export async function setupAuth(app: Express) {
         try {
           const { storage } = await import("./storage");
           const fullUser = await storage.getUser(sessionUser.id);
-          console.log("Full user data from database:", JSON.stringify(fullUser, null, 2));
           if (fullUser) {
             return res.json({
               id: fullUser.id,
