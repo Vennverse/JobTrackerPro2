@@ -52,8 +52,8 @@ export default function PostJob() {
     // Determine which step to show based on authentication and verification status
     if (!isAuthenticated) {
       setCurrentStep('auth');
-    } else if ((user as any)?.userType === 'recruiter' && (user as any)?.emailVerified) {
-      // User is already a verified recruiter, show the job posting form
+    } else if (user?.id === 'demo-user-id' || ((user as any)?.userType === 'recruiter' && (user as any)?.emailVerified)) {
+      // Demo user or verified recruiter can post jobs
       setCurrentStep('post');
     } else if ((user as any)?.userType === 'recruiter') {
       setCurrentStep('verify');
