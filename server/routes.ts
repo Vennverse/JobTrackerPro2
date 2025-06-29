@@ -209,8 +209,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Delete used token
       await storage.deleteEmailVerificationToken(token as string);
 
-      // Redirect to success page or login
-      res.redirect('/?verified=true');
+      // Redirect to post job page
+      res.redirect('/post-job?verified=true');
     } catch (error) {
       console.error("Error verifying email:", error);
       res.status(500).json({ message: "Failed to verify email" });

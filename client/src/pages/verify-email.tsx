@@ -23,10 +23,10 @@ export default function VerifyEmail() {
       .then(response => {
         if (response.ok) {
           setStatus('success');
-          setMessage('Your email has been verified successfully! You can now sign in as a recruiter.');
-          // Redirect to login after a delay
+          setMessage('Your email has been verified successfully! Redirecting to job posting...');
+          // Redirect to post job page after a delay
           setTimeout(() => {
-            window.location.href = '/user-type';
+            window.location.href = '/post-job';
           }, 3000);
         } else {
           return response.json().then(data => {
@@ -71,7 +71,7 @@ export default function VerifyEmail() {
               <XCircle className="w-12 h-12 mx-auto text-red-500" />
               <p className="text-red-700 font-medium">{message}</p>
               <Button 
-                onClick={() => window.location.href = '/user-type'}
+                onClick={() => window.location.href = '/auth'}
                 className="mt-4"
               >
                 Go to Sign In

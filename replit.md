@@ -83,6 +83,7 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent updates to the AutoJobr platform:
+- June 29, 2025: **Simplified Authentication Flow Complete** - Removed user-type selection step, added "Post Job" to sidebar navigation, fixed email verification redirect from broken /user-type to proper /post-job flow
 - June 29, 2025: **Complete Recruiter Platform Implementation** - Added full recruiter functionality with user type selection, email verification, job posting management, application tracking, and chat system
 - June 29, 2025: **Recruiter Dashboard & Job Management** - Built comprehensive recruiter dashboard with job posting CRUD, application review, and candidate communication features
 - June 29, 2025: **User Type System** - Implemented dual user types (job_seeker/recruiter) with separate authentication flows and corporate email verification for recruiters
