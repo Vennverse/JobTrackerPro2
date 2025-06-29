@@ -7,6 +7,12 @@ import {
   jobApplications,
   jobRecommendations,
   aiJobAnalyses,
+  resumes,
+  jobPostings,
+  jobPostingApplications,
+  chatConversations,
+  chatMessages,
+  emailVerificationTokens,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -23,6 +29,18 @@ import {
   type InsertJobRecommendation,
   type AiJobAnalysis,
   type InsertAiJobAnalysis,
+  type Resume,
+  type InsertResume,
+  type JobPosting,
+  type InsertJobPosting,
+  type JobPostingApplication,
+  type InsertJobPostingApplication,
+  type ChatConversation,
+  type InsertChatConversation,
+  type ChatMessage,
+  type InsertChatMessage,
+  type EmailVerificationToken,
+  type InsertEmailVerificationToken,
 } from "@shared/schema";
 import { db } from "./db";
 
@@ -109,6 +127,38 @@ export interface IStorage {
     subscriptionEndDate?: Date;
   }): Promise<User>;
   getUserByPaypalSubscription(paypalSubscriptionId: string): Promise<User | undefined>;
+
+  // Recruiter operations
+  // Job postings
+  getJobPostings(recruiterId?: string): Promise<JobPosting[]>;
+  getJobPosting(id: number): Promise<JobPosting | undefined>;
+  createJobPosting(jobPosting: InsertJobPosting): Promise<JobPosting>;
+  updateJobPosting(id: number, jobPosting: Partial<InsertJobPosting>): Promise<JobPosting>;
+  deleteJobPosting(id: number): Promise<void>;
+  incrementJobPostingViews(id: number): Promise<void>;
+  
+  // Job posting applications
+  getJobPostingApplications(jobPostingId: number): Promise<JobPostingApplication[]>;
+  getJobPostingApplication(id: number): Promise<JobPostingApplication | undefined>;
+  getApplicationsForRecruiter(recruiterId: string): Promise<JobPostingApplication[]>;
+  getApplicationsForJobSeeker(jobSeekerId: string): Promise<JobPostingApplication[]>;
+  createJobPostingApplication(application: InsertJobPostingApplication): Promise<JobPostingApplication>;
+  updateJobPostingApplication(id: number, application: Partial<InsertJobPostingApplication>): Promise<JobPostingApplication>;
+  deleteJobPostingApplication(id: number): Promise<void>;
+  
+  // Chat system
+  getChatConversations(userId: string): Promise<ChatConversation[]>;
+  getChatConversation(id: number): Promise<ChatConversation | undefined>;
+  createChatConversation(conversation: InsertChatConversation): Promise<ChatConversation>;
+  getChatMessages(conversationId: number): Promise<ChatMessage[]>;
+  createChatMessage(message: InsertChatMessage): Promise<ChatMessage>;
+  markMessagesAsRead(conversationId: number, userId: string): Promise<void>;
+  
+  // Email verification
+  createEmailVerificationToken(token: InsertEmailVerificationToken): Promise<EmailVerificationToken>;
+  getEmailVerificationToken(token: string): Promise<EmailVerificationToken | undefined>;
+  deleteEmailVerificationToken(token: string): Promise<void>;
+  updateUserEmailVerification(userId: string, verified: boolean): Promise<User>;
 }
 
 export class DatabaseStorage implements IStorage {

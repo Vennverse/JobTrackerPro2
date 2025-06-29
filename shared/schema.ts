@@ -34,6 +34,11 @@ export const users = pgTable("users", {
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
   profileImageUrl: varchar("profile_image_url"),
+  userType: varchar("user_type").default("job_seeker"), // job_seeker, recruiter
+  emailVerified: boolean("email_verified").default(false),
+  companyName: varchar("company_name"), // For recruiters
+  companyWebsite: varchar("company_website"), // For recruiters
+  companyLogoUrl: varchar("company_logo_url"), // For recruiters
   stripeCustomerId: varchar("stripe_customer_id"),
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   paypalSubscriptionId: varchar("paypal_subscription_id"),
@@ -293,6 +298,91 @@ export const dailyUsage = pgTable("daily_usage", {
   index("daily_usage_user_date_idx").on(table.userId, table.date),
 ]);
 
+// Job postings created by recruiters
+export const jobPostings = pgTable("job_postings", {
+  id: serial("id").primaryKey(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  companyName: varchar("company_name").notNull(),
+  companyLogo: varchar("company_logo"), // URL to company logo
+  location: varchar("location"),
+  workMode: varchar("work_mode"), // remote, hybrid, onsite
+  jobType: varchar("job_type"), // full-time, part-time, contract, internship
+  experienceLevel: varchar("experience_level"), // entry, mid, senior, lead
+  skills: text("skills").array(), // Required skills
+  minSalary: integer("min_salary"),
+  maxSalary: integer("max_salary"),
+  currency: varchar("currency").default("USD"),
+  benefits: text("benefits"),
+  requirements: text("requirements"),
+  responsibilities: text("responsibilities"),
+  isActive: boolean("is_active").default(true),
+  applicationsCount: integer("applications_count").default(0),
+  viewsCount: integer("views_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Applications to job postings from job seekers
+export const jobPostingApplications = pgTable("job_posting_applications", {
+  id: serial("id").primaryKey(),
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id).notNull(),
+  applicantId: varchar("applicant_id").references(() => users.id).notNull(),
+  resumeId: integer("resume_id").references(() => resumes.id), // Which resume was used
+  coverLetter: text("cover_letter"), // Custom cover letter for this application
+  status: varchar("status").default("pending"), // pending, reviewed, shortlisted, interviewed, hired, rejected
+  matchScore: integer("match_score"), // AI-calculated compatibility score
+  recruiterNotes: text("recruiter_notes"), // Private notes from recruiter
+  appliedAt: timestamp("applied_at").defaultNow(),
+  reviewedAt: timestamp("reviewed_at"),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("job_posting_applications_job_idx").on(table.jobPostingId),
+  index("job_posting_applications_applicant_idx").on(table.applicantId),
+]);
+
+// Chat system between recruiters and job seekers
+export const chatConversations = pgTable("chat_conversations", {
+  id: serial("id").primaryKey(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  jobSeekerId: varchar("job_seeker_id").references(() => users.id).notNull(),
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id), // Context of the conversation
+  applicationId: integer("application_id").references(() => jobPostingApplications.id), // Related application
+  lastMessageAt: timestamp("last_message_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("chat_conversations_recruiter_idx").on(table.recruiterId),
+  index("chat_conversations_job_seeker_idx").on(table.jobSeekerId),
+]);
+
+export const chatMessages = pgTable("chat_messages", {
+  id: serial("id").primaryKey(),
+  conversationId: integer("conversation_id").references(() => chatConversations.id).notNull(),
+  senderId: varchar("sender_id").references(() => users.id).notNull(),
+  message: text("message").notNull(),
+  messageType: varchar("message_type").default("text"), // text, file, system
+  isRead: boolean("is_read").default(false),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("chat_messages_conversation_idx").on(table.conversationId),
+  index("chat_messages_sender_idx").on(table.senderId),
+]);
+
+// Email verification tokens for recruiters
+export const emailVerificationTokens = pgTable("email_verification_tokens", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  token: varchar("token").notNull().unique(),
+  email: varchar("email").notNull(),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("email_verification_tokens_user_idx").on(table.userId),
+  index("email_verification_tokens_token_idx").on(table.token),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -306,6 +396,77 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   recommendations: many(jobRecommendations),
   aiJobAnalyses: many(aiJobAnalyses),
   dailyUsage: many(dailyUsage),
+  // Recruiter relations
+  jobPostings: many(jobPostings),
+  jobPostingApplications: many(jobPostingApplications),
+  recruiterConversations: many(chatConversations, { relationName: "recruiterChats" }),
+  jobSeekerConversations: many(chatConversations, { relationName: "jobSeekerChats" }),
+  sentMessages: many(chatMessages),
+  emailVerificationTokens: many(emailVerificationTokens),
+}));
+
+export const jobPostingsRelations = relations(jobPostings, ({ one, many }) => ({
+  recruiter: one(users, {
+    fields: [jobPostings.recruiterId],
+    references: [users.id],
+  }),
+  applications: many(jobPostingApplications),
+  conversations: many(chatConversations),
+}));
+
+export const jobPostingApplicationsRelations = relations(jobPostingApplications, ({ one }) => ({
+  jobPosting: one(jobPostings, {
+    fields: [jobPostingApplications.jobPostingId],
+    references: [jobPostings.id],
+  }),
+  applicant: one(users, {
+    fields: [jobPostingApplications.applicantId],
+    references: [users.id],
+  }),
+  resume: one(resumes, {
+    fields: [jobPostingApplications.resumeId],
+    references: [resumes.id],
+  }),
+}));
+
+export const chatConversationsRelations = relations(chatConversations, ({ one, many }) => ({
+  recruiter: one(users, {
+    fields: [chatConversations.recruiterId],
+    references: [users.id],
+    relationName: "recruiterChats",
+  }),
+  jobSeeker: one(users, {
+    fields: [chatConversations.jobSeekerId],
+    references: [users.id],
+    relationName: "jobSeekerChats",
+  }),
+  jobPosting: one(jobPostings, {
+    fields: [chatConversations.jobPostingId],
+    references: [jobPostings.id],
+  }),
+  application: one(jobPostingApplications, {
+    fields: [chatConversations.applicationId],
+    references: [jobPostingApplications.id],
+  }),
+  messages: many(chatMessages),
+}));
+
+export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
+  conversation: one(chatConversations, {
+    fields: [chatMessages.conversationId],
+    references: [chatConversations.id],
+  }),
+  sender: one(users, {
+    fields: [chatMessages.senderId],
+    references: [users.id],
+  }),
+}));
+
+export const emailVerificationTokensRelations = relations(emailVerificationTokens, ({ one }) => ({
+  user: one(users, {
+    fields: [emailVerificationTokens.userId],
+    references: [users.id],
+  }),
 }));
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
@@ -435,5 +596,47 @@ export const insertDailyUsageSchema = createInsertSchema(dailyUsage).omit({
   updatedAt: true,
 });
 
+// New insert schemas for recruiter functionality
+export const insertJobPostingSchema = createInsertSchema(jobPostings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  applicationsCount: true,
+  viewsCount: true,
+});
+
+export const insertJobPostingApplicationSchema = createInsertSchema(jobPostingApplications).omit({
+  id: true,
+  appliedAt: true,
+  updatedAt: true,
+});
+
+export const insertChatConversationSchema = createInsertSchema(chatConversations).omit({
+  id: true,
+  createdAt: true,
+  lastMessageAt: true,
+});
+
+export const insertChatMessageSchema = createInsertSchema(chatMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertEmailVerificationTokenSchema = createInsertSchema(emailVerificationTokens).omit({
+  id: true,
+  createdAt: true,
+});
+
+// Types
 export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
 export type DailyUsage = typeof dailyUsage.$inferSelect;
+export type InsertJobPosting = z.infer<typeof insertJobPostingSchema>;
+export type JobPosting = typeof jobPostings.$inferSelect;
+export type InsertJobPostingApplication = z.infer<typeof insertJobPostingApplicationSchema>;
+export type JobPostingApplication = typeof jobPostingApplications.$inferSelect;
+export type InsertChatConversation = z.infer<typeof insertChatConversationSchema>;
+export type ChatConversation = typeof chatConversations.$inferSelect;
+export type InsertChatMessage = z.infer<typeof insertChatMessageSchema>;
+export type ChatMessage = typeof chatMessages.$inferSelect;
+export type InsertEmailVerificationToken = z.infer<typeof insertEmailVerificationTokenSchema>;
+export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
