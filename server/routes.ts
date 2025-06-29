@@ -812,18 +812,28 @@ Additional Information:
     try {
       const userId = req.user.id;
       
-      // For demo user, return sample stats
-      if (userId === 'demo-user-id') {
-        return res.json({
-          totalApplications: 0,
-          interviews: 0,
-          responseRate: 0,
-          avgMatchScore: 0
-        });
-      }
+      // Get applications from job postings (new system)
+      const applications = await storage.getApplicationsForJobSeeker(userId);
       
-      const stats = await storage.getApplicationStats(userId);
-      res.json(stats);
+      // Calculate stats
+      const totalApplications = applications.length;
+      const interviews = applications.filter(app => 
+        app.status === 'interviewed' || app.status === 'interview'
+      ).length;
+      const responses = applications.filter(app => 
+        app.status !== 'pending' && app.status !== 'applied'
+      ).length;
+      const responseRate = totalApplications > 0 ? Math.round((responses / totalApplications) * 100) : 0;
+      const avgMatchScore = applications.length > 0 
+        ? Math.round(applications.reduce((sum, app) => sum + (app.matchScore || 0), 0) / applications.length)
+        : 0;
+      
+      res.json({
+        totalApplications,
+        interviews,
+        responseRate,
+        avgMatchScore
+      });
     } catch (error) {
       console.error("Error fetching application stats:", error);
       res.status(500).json({ message: "Failed to fetch application stats" });
