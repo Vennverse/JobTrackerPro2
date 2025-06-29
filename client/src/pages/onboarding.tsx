@@ -165,7 +165,7 @@ export default function Onboarding() {
       const formData = new FormData();
       formData.append('resume', file);
 
-      const response = await fetch('/api/resume/upload', {
+      const response = await fetch('/api/resumes/upload', {
         method: 'POST',
         body: formData,
       });
