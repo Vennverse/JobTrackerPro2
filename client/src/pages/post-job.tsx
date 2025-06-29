@@ -54,7 +54,7 @@ export default function PostJob() {
       setCurrentStep('auth');
     } else if (user?.userType === 'recruiter' && user?.emailVerified) {
       // User is already a verified recruiter, go directly to recruiter dashboard
-      setLocation('/');
+      setLocation('/recruiter-dashboard');
     } else if (user?.userType === 'recruiter') {
       setCurrentStep('verify');
     } else {

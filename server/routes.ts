@@ -195,16 +195,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Invalid or expired verification token" });
       }
 
-      // Create verified recruiter user
-      const userId = `recruiter-${Date.now()}`;
-      await storage.upsertUser({
-        id: userId,
-        email: tokenRecord.email,
-        userType: "recruiter",
-        emailVerified: true,
-        companyName: tokenRecord.companyName,
-        companyWebsite: tokenRecord.companyWebsite,
-      });
+      // Find existing user by email and update them to recruiter status
+      const existingUser = await storage.getUserByEmail(tokenRecord.email);
+      if (existingUser) {
+        // Update existing user to recruiter
+        await storage.upsertUser({
+          id: existingUser.id,
+          email: tokenRecord.email,
+          userType: "recruiter", 
+          emailVerified: true,
+          companyName: tokenRecord.companyName,
+          companyWebsite: tokenRecord.companyWebsite,
+          firstName: existingUser.firstName,
+          lastName: existingUser.lastName,
+          profileImageUrl: existingUser.profileImageUrl,
+        });
+      } else {
+        // Create new recruiter user if no existing user found
+        const userId = `recruiter-${Date.now()}`;
+        await storage.upsertUser({
+          id: userId,
+          email: tokenRecord.email,
+          userType: "recruiter",
+          emailVerified: true,
+          companyName: tokenRecord.companyName,
+          companyWebsite: tokenRecord.companyWebsite,
+        });
+      }
 
       // Delete used token
       await storage.deleteEmailVerificationToken(token as string);
@@ -1797,6 +1814,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
         groqConnected: false,
         error: error.message
       });
+    }
+  });
+
+  // Test route to manually make demo user a verified recruiter
+  app.get('/api/test-make-recruiter', async (req, res) => {
+    try {
+      const user = await storage.getUser('demo-user-id');
+      if (user) {
+        const updatedUser = await storage.upsertUser({
+          id: user.id,
+          email: user.email,
+          userType: 'recruiter',
+          emailVerified: true,
+          companyName: 'Test Company',
+          companyWebsite: 'https://test.com',
+          firstName: user.firstName,
+          lastName: user.lastName,
+          profileImageUrl: user.profileImageUrl,
+        });
+        res.json({ message: 'Demo user is now a verified recruiter', user: updatedUser });
+      } else {
+        res.status(404).json({ message: 'Demo user not found' });
+      }
+    } catch (error) {
+      console.error('Error making demo user recruiter:', error);
+      res.status(500).json({ message: 'Failed to update user' });
     }
   });
 
