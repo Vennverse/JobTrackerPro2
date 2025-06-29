@@ -18,6 +18,8 @@ import UserTypeSelection from "@/pages/user-type-selection";
 import RecruiterDashboard from "@/pages/recruiter-dashboard";
 import PostJob from "@/pages/post-job";
 import VerifyEmail from "@/pages/verify-email";
+import ViewJob from "@/pages/view-job";
+import EditJob from "@/pages/edit-job";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -44,7 +46,10 @@ function Router() {
           {user?.userType === 'recruiter' ? (
             <>
               <Route path="/" component={RecruiterDashboard} />
-              <Route path="/recruiter/dashboard" component={RecruiterDashboard} />
+              <Route path="/recruiter-dashboard" component={RecruiterDashboard} />
+              <Route path="/recruiter/post-job" component={PostJob} />
+              <Route path="/recruiter/edit-job/:id" component={EditJob} />
+              <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={Subscription} />
             </>
