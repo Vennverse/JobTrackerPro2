@@ -44,30 +44,36 @@ export default function Jobs() {
   const [page, setPage] = useState(1);
 
   const { data: jobsData, isLoading: jobsLoading, error } = useQuery({
-    queryKey: ["/api/jobs/search", searchQuery, location, page],
+    queryKey: ["/api/jobs/postings", searchQuery, location],
     queryFn: async () => {
-      if (searchQuery.length < 3) {
-        throw new Error("Search query must be at least 3 characters");
-      }
-      
-      const params = new URLSearchParams({
-        q: searchQuery,
-        location: location || "us",
-        page: page.toString()
-      });
-      
-      const response = await fetch(`/api/jobs/search?${params}`, {
+      const response = await fetch(`/api/jobs/postings`, {
         credentials: 'include'
       });
       
       if (!response.ok) {
         const errorData = await response.json();
-        throw new Error(errorData.message || "Failed to search jobs");
+        throw new Error(errorData.message || "Failed to fetch jobs");
       }
       
-      return response.json();
+      const jobs = await response.json();
+      
+      // Filter jobs based on search query and location if provided
+      let filteredJobs = jobs;
+      if (searchQuery.length >= 1) {
+        filteredJobs = jobs.filter((job: any) => 
+          job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          job.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          job.description.toLowerCase().includes(searchQuery.toLowerCase())
+        );
+      }
+      if (location) {
+        filteredJobs = filteredJobs.filter((job: any) => 
+          job.location?.toLowerCase().includes(location.toLowerCase())
+        );
+      }
+      
+      return filteredJobs;
     },
-    enabled: searchQuery.length > 2,
     retry: false,
   });
 

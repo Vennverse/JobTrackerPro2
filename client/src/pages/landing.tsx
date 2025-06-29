@@ -29,7 +29,7 @@ import {
 
 export default function Landing() {
   const handleLogin = () => {
-    window.location.href = "/auth";
+    window.location.href = "/user-type";
   };
 
   const features = [

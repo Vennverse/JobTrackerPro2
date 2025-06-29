@@ -11,11 +11,7 @@ import { useMutation } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
 
-interface UserTypeSelectionProps {
-  onComplete: (userType: string, additionalData?: any) => void;
-}
-
-export default function UserTypeSelection({ onComplete }: UserTypeSelectionProps) {
+export default function UserTypeSelection() {
   const [selectedType, setSelectedType] = useState<string>("");
   const [email, setEmail] = useState("");
   const [companyName, setCompanyName] = useState("");
@@ -56,7 +52,7 @@ export default function UserTypeSelection({ onComplete }: UserTypeSelectionProps
   });
 
   const handleJobSeekerSelect = () => {
-    onComplete("job_seeker");
+    setLocation("/auth");
   };
 
   const handleRecruiterSelect = () => {
