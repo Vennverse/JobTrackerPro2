@@ -159,8 +159,9 @@ export function ApplicationsTable({ applications, isLoading, showActions = false
             </div>
             
             <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2">
+              <div className="flex items-center space-x-2 flex-wrap">
                 {getStatusBadge(application.status)}
+                {getSourceBadge(application.source)}
                 {application.matchScore && (
                   <div className="flex items-center space-x-1">
                     <div className="w-12 bg-muted rounded-full h-2">
@@ -197,6 +198,9 @@ export function ApplicationsTable({ applications, isLoading, showActions = false
               </th>
               <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
                 Status
+              </th>
+              <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
+                Source
               </th>
               <th className="text-left text-xs font-medium text-muted-foreground uppercase tracking-wider py-3 px-6">
                 Applied
@@ -257,6 +261,9 @@ export function ApplicationsTable({ applications, isLoading, showActions = false
               </td>
               <td className="py-4 px-6 whitespace-nowrap">
                 {getStatusBadge(application.status)}
+              </td>
+              <td className="py-4 px-6 whitespace-nowrap">
+                {getSourceBadge(application.source)}
               </td>
               <td className="py-4 px-6 whitespace-nowrap text-sm text-muted-foreground">
                 {formatDistanceToNow(new Date(application.appliedDate), { addSuffix: true })}

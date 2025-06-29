@@ -5,6 +5,7 @@ class ExtensionConfig {
   constructor() {
     this.possibleUrls = [
       'https://60e68a76-86c4-4eef-b2f5-8a97de774d09-00-f9a0u7nh8k0p.kirk.replit.dev',
+      'https://autojobr.replit.app',
       'http://localhost:5000'
     ];
     this.currentApiUrl = null;
