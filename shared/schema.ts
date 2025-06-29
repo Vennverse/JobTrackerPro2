@@ -371,18 +371,21 @@ export const chatMessages = pgTable("chat_messages", {
   index("chat_messages_sender_idx").on(table.senderId),
 ]);
 
-// Email verification tokens for recruiters
+// Email verification tokens for users
 export const emailVerificationTokens = pgTable("email_verification_tokens", {
   id: serial("id").primaryKey(),
   token: varchar("token").notNull().unique(),
   email: varchar("email").notNull(),
-  companyName: varchar("company_name").notNull(),
-  companyWebsite: varchar("company_website"),
+  userId: varchar("user_id").notNull(),
+  companyName: varchar("company_name"), // Optional: for recruiter verification
+  companyWebsite: varchar("company_website"), // Optional: for recruiter verification
+  verified: boolean("verified").default(false),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
   index("email_verification_tokens_token_idx").on(table.token),
   index("email_verification_tokens_email_idx").on(table.email),
+  index("email_verification_tokens_user_id_idx").on(table.userId),
 ]);
 
 // Relations

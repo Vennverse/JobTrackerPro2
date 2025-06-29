@@ -235,7 +235,7 @@ export async function setupAuth(app: Express) {
       // Hash password
       const hashedPassword = await bcrypt.hash(password, 10);
 
-      // Create new user
+      // Create new user (not verified yet)
       const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
       const newUser = await storage.upsertUser({
         id: userId,
@@ -244,27 +244,51 @@ export async function setupAuth(app: Express) {
         lastName,
         password: hashedPassword,
         userType: 'job_seeker',
-        emailVerified: true, // For simplicity, we'll skip email verification
+        emailVerified: false, // User needs to verify email
         profileImageUrl: null,
         companyName: null,
         companyWebsite: null
       });
 
-      // Store session
-      (req as any).session.user = {
-        id: newUser.id,
-        email: newUser.email,
-        name: `${newUser.firstName} ${newUser.lastName}`,
-      };
+      // Generate verification token
+      const verificationToken = Math.random().toString(36).substr(2, 32);
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour expiry
 
-      res.status(201).json({ 
-        message: 'Account created successfully', 
-        user: {
-          id: newUser.id,
-          email: newUser.email,
-          name: `${newUser.firstName} ${newUser.lastName}`,
-        }
+      // Store verification token
+      await storage.createEmailVerificationToken({
+        token: verificationToken,
+        email,
+        userId,
+        expiresAt,
+        verified: false
       });
+
+      // Send verification email
+      try {
+        const { sendEmail, generateVerificationEmail } = await import('./emailService');
+        const emailHtml = generateVerificationEmail(verificationToken, 'AutoJobr');
+        
+        await sendEmail({
+          to: email,
+          subject: 'Verify your AutoJobr account',
+          html: emailHtml,
+        });
+
+        res.status(201).json({ 
+          message: 'Account created successfully. Please check your email to verify your account.',
+          requiresVerification: true,
+          email: email
+        });
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
+        // If email fails, still create account but notify user
+        res.status(201).json({ 
+          message: 'Account created but verification email could not be sent. Please contact support.',
+          requiresVerification: true,
+          email: email
+        });
+      }
     } catch (error) {
       console.error('Email signup error:', error);
       res.status(500).json({ message: 'Failed to create account' });
@@ -291,6 +315,15 @@ export async function setupAuth(app: Express) {
         return res.status(401).json({ message: 'Invalid email or password' });
       }
 
+      // Check if email is verified (only for email signup users)
+      if (!user.emailVerified) {
+        return res.status(403).json({ 
+          message: 'Please verify your email address before logging in. Check your inbox for the verification email.',
+          requiresVerification: true,
+          email: user.email
+        });
+      }
+
       // Store session
       (req as any).session.user = {
         id: user.id,
@@ -309,6 +342,117 @@ export async function setupAuth(app: Express) {
     } catch (error) {
       console.error('Email login error:', error);
       res.status(500).json({ message: 'Login failed' });
+    }
+  });
+
+  // Email verification endpoint
+  app.get('/api/auth/verify-email', async (req, res) => {
+    try {
+      const { token } = req.query;
+
+      if (!token) {
+        return res.status(400).json({ message: 'Verification token is required' });
+      }
+
+      // Get token from database
+      const tokenRecord = await storage.getEmailVerificationToken(token as string);
+      
+      if (!tokenRecord || tokenRecord.expiresAt < new Date()) {
+        return res.status(400).json({ message: 'Invalid or expired verification token' });
+      }
+
+      // Update user's email verification status
+      const user = await storage.getUser(tokenRecord.userId);
+      if (user) {
+        await storage.upsertUser({
+          ...user,
+          emailVerified: true,
+        });
+
+        // Delete used token
+        await storage.deleteEmailVerificationToken(token as string);
+
+        // Auto-login the user
+        (req as any).session.user = {
+          id: user.id,
+          email: user.email,
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        };
+
+        // Redirect to app
+        res.redirect('/?verified=true');
+      } else {
+        return res.status(400).json({ message: 'User not found' });
+      }
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({ message: 'Email verification failed' });
+    }
+  });
+
+  // Resend verification email
+  app.post('/api/auth/resend-verification', async (req, res) => {
+    try {
+      const { email } = req.body;
+
+      if (!email) {
+        return res.status(400).json({ message: 'Email is required' });
+      }
+
+      // Find user by email
+      const [user] = await db.select().from(users).where(eq(users.email, email));
+      if (!user) {
+        return res.status(404).json({ message: 'User not found' });
+      }
+
+      if (user.emailVerified) {
+        return res.status(400).json({ message: 'Email is already verified' });
+      }
+
+      // Generate new verification token
+      const verificationToken = Math.random().toString(36).substr(2, 32);
+      const expiresAt = new Date();
+      expiresAt.setHours(expiresAt.getHours() + 24); // 24 hour expiry
+
+      // Delete old tokens for this user
+      try {
+        await storage.deleteEmailVerificationTokensByUserId(user.id);
+      } catch (error) {
+        console.log('No old tokens to delete');
+      }
+
+      // Store new verification token
+      await storage.createEmailVerificationToken({
+        token: verificationToken,
+        email,
+        userId: user.id,
+        expiresAt,
+        verified: false
+      });
+
+      // Send verification email
+      try {
+        const { sendEmail, generateVerificationEmail } = await import('./emailService');
+        const emailHtml = generateVerificationEmail(verificationToken, 'AutoJobr');
+        
+        await sendEmail({
+          to: email,
+          subject: 'Verify your AutoJobr account',
+          html: emailHtml,
+        });
+
+        res.json({ 
+          message: 'Verification email sent successfully. Please check your inbox.'
+        });
+      } catch (emailError) {
+        console.error('Email sending error:', emailError);
+        res.status(500).json({ 
+          message: 'Failed to send verification email. Please try again later.'
+        });
+      }
+    } catch (error) {
+      console.error('Resend verification error:', error);
+      res.status(500).json({ message: 'Failed to resend verification email' });
     }
   });
 
