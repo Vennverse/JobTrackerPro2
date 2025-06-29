@@ -40,7 +40,7 @@ export default function PostJob() {
 
   const createJobMutation = useMutation({
     mutationFn: async (jobData: any) => {
-      return await apiRequest("/api/recruiter/jobs", "POST", jobData);
+      return await apiRequest("POST", "/api/recruiter/jobs", jobData);
     },
     onSuccess: () => {
       toast({

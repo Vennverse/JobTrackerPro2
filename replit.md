@@ -83,6 +83,12 @@ Preferred communication style: Simple, everyday language.
 ## Recent Changes
 
 Recent updates to the AutoJobr platform:
+- June 29, 2025: **Complete Recruiter Platform Implementation** - Added full recruiter functionality with user type selection, email verification, job posting management, application tracking, and chat system
+- June 29, 2025: **Recruiter Dashboard & Job Management** - Built comprehensive recruiter dashboard with job posting CRUD, application review, and candidate communication features
+- June 29, 2025: **User Type System** - Implemented dual user types (job_seeker/recruiter) with separate authentication flows and corporate email verification for recruiters
+- June 29, 2025: **Job Posting Platform** - Created job posting form with skills, compensation, requirements, and complete job lifecycle management
+- June 29, 2025: **Chat System Integration** - Added real-time messaging between recruiters and job seekers with application context
+- June 29, 2025: **Updated Job Discovery** - Modified job seeker dashboard to show recruiter-posted jobs instead of external Adzuna API jobs
 - June 27, 2025: **Major Platform Enhancement** - Completely redesigned dashboard with comprehensive resume analysis, AI-powered job recommendations, and advanced analytics
 - June 27, 2025: **Resume Management System** - Implemented 2-resume limit for free users, unlimited for premium, with Groq AI-powered ATS analysis and optimization
 - June 27, 2025: **Enhanced Applications Page** - Added comprehensive analytics, application pipeline tracking, AI insights, and performance metrics
