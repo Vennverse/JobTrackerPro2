@@ -2207,10 +2207,39 @@ Additional Information:
 
   // Job Seeker API Routes for Job Postings
   
-  // Get all active job postings for job seekers
+  // Get all active job postings for job seekers with filtering
   app.get('/api/jobs/postings', isAuthenticated, async (req: any, res) => {
     try {
-      const jobPostings = await storage.getJobPostings(); // No recruiterId = get all active
+      const { search, location, jobType, workMode } = req.query;
+      
+      let jobPostings = await storage.getJobPostings(); // No recruiterId = get all active
+      
+      // Apply filters
+      if (search) {
+        const searchLower = (search as string).toLowerCase();
+        jobPostings = jobPostings.filter(job => 
+          job.title.toLowerCase().includes(searchLower) ||
+          job.companyName.toLowerCase().includes(searchLower) ||
+          job.description.toLowerCase().includes(searchLower) ||
+          (job.skills && job.skills.some(skill => skill.toLowerCase().includes(searchLower)))
+        );
+      }
+      
+      if (location) {
+        const locationLower = (location as string).toLowerCase();
+        jobPostings = jobPostings.filter(job => 
+          job.location && job.location.toLowerCase().includes(locationLower)
+        );
+      }
+      
+      if (jobType && jobType !== 'all') {
+        jobPostings = jobPostings.filter(job => job.jobType === jobType);
+      }
+      
+      if (workMode && workMode !== 'all') {
+        jobPostings = jobPostings.filter(job => job.workMode === workMode);
+      }
+      
       res.json(jobPostings);
     } catch (error) {
       console.error("Error fetching job postings:", error);

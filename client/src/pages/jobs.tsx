@@ -93,15 +93,16 @@ export default function Jobs() {
   // Apply to job mutation
   const applyMutation = useMutation({
     mutationFn: async (jobId: number) => {
-      const response = await fetch("/api/jobs/apply", {
+      const response = await fetch(`/api/jobs/postings/${jobId}/apply`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: 'include',
-        body: JSON.stringify({ jobId })
+        body: JSON.stringify({ resumeId: null, coverLetter: "" })
       });
       
       if (!response.ok) {
-        throw new Error('Failed to apply to job');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Failed to apply to job');
       }
       
       return response.json();
@@ -112,6 +113,7 @@ export default function Jobs() {
         description: "Your application has been sent to the recruiter!"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/postings"] });
     },
     onError: (error) => {
       toast({
@@ -194,7 +196,7 @@ export default function Jobs() {
                       <SelectValue placeholder="Any job type" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any job type</SelectItem>
+                      <SelectItem value="all">Any job type</SelectItem>
                       <SelectItem value="full-time">Full-time</SelectItem>
                       <SelectItem value="part-time">Part-time</SelectItem>
                       <SelectItem value="contract">Contract</SelectItem>
@@ -211,7 +213,7 @@ export default function Jobs() {
                       <SelectValue placeholder="Any work mode" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Any work mode</SelectItem>
+                      <SelectItem value="all">Any work mode</SelectItem>
                       <SelectItem value="remote">Remote</SelectItem>
                       <SelectItem value="on-site">On-site</SelectItem>
                       <SelectItem value="hybrid">Hybrid</SelectItem>
