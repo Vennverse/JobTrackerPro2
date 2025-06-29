@@ -129,39 +129,7 @@ export async function setupAuth(app: Express) {
         console.error("Error fetching profile for onboarding status:", error);
       }
 
-      // For demo user, fetch complete user data from database
-      if (sessionUser.id === 'demo-user-id') {
-        try {
-          const { storage } = await import("./storage");
-          const fullUser = await storage.getUser(sessionUser.id);
-          if (fullUser) {
-            return res.json({
-              id: fullUser.id,
-              email: fullUser.email,
-              name: sessionUser.name,
-              firstName: fullUser.firstName,
-              lastName: fullUser.lastName,
-              userType: fullUser.userType,
-              emailVerified: fullUser.emailVerified,
-              companyName: fullUser.companyName,
-              companyWebsite: fullUser.companyWebsite,
-              onboardingCompleted,
-            });
-          }
-        } catch (error) {
-          console.error("Error fetching full demo user data:", error);
-        }
-        
-        // Fallback to session data if database fetch fails
-        return res.json({
-          id: sessionUser.id,
-          email: sessionUser.email,
-          name: sessionUser.name,
-          firstName: 'Demo',
-          lastName: 'User',
-          onboardingCompleted,
-        });
-      }
+
 
       // For real users, fetch from database
       try {
@@ -460,40 +428,7 @@ export async function setupAuth(app: Express) {
     }
   });
 
-  // Demo login for testing
-  app.post('/api/auth/demo', async (req, res) => {
-    try {
-      const demoUserData = {
-        id: 'demo-user-id',
-        email: 'demo@autojobr.com',
-        firstName: 'Demo',
-        lastName: 'User',
-        profileImageUrl: null
-      };
 
-      // Ensure demo user exists in database
-      const demoUser = await storage.upsertUser(demoUserData);
-
-      // Set session
-      (req as any).session.user = {
-        id: demoUser.id,
-        email: demoUser.email,
-        name: `${demoUser.firstName} ${demoUser.lastName}`,
-      };
-
-      res.json({ 
-        message: "Demo login successful", 
-        user: {
-          id: demoUser.id,
-          email: demoUser.email,
-          name: `${demoUser.firstName} ${demoUser.lastName}`,
-        }
-      });
-    } catch (error) {
-      console.error("Demo login error:", error);
-      res.status(500).json({ message: "Demo login failed" });
-    }
-  });
 }
 
 // Middleware to check authentication
@@ -505,17 +440,7 @@ export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-    // For demo user, use session data directly
-    if (sessionUser.id === 'demo-user-id') {
-      req.user = {
-        id: sessionUser.id,
-        email: sessionUser.email,
-        name: sessionUser.name,
-        firstName: 'Demo',
-        lastName: 'User',
-      };
-      return next();
-    }
+
 
     // For real users, also use session data (avoid database calls for now)
     req.user = {

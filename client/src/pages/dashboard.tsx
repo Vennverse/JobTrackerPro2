@@ -7,6 +7,7 @@ import { apiRequest } from "@/lib/queryClient";
 import { Navbar } from "@/components/navbar";
 import { StatsCards } from "@/components/stats-cards";
 import { ApplicationsTable } from "@/components/applications-table";
+import { UpgradePrompt } from "@/components/upgrade-prompt";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Button } from "@/components/ui/button";
