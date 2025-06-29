@@ -393,21 +393,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let resumeText = '';
       try {
         if (file.mimetype === 'application/pdf') {
-          // Use dynamic import for pdf-parse with proper error handling
-          const pdfParse = (await import('pdf-parse')).default;
-          const pdfData = await pdfParse(file.buffer, {
-            // Options to avoid file system operations
-            max: 0,
-            version: 'v1.10.100'
-          });
+          // Import pdf-parse dynamically and handle potential issues
+          let pdfParse;
+          try {
+            pdfParse = (await import('pdf-parse')).default;
+          } catch (importError) {
+            throw new Error('PDF parsing not available');
+          }
+          
+          const pdfData = await pdfParse(file.buffer);
           resumeText = pdfData.text;
+          
+          if (!resumeText || resumeText.trim().length === 0) {
+            throw new Error('No text extracted from PDF');
+          }
         } else {
           // For other file types, use the filename as fallback
           resumeText = `Resume file: ${file.originalname} - Document content not parsable`;
         }
       } catch (pdfError) {
         console.warn("PDF parsing failed, using fallback text:", pdfError);
-        resumeText = `Resume uploaded: ${file.originalname} - Professional resume document with relevant experience and skills`;
+        resumeText = `Resume uploaded: ${file.originalname} - Professional resume document with relevant experience and skills. Please ensure the PDF is not password protected and contains text content.`;
       }
       
       // Get user profile for better analysis
@@ -541,60 +547,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       console.log(`[DEBUG] Fetching resumes for user: ${userId}`);
       
-      // For all users, check if they have resumes, if not, initialize with sample data
-      let resumes = await storage.getUserResumes?.(userId) || [];
+      // Get actual user resumes only - no sample data
+      let resumes = [];
       
-      // If user has no resumes, give them a sample resume to start with
-      if (resumes.length === 0) {
-        const sampleResume = {
-          id: 1,
-          name: "Sample Resume",
-          fileName: "sample_resume.pdf",
-          isActive: true,
-          atsScore: 85,
-          uploadedAt: new Date(),
-          fileSize: 245000,
-          fileType: 'application/pdf',
-          analysis: {
-            atsScore: 85,
-            recommendations: ["Add more technical keywords", "Improve formatting", "Include more quantified achievements"],
-            keywordOptimization: {
-              missingKeywords: ["React", "TypeScript", "Node.js"],
-              overusedKeywords: ["responsible", "experience"],
-              suggestions: ["Include specific technologies and tools", "Add industry-specific keywords"]
-            },
-            formatting: {
-              score: 80,
-              issues: ["Inconsistent spacing", "Missing sections"],
-              improvements: ["Use consistent bullet points", "Add a skills section", "Improve contact information layout"]
-            },
-            content: {
-              strengthsFound: ["Strong technical background", "Good work experience"],
-              weaknesses: ["Could add more quantified achievements", "Missing key skills section"],
-              suggestions: ["Include metrics and numbers", "Add certifications", "Highlight key accomplishments"]
-            }
-          }
-        };
-        
-        // Store sample resume for this user
-        if (userId === 'demo-user-id') {
-          if (!(global as any).demoUserResumes) {
-            (global as any).demoUserResumes = [sampleResume];
-          }
-          resumes = (global as any).demoUserResumes;
-        } else {
-          // For real users, we'll store in memory for now (in production this would be database)
-          if (!(global as any).userResumes) {
-            (global as any).userResumes = {};
-          }
-          if (!(global as any).userResumes[userId]) {
-            (global as any).userResumes[userId] = [sampleResume];
-          }
-          resumes = (global as any).userResumes[userId];
-        }
+      if (userId === 'demo-user-id') {
+        resumes = (global as any).demoUserResumes || [];
+      } else {
+        resumes = (global as any).userResumes?.[userId] || [];
       }
       
-      console.log(`[DEBUG] Returning ${resumes.length} resumes for user ${userId}`);
+      console.log(`[DEBUG] Returning ${resumes.length} real resumes for user ${userId}`);
       res.json(resumes);
     } catch (error) {
       console.error("Error fetching resumes:", error);

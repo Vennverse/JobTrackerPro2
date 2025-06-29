@@ -580,9 +580,9 @@ export default function Dashboard() {
                       <div className="space-y-2">
                         <div className="flex justify-between items-center">
                           <span className="text-sm font-medium">ATS Compatibility</span>
-                          <span className="text-sm text-muted-foreground">{profile?.atsScore || 0}/100</span>
+                          <span className="text-sm text-muted-foreground">{Array.isArray(resumes) && resumes.length > 0 ? (resumes.find((r: any) => r.isActive)?.atsScore || resumes[0]?.atsScore || 0) : 0}/100</span>
                         </div>
-                        <Progress value={profile?.atsScore || 0} className="h-3" />
+                        <Progress value={Array.isArray(resumes) && resumes.length > 0 ? (resumes.find((r: any) => r.isActive)?.atsScore || resumes[0]?.atsScore || 0) : 0} className="h-3" />
                       </div>
 
                       {/* Resume Stats Grid */}
@@ -651,13 +651,13 @@ export default function Dashboard() {
                   ) : (
                     <div className="text-center py-8">
                       <Upload className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                      <h3 className="font-semibold mb-2">Upload Your Resume</h3>
-                      <p className="text-muted-foreground mb-4">Get instant ATS analysis and optimization tips</p>
+                      <h3 className="font-semibold mb-2">No Resumes Uploaded</h3>
+                      <p className="text-muted-foreground mb-4">Upload your resume to get AI-powered ATS analysis and optimization tips</p>
                       <label htmlFor="resume-upload-empty" className="inline-block">
                         <Button asChild>
                           <div className="cursor-pointer">
                             <Upload className="w-4 h-4 mr-2" />
-                            Upload Resume
+                            Upload Your First Resume
                           </div>
                         </Button>
                         <input
@@ -666,8 +666,15 @@ export default function Dashboard() {
                           accept=".pdf,.doc,.docx"
                           className="hidden"
                           onChange={handleResumeUpload}
+                          disabled={uploadResumeMutation.isPending}
                         />
                       </label>
+                      {uploadResumeMutation.isPending && (
+                        <div className="mt-4">
+                          <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary mx-auto"></div>
+                          <p className="text-sm text-muted-foreground mt-2">Analyzing resume...</p>
+                        </div>
+                      )}
                     </div>
                   )}
                 </CardContent>
