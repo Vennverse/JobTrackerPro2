@@ -935,6 +935,11 @@ Additional Information:
         return res.status(400).json({ message: "No resume file uploaded" });
       }
 
+      console.log(`[DEBUG] Resume upload for user: ${userId}, file: ${req.file.originalname}`);
+
+      // Store the file using our file storage service with compression
+      const storedFile = await fileStorage.storeResume(req.file, userId);
+
       let resumeText = '';
       
       // Extract text from PDF
@@ -1533,21 +1538,35 @@ Additional Information:
   app.post('/api/subscription/upgrade', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { paypalOrderId, paypalSubscriptionId, stripePaymentIntentId } = req.body;
+      const { 
+        paypalOrderId, 
+        paypalSubscriptionId, 
+        stripePaymentIntentId,
+        razorpayPaymentId,
+        razorpayOrderId,
+        razorpaySignature
+      } = req.body;
       
-      // Require either PayPal or Stripe payment verification
-      if (!paypalOrderId && !stripePaymentIntentId) {
+      // Require either PayPal, Stripe, or Razorpay payment verification
+      if (!paypalOrderId && !stripePaymentIntentId && !razorpayPaymentId) {
         return res.status(400).json({ 
-          message: "Payment verification required. Please complete payment through PayPal or Stripe first.",
+          message: "Payment verification required. Please complete payment through PayPal, Stripe, or Razorpay first.",
           requiresPayment: true 
         });
       }
 
-      // TODO: Add actual PayPal/Stripe payment verification here
+      // TODO: Add actual PayPal/Stripe/Razorpay payment verification here
       // For now, we require payment IDs but don't verify them (user should integrate payment processing)
       if (paypalOrderId && !paypalSubscriptionId) {
         return res.status(400).json({ 
           message: "PayPal subscription ID required along with order ID",
+          requiresPayment: true 
+        });
+      }
+
+      if (razorpayPaymentId && (!razorpayOrderId || !razorpaySignature)) {
+        return res.status(400).json({ 
+          message: "Razorpay order ID and signature required along with payment ID",
           requiresPayment: true 
         });
       }

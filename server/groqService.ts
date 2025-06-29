@@ -90,13 +90,28 @@ Please provide a comprehensive analysis in the following JSON format:
   }
 }
 
-Focus on:
-1. ATS compatibility and parsing issues
-2. Keyword optimization for common job applications
-3. Formatting best practices
-4. Content structure and impact
-5. Quantifiable achievements
-6. Industry-specific optimizations
+ADVANCED ATS SCORING CRITERIA:
+1. Content Analysis (40% weight):
+   - Quantifiable achievements with numbers/percentages (15 points)
+   - Industry-relevant keywords and skills (15 points)
+   - Action verbs and accomplishment statements (10 points)
+   
+2. Formatting & Structure (30% weight):
+   - Clear section headers (Experience, Education, Skills, etc.) (15 points)
+   - Consistent date formatting and bullet points (10 points)
+   - Standard font usage and proper spacing (5 points)
+   
+3. Keyword Optimization (20% weight):
+   - Job-relevant skills and technologies (10 points)
+   - Industry-specific terminology (5 points)
+   - Balanced keyword density (not overstuffed) (5 points)
+   
+4. ATS Technical Compatibility (10% weight):
+   - File format compatibility (5 points)
+   - Text parsing friendliness (3 points)
+   - Standard section naming conventions (2 points)
+
+Calculate ATS score based on weighted criteria above. Provide specific, actionable recommendations.
 `;
 
     try {
