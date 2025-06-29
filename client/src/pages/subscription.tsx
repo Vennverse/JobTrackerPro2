@@ -157,15 +157,29 @@ export default function Subscription() {
                     {isPremium && isActive ? "Active" : isPremium ? "Inactive" : "Free"}
                   </Badge>
                 </div>
+
+                <div className="flex items-center justify-between">
+                  <span>Price</span>
+                  <span className="font-semibold">
+                    {isPremium ? "$10/month" : "$0/month"}
+                  </span>
+                </div>
                 
                 {!isPremium && (
-                  <Button 
-                    onClick={handleUpgrade} 
-                    disabled={upgradeMutation.isPending}
-                    className="w-full"
-                  >
-                    {upgradeMutation.isPending ? "Processing..." : "Upgrade to Premium"}
-                  </Button>
+                  <>
+                    <Separator />
+                    <div className="text-center space-y-2">
+                      <div className="text-2xl font-bold">$10<span className="text-sm text-muted-foreground">/month</span></div>
+                      <p className="text-sm text-muted-foreground">Unlock unlimited features & AI-powered tools</p>
+                    </div>
+                    <Button 
+                      onClick={handleUpgrade} 
+                      disabled={upgradeMutation.isPending}
+                      className="w-full"
+                    >
+                      {upgradeMutation.isPending ? "Processing..." : "Upgrade to Premium"}
+                    </Button>
+                  </>
                 )}
 
                 {isPremium && isActive && (

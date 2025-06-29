@@ -10,7 +10,7 @@ export const USAGE_LIMITS = {
     applications: 10,
     autoFills: 15,
   },
-  pro: {
+  premium: {
     jobAnalyses: -1, // unlimited
     resumeAnalyses: -1, // unlimited
     applications: -1, // unlimited
@@ -28,7 +28,7 @@ export class SubscriptionService {
     return {
       planType: user?.planType || 'free',
       subscriptionStatus: user?.subscriptionStatus || 'free',
-      isProUser: user?.planType === 'pro' && user?.subscriptionStatus === 'active',
+      isPremiumUser: user?.planType === 'premium' && user?.subscriptionStatus === 'active',
     };
   }
 
@@ -150,32 +150,25 @@ export class SubscriptionService {
     const subscription = await this.getUserSubscription(userId);
     const usage = await this.getDailyUsage(userId);
     
-    const limits = subscription.isProUser ? USAGE_LIMITS.pro : USAGE_LIMITS.free;
+    const limits = subscription.isPremiumUser ? USAGE_LIMITS.premium : USAGE_LIMITS.free;
     
     return {
-      planType: subscription.planType,
-      isProUser: subscription.isProUser,
+      subscription: {
+        planType: subscription.planType,
+        subscriptionStatus: subscription.subscriptionStatus,
+        subscriptionEndDate: null, // Add if we track end dates
+      },
       usage: {
-        jobAnalyses: {
-          used: usage.jobAnalysesCount || 0,
-          limit: limits.jobAnalyses,
-          remaining: limits.jobAnalyses === -1 ? -1 : Math.max(0, limits.jobAnalyses - (usage.jobAnalysesCount || 0)),
-        },
-        resumeAnalyses: {
-          used: usage.resumeAnalysesCount || 0,
-          limit: limits.resumeAnalyses,
-          remaining: limits.resumeAnalyses === -1 ? -1 : Math.max(0, limits.resumeAnalyses - (usage.resumeAnalysesCount || 0)),
-        },
-        applications: {
-          used: usage.applicationsCount || 0,
-          limit: limits.applications,
-          remaining: limits.applications === -1 ? -1 : Math.max(0, limits.applications - (usage.applicationsCount || 0)),
-        },
-        autoFills: {
-          used: usage.autoFillsCount || 0,
-          limit: limits.autoFills,
-          remaining: limits.autoFills === -1 ? -1 : Math.max(0, limits.autoFills - (usage.autoFillsCount || 0)),
-        },
+        jobAnalyses: usage.jobAnalysesCount || 0,
+        resumeAnalyses: usage.resumeAnalysesCount || 0,
+        applications: usage.applicationsCount || 0,
+        autoFills: usage.autoFillsCount || 0,
+      },
+      limits: subscription.isPremiumUser ? null : {
+        jobAnalyses: limits.jobAnalyses,
+        resumeAnalyses: limits.resumeAnalyses,
+        applications: limits.applications,
+        autoFills: limits.autoFills,
       },
       resetTime: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
     };
