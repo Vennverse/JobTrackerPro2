@@ -16,6 +16,10 @@ import { apiRequest } from "@/lib/queryClient";
 export default function RecruiterDashboard() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
+  const queryClient = useQueryClient();
+  const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [applicationStatus, setApplicationStatus] = useState("");
+  const [recruiterNotes, setRecruiterNotes] = useState("");
 
   // Fetch recruiter's job postings
   const { data: jobPostings = [], isLoading: jobsLoading } = useQuery({
@@ -31,6 +35,48 @@ export default function RecruiterDashboard() {
   const { data: conversations = [], isLoading: conversationsLoading } = useQuery({
     queryKey: ['/api/chat/conversations'],
   });
+
+  // Mutation for updating application status
+  const updateApplicationMutation = useMutation({
+    mutationFn: async ({ applicationId, status, notes }: { applicationId: number; status: string; notes?: string }) => {
+      return await apiRequest("PUT", `/api/recruiter/applications/${applicationId}`, {
+        status,
+        recruiterNotes: notes,
+        reviewedAt: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Application Updated",
+        description: "Application status has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/recruiter/applications'] });
+      setSelectedApplication(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update application status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateApplication = (status: string) => {
+    if (selectedApplication) {
+      updateApplicationMutation.mutate({
+        applicationId: selectedApplication.id,
+        status,
+        notes: recruiterNotes,
+      });
+    }
+  };
+
+  const openApplicationDialog = (application: any) => {
+    setSelectedApplication(application);
+    setApplicationStatus(application.status || "pending");
+    setRecruiterNotes(application.recruiterNotes || "");
+  };
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
@@ -274,43 +320,142 @@ export default function RecruiterDashboard() {
                             )}
                           </div>
                           <div className="flex gap-2">
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button variant="outline" size="sm">
+                                  <FileText className="w-4 h-4 mr-1" />
+                                  View Details
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent className="max-w-2xl">
+                                <DialogHeader>
+                                  <DialogTitle>Application Details</DialogTitle>
+                                  <DialogDescription>
+                                    Review candidate application and update status
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div className="grid grid-cols-2 gap-4">
+                                    <div>
+                                      <Label className="text-sm font-medium">Applied Date</Label>
+                                      <p className="text-sm text-gray-600">{new Date(application.appliedAt).toLocaleDateString()}</p>
+                                    </div>
+                                    <div>
+                                      <Label className="text-sm font-medium">Status</Label>
+                                      <Badge variant="outline" className="ml-2">{application.status}</Badge>
+                                    </div>
+                                  </div>
+                                  
+                                  {application.matchScore && (
+                                    <div>
+                                      <Label className="text-sm font-medium">Match Score</Label>
+                                      <div className="flex items-center gap-2 mt-1">
+                                        <div className="flex-1 bg-gray-200 rounded-full h-2">
+                                          <div 
+                                            className="bg-blue-600 h-2 rounded-full" 
+                                            style={{ width: `${application.matchScore}%` }}
+                                          ></div>
+                                        </div>
+                                        <span className="text-sm font-medium">{application.matchScore}%</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {application.coverLetter && (
+                                    <div>
+                                      <Label className="text-sm font-medium">Cover Letter</Label>
+                                      <div className="mt-1 p-3 bg-gray-50 rounded-md text-sm">
+                                        {application.coverLetter}
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {application.recruiterNotes && (
+                                    <div>
+                                      <Label className="text-sm font-medium">Previous Notes</Label>
+                                      <div className="mt-1 p-3 bg-gray-50 rounded-md text-sm">
+                                        {application.recruiterNotes}
+                                      </div>
+                                    </div>
+                                  )}
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                            
+                            <Dialog>
+                              <DialogTrigger asChild>
+                                <Button 
+                                  variant="outline" 
+                                  size="sm"
+                                  onClick={() => openApplicationDialog(application)}
+                                >
+                                  <CheckCircle className="w-4 h-4 mr-1" />
+                                  Review
+                                </Button>
+                              </DialogTrigger>
+                              <DialogContent>
+                                <DialogHeader>
+                                  <DialogTitle>Update Application Status</DialogTitle>
+                                  <DialogDescription>
+                                    Change the status of this application and add notes
+                                  </DialogDescription>
+                                </DialogHeader>
+                                <div className="space-y-4">
+                                  <div>
+                                    <Label htmlFor="status">Application Status</Label>
+                                    <Select value={applicationStatus} onValueChange={setApplicationStatus}>
+                                      <SelectTrigger>
+                                        <SelectValue />
+                                      </SelectTrigger>
+                                      <SelectContent>
+                                        <SelectItem value="pending">Pending Review</SelectItem>
+                                        <SelectItem value="reviewed">Reviewed</SelectItem>
+                                        <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                                        <SelectItem value="interviewed">Interviewed</SelectItem>
+                                        <SelectItem value="hired">Hired</SelectItem>
+                                        <SelectItem value="rejected">Rejected</SelectItem>
+                                      </SelectContent>
+                                    </Select>
+                                  </div>
+                                  
+                                  <div>
+                                    <Label htmlFor="notes">Recruiter Notes</Label>
+                                    <Textarea
+                                      id="notes"
+                                      placeholder="Add your notes about this candidate..."
+                                      value={recruiterNotes}
+                                      onChange={(e) => setRecruiterNotes(e.target.value)}
+                                      rows={3}
+                                    />
+                                  </div>
+                                  
+                                  <div className="flex justify-end gap-2">
+                                    <Button variant="outline" onClick={() => setSelectedApplication(null)}>
+                                      Cancel
+                                    </Button>
+                                    <Button 
+                                      onClick={() => handleUpdateApplication(applicationStatus)}
+                                      disabled={updateApplicationMutation.isPending}
+                                    >
+                                      {updateApplicationMutation.isPending ? "Updating..." : "Update Status"}
+                                    </Button>
+                                  </div>
+                                </div>
+                              </DialogContent>
+                            </Dialog>
+                            
                             <Button 
                               variant="outline" 
                               size="sm"
                               onClick={() => {
-                                // Show candidate profile dialog
                                 toast({
-                                  title: "Profile View",
-                                  description: "Candidate profile functionality coming soon",
+                                  title: "Message Feature",
+                                  description: "Direct messaging will be available in the next update.",
                                 });
                               }}
                             >
-                              View Profile
-                            </Button>
-                            <Button 
-                              variant="outline" 
-                              size="sm"
-                              onClick={() => {
-                                // Start chat with candidate
-                                toast({
-                                  title: "Chat Started",
-                                  description: "Chat functionality coming soon",
-                                });
-                              }}
-                            >
+                              <Mail className="w-4 h-4 mr-1" />
                               Message
-                            </Button>
-                            <Button 
-                              size="sm"
-                              onClick={() => {
-                                // Update application status
-                                toast({
-                                  title: "Application Updated",
-                                  description: "Review functionality coming soon",
-                                });
-                              }}
-                            >
-                              Review
                             </Button>
                           </div>
                         </div>
