@@ -937,12 +937,16 @@ Additional Information:
         };
       }
       
-      // Save resume data to profile
+      // Save resume data to profile with file buffer for persistence
       const resumeFileName = `resume_${userId}_${Date.now()}.pdf`;
+      const resumeDataBase64 = req.file.buffer.toString('base64');
+      
       await storage.upsertUserProfile({
         userId,
         resumeText,
         resumeFileName,
+        resumeData: resumeDataBase64, // Store base64 encoded file data
+        resumeMimeType: req.file.mimetype,
         atsScore,
         atsAnalysis: analysis,
         atsRecommendations: recommendations,

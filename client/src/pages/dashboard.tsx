@@ -831,56 +831,7 @@ export default function Dashboard() {
             </div>
           </div>
 
-          {/* Job Recommendations */}
-          <Card>
-            <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="text-xl flex items-center gap-2">
-                  <Target className="w-5 h-5 text-primary" />
-                  Recommended Jobs
-                </CardTitle>
-                <Button variant="outline" size="sm">View All</Button>
-              </div>
-            </CardHeader>
-            <CardContent>
-              {recommendationsLoading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {[...Array(4)].map((_, i) => (
-                    <div key={i} className="p-4 border rounded-lg">
-                      <Skeleton className="h-4 w-3/4 mb-2" />
-                      <Skeleton className="h-3 w-1/2 mb-3" />
-                      <Skeleton className="h-20 w-full" />
-                    </div>
-                  ))}
-                </div>
-              ) : jobRecommendations?.length > 0 ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                  {jobRecommendations.slice(0, 4).map((job: any, idx: number) => (
-                    <div key={idx} className="p-4 border rounded-lg hover:shadow-md transition-shadow">
-                      <div className="flex items-start justify-between mb-2">
-                        <h4 className="font-semibold text-sm">{job.title}</h4>
-                        <Badge variant="secondary" className="text-xs">
-                          {job.matchScore}% Match
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground mb-2">{job.company}</p>
-                      <p className="text-xs text-muted-foreground mb-3 line-clamp-2">{job.description}</p>
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-muted-foreground">{job.location}</span>
-                        <Button size="sm" variant="outline">Apply</Button>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-6">
-                  <Briefcase className="w-12 h-12 text-muted-foreground mx-auto mb-3" />
-                  <h3 className="font-semibold mb-2">No Recommendations Yet</h3>
-                  <p className="text-muted-foreground text-sm">Complete your profile to get personalized job recommendations</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+
 
           {/* Job Postings from Recruiters */}
           <Card>
