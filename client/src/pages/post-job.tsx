@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,16 +7,25 @@ import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { ArrowLeft, Building, MapPin, DollarSign, Users, Clock, Briefcase } from "lucide-react";
+import { ArrowLeft, Building, MapPin, DollarSign, Users, Clock, Briefcase, Mail, CheckCircle } from "lucide-react";
 import { useLocation } from "wouter";
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 
 export default function PostJob() {
   const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const { user, isAuthenticated } = useAuth();
+  
+  const [currentStep, setCurrentStep] = useState<'auth' | 'verify' | 'post'>('auth');
+  const [verificationData, setVerificationData] = useState({
+    email: "",
+    companyName: "",
+    companyWebsite: "",
+  });
   
   const [formData, setFormData] = useState({
     title: "",
@@ -37,6 +46,41 @@ export default function PostJob() {
   });
 
   const [skillInput, setSkillInput] = useState("");
+
+  useEffect(() => {
+    // Determine which step to show based on authentication and verification status
+    if (!isAuthenticated) {
+      setCurrentStep('auth');
+    } else if (user?.userType === 'recruiter' && user?.emailVerified) {
+      // User is already a verified recruiter, go directly to recruiter dashboard
+      setLocation('/');
+    } else if (user?.userType === 'recruiter') {
+      setCurrentStep('verify');
+    } else {
+      // User needs to verify company email to become recruiter
+      setCurrentStep('verify');
+    }
+  }, [isAuthenticated, user, setLocation]);
+
+  const verificationMutation = useMutation({
+    mutationFn: async (data: typeof verificationData) => {
+      return await apiRequest("POST", "/api/auth/send-verification", data);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Verification Email Sent",
+        description: "Check your email and click the verification link to complete setup.",
+      });
+      setLocation("/verify-email");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Verification Failed",
+        description: error.message || "Failed to send verification email. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
 
   const createJobMutation = useMutation({
     mutationFn: async (jobData: any) => {
@@ -101,6 +145,114 @@ export default function PostJob() {
     createJobMutation.mutate(jobData);
   };
 
+  // Authentication step
+  if (currentStep === 'auth') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <Briefcase className="w-8 h-8 text-blue-600" />
+              Post a Job
+            </CardTitle>
+            <CardDescription>
+              Sign in to start posting jobs and find the perfect candidates
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Button 
+              className="w-full" 
+              onClick={() => setLocation('/auth')}
+            >
+              Sign in to Continue
+            </Button>
+            <div className="text-center">
+              <Button 
+                variant="link" 
+                onClick={() => setLocation('/')}
+                className="text-sm"
+              >
+                Back to Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  // Email verification step
+  if (currentStep === 'verify') {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4">
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="flex items-center justify-center gap-2">
+              <Mail className="w-8 h-8 text-blue-600" />
+              Verify Company Email
+            </CardTitle>
+            <CardDescription>
+              To post jobs, verify your company email address
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <form onSubmit={(e) => {
+              e.preventDefault();
+              verificationMutation.mutate(verificationData);
+            }} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Company Email *</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  placeholder="you@company.com"
+                  value={verificationData.email}
+                  onChange={(e) => setVerificationData(prev => ({...prev, email: e.target.value}))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="companyName">Company Name *</Label>
+                <Input
+                  id="companyName"
+                  placeholder="Your Company"
+                  value={verificationData.companyName}
+                  onChange={(e) => setVerificationData(prev => ({...prev, companyName: e.target.value}))}
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="companyWebsite">Company Website</Label>
+                <Input
+                  id="companyWebsite"
+                  placeholder="company.com"
+                  value={verificationData.companyWebsite}
+                  onChange={(e) => setVerificationData(prev => ({...prev, companyWebsite: e.target.value}))}
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full"
+                disabled={verificationMutation.isPending}
+              >
+                {verificationMutation.isPending ? "Sending..." : "Send Verification Email"}
+              </Button>
+            </form>
+            <div className="text-center">
+              <Button 
+                variant="link" 
+                onClick={() => setLocation('/')}
+                className="text-sm"
+              >
+                Back to Home
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
       {/* Header */}
@@ -110,7 +262,7 @@ export default function PostJob() {
             <Button
               variant="ghost"
               size="sm"
-              onClick={() => setLocation('/recruiter/dashboard')}
+              onClick={() => setLocation('/')}
             >
               <ArrowLeft className="w-4 h-4 mr-2" />
               Back to Dashboard

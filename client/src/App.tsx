@@ -33,8 +33,11 @@ function Router() {
   return (
     <Switch>
       <Route path="/auth" component={AuthPage} />
-      <Route path="/user-type" component={UserTypeSelection} />
       <Route path="/verify-email" component={VerifyEmail} />
+      
+      {/* Post Job route - accessible to everyone, handles verification internally */}
+      <Route path="/post-job" component={PostJob} />
+      
       {isAuthenticated ? (
         <>
           {/* Handle different user types */}
@@ -42,7 +45,6 @@ function Router() {
             <>
               <Route path="/" component={RecruiterDashboard} />
               <Route path="/recruiter/dashboard" component={RecruiterDashboard} />
-              <Route path="/recruiter/post-job" component={PostJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={Subscription} />
             </>
