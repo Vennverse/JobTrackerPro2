@@ -15,7 +15,7 @@ interface EmailParams {
 export async function sendEmail(params: EmailParams): Promise<boolean> {
   try {
     const { data, error } = await resend.emails.send({
-      from: 'AutoJobr <noreply@autojobr.com>',
+      from: 'AutoJobr <onboarding@resend.dev>',
       to: params.to,
       subject: params.subject,
       html: params.html,
@@ -35,7 +35,10 @@ export async function sendEmail(params: EmailParams): Promise<boolean> {
 }
 
 export function generateVerificationEmail(token: string, companyName: string): string {
-  const verificationUrl = `${process.env.NODE_ENV === 'production' ? 'https://' : 'http://'}${process.env.REPLIT_DOMAINS?.split(',')[0] || 'localhost:5000'}/verify-email?token=${token}`;
+  const baseUrl = process.env.NODE_ENV === 'production' 
+    ? `https://${process.env.REPLIT_DOMAINS?.split(',')[0]}` 
+    : 'http://localhost:5000';
+  const verificationUrl = `${baseUrl}/verify-email?token=${token}`;
   
   return `
     <!DOCTYPE html>
