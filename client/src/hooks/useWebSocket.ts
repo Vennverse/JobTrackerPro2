@@ -23,10 +23,25 @@ export const useWebSocket = ({
   const ws = useRef<WebSocket | null>(null);
   const [isConnected, setIsConnected] = useState(false);
   const [connectionState, setConnectionState] = useState<'connecting' | 'connected' | 'disconnected'>('disconnected');
+  const mountedRef = useRef(true);
+
+  const disconnect = useCallback(() => {
+    if (ws.current) {
+      ws.current.close();
+      ws.current = null;
+    }
+    setIsConnected(false);
+    setConnectionState('disconnected');
+  }, []);
 
   const connect = useCallback(() => {
-    if (ws.current?.readyState === WebSocket.OPEN) {
+    if (!mountedRef.current || !userId || ws.current?.readyState === WebSocket.OPEN) {
       return;
+    }
+
+    // Clean up any existing connection
+    if (ws.current) {
+      ws.current.close();
     }
 
     try {
@@ -37,12 +52,14 @@ export const useWebSocket = ({
       setConnectionState('connecting');
 
       ws.current.onopen = () => {
+        if (!mountedRef.current) return;
+        
         console.log('WebSocket connected');
         setIsConnected(true);
         setConnectionState('connected');
         
         // Authenticate with user ID
-        if (userId && ws.current) {
+        if (userId && ws.current?.readyState === WebSocket.OPEN) {
           ws.current.send(JSON.stringify({
             type: 'authenticate',
             userId: userId
@@ -53,6 +70,8 @@ export const useWebSocket = ({
       };
 
       ws.current.onmessage = (event) => {
+        if (!mountedRef.current) return;
+        
         try {
           const message = JSON.parse(event.data);
           onMessage?.(message);
@@ -62,37 +81,29 @@ export const useWebSocket = ({
       };
 
       ws.current.onclose = () => {
+        if (!mountedRef.current) return;
+        
         console.log('WebSocket disconnected');
         setIsConnected(false);
         setConnectionState('disconnected');
         onDisconnect?.();
-        
-        // Attempt to reconnect after 3 seconds
-        setTimeout(() => {
-          if (userId) {
-            connect();
-          }
-        }, 3000);
       };
 
       ws.current.onerror = (error) => {
+        if (!mountedRef.current) return;
+        
         console.error('WebSocket error:', error);
         setIsConnected(false);
         setConnectionState('disconnected');
       };
 
     } catch (error) {
+      if (!mountedRef.current) return;
+      
       console.error('Failed to create WebSocket connection:', error);
       setConnectionState('disconnected');
     }
-  }, [url, userId, onMessage, onConnect, onDisconnect]);
-
-  const disconnect = useCallback(() => {
-    if (ws.current) {
-      ws.current.close();
-      ws.current = null;
-    }
-  }, []);
+  }, [userId, onMessage, onConnect, onDisconnect]);
 
   const sendMessage = useCallback((message: WebSocketMessage) => {
     if (ws.current?.readyState === WebSocket.OPEN) {
@@ -103,16 +114,20 @@ export const useWebSocket = ({
     return false;
   }, []);
 
-  // Connect when userId is available
+  // Only connect once when userId is available
   useEffect(() => {
-    if (userId) {
+    if (userId && connectionState === 'disconnected') {
       connect();
     }
+  }, [userId, connect, connectionState]);
 
+  // Cleanup on unmount
+  useEffect(() => {
     return () => {
+      mountedRef.current = false;
       disconnect();
     };
-  }, [userId, connect, disconnect]);
+  }, [disconnect]);
 
   return {
     isConnected,

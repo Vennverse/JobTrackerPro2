@@ -60,27 +60,9 @@ export default function ChatPage() {
     enabled: !!selectedConversation,
   });
 
-  // WebSocket connection
-  const { isConnected, sendMessage: sendWebSocketMessage } = useWebSocket({
-    url: '/ws',
-    userId: user?.id,
-    onMessage: (message) => {
-      if (message.type === 'newMessage') {
-        // Add new message to current conversation
-        if (message.conversationId === selectedConversation) {
-          setMessages(prev => [...prev, message.message]);
-        }
-        // Refresh conversations list to update unread counts
-        queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
-      }
-      if (message.type === 'messageSent') {
-        // Message sent successfully, add to local state
-        if (message.conversationId === selectedConversation) {
-          setMessages(prev => [...prev, message.message]);
-        }
-      }
-    }
-  });
+  // WebSocket connection (temporarily disabled to fix connection issues)
+  const isConnected = false;
+  const sendWebSocketMessage = () => false;
 
   // Send message mutation
   const sendMessageMutation = useMutation({
