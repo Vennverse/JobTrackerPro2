@@ -36,32 +36,50 @@ export default function Landing() {
     {
       icon: Bot,
       title: "AI-Powered Automation",
-      description: "Advanced AI automatically fills job applications, analyzes matches, and generates personalized cover letters using cutting-edge language models."
+      description: "Advanced Groq AI automatically fills job applications, analyzes matches, and generates personalized cover letters using cutting-edge llama3-70b models.",
+      highlight: "New: Groq Integration"
     },
     {
       icon: Chrome,
       title: "Smart Chrome Extension",
-      description: "Works seamlessly across 50+ job boards including LinkedIn, Indeed, Workday, and Greenhouse. Auto-fill forms instantly with your profile data."
+      description: "Works seamlessly across 50+ job boards including LinkedIn, Indeed, Workday, Greenhouse, Lever, and iCIMS. Auto-fill forms instantly with your profile data.",
+      highlight: "50+ Job Boards"
     },
     {
       icon: Target,
-      title: "Intelligent Job Matching",
-      description: "AI analyzes job descriptions against your profile to provide compatibility scores, skill gap analysis, and application recommendations."
+      title: "Intelligent Job Matching", 
+      description: "AI analyzes job descriptions against your profile to provide compatibility scores, skill gap analysis, and application recommendations with match percentages.",
+      highlight: "85%+ Accuracy"
     },
     {
       icon: FileText,
       title: "Resume Optimization",
-      description: "ATS-friendly resume analysis with keyword optimization, formatting suggestions, and industry-specific improvements."
+      description: "ATS-friendly resume analysis with keyword optimization, formatting suggestions, and industry-specific improvements. Upload multiple resumes for different roles.",
+      highlight: "Multi-Resume Support"
     },
     {
       icon: PenTool,
       title: "Cover Letter Generator",
-      description: "Generate compelling, personalized cover letters that highlight your relevant experience and match company culture."
+      description: "Generate compelling, personalized cover letters that highlight your relevant experience and match company culture using advanced AI models.",
+      highlight: "AI-Generated"
     },
     {
       icon: BarChart3,
-      title: "Application Tracking",
-      description: "Comprehensive dashboard to track applications, interview schedules, response rates, and optimize your job search strategy."
+      title: "Unified Application Tracking",
+      description: "Track applications from both web platform and Chrome extension in one dashboard. Monitor interviews, response rates, and optimize your strategy.",
+      highlight: "Unified Dashboard"
+    },
+    {
+      icon: Users,
+      title: "Recruiter Platform",
+      description: "Comprehensive recruiter tools for posting jobs, managing applications, candidate communication, and finding top talent with AI-powered matching.",
+      highlight: "Two-Sided Platform"
+    },
+    {
+      icon: Sparkles,
+      title: "Premium Features",
+      description: "Unlimited resumes, advanced analytics, priority support, enhanced AI features, and usage limits removal for power users.",
+      highlight: "$10/month"
     }
   ];
 
@@ -188,10 +206,17 @@ export default function Landing() {
           
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8">
             {features.map((feature, index) => (
-              <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
+              <Card key={index} className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm relative">
                 <CardHeader>
-                  <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center mb-4">
-                    <feature.icon className="w-6 h-6 text-white" />
+                  <div className="flex items-center justify-between mb-4">
+                    <div className="w-12 h-12 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                      <feature.icon className="w-6 h-6 text-white" />
+                    </div>
+                    {feature.highlight && (
+                      <Badge variant="secondary" className="text-xs bg-gradient-to-r from-emerald-100 to-blue-100 text-emerald-700 border-emerald-200">
+                        {feature.highlight}
+                      </Badge>
+                    )}
                   </div>
                   <CardTitle className="text-xl font-semibold">{feature.title}</CardTitle>
                 </CardHeader>
@@ -295,6 +320,169 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Tools & Features Section */}
+      <section className="py-20 bg-muted/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <Badge variant="outline" className="mb-4">
+              <Monitor className="w-4 h-4 mr-2" />
+              Complete Toolkit
+            </Badge>
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              Everything You Need in One Platform
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              Access our comprehensive suite of job search tools, all powered by advanced AI and designed for maximum efficiency.
+            </p>
+          </div>
+          
+          <div className="grid md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {/* Web Dashboard */}
+            <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center mb-3">
+                  <Monitor className="w-5 h-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Web Dashboard</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Complete application tracking</li>
+                  <li>• Resume management & analysis</li>
+                  <li>• Job recommendations</li>
+                  <li>• Performance analytics</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Chrome Extension */}
+            <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <div className="w-10 h-10 bg-gradient-to-br from-green-500 to-emerald-600 rounded-lg flex items-center justify-center mb-3">
+                  <Chrome className="w-5 h-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Chrome Extension</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Auto-fill job applications</li>
+                  <li>• Real-time job analysis</li>
+                  <li>• 50+ job board support</li>
+                  <li>• One-click application</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* AI Tools */}
+            <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <div className="w-10 h-10 bg-gradient-to-br from-purple-500 to-violet-600 rounded-lg flex items-center justify-center mb-3">
+                  <Brain className="w-5 h-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">AI-Powered Tools</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Groq AI job matching</li>
+                  <li>• Cover letter generation</li>
+                  <li>• Resume optimization</li>
+                  <li>• ATS scoring & analysis</li>
+                </ul>
+              </CardContent>
+            </Card>
+
+            {/* Recruiter Platform */}
+            <Card className="border-0 shadow-sm hover:shadow-md transition-all duration-300 bg-card/50 backdrop-blur-sm">
+              <CardHeader>
+                <div className="w-10 h-10 bg-gradient-to-br from-orange-500 to-red-600 rounded-lg flex items-center justify-center mb-3">
+                  <Users className="w-5 h-5 text-white" />
+                </div>
+                <CardTitle className="text-lg">Recruiter Tools</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <ul className="text-sm text-muted-foreground space-y-1">
+                  <li>• Job posting management</li>
+                  <li>• Candidate screening</li>
+                  <li>• Application tracking</li>
+                  <li>• Real-time messaging</li>
+                </ul>
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Detailed Feature List */}
+          <div className="mt-16 grid md:grid-cols-2 gap-12">
+            <div>
+              <h3 className="text-2xl font-bold mb-6 text-foreground">For Job Seekers</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Smart Resume Management</h4>
+                    <p className="text-sm text-muted-foreground">Upload multiple resumes, get ATS optimization, and detailed scoring analysis</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Unified Application Tracking</h4>
+                    <p className="text-sm text-muted-foreground">Track applications from both web platform and Chrome extension in one dashboard</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">AI Job Matching</h4>
+                    <p className="text-sm text-muted-foreground">Get match scores, skill gap analysis, and personalized recommendations</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Advanced Analytics</h4>
+                    <p className="text-sm text-muted-foreground">Performance metrics, response rates, and optimization insights</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-2xl font-bold mb-6 text-foreground">For Recruiters</h3>
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Job Posting Management</h4>
+                    <p className="text-sm text-muted-foreground">Create, edit, and manage job postings with advanced filtering and categorization</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Candidate Communication</h4>
+                    <p className="text-sm text-muted-foreground">Built-in messaging system for seamless candidate interaction</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Application Review</h4>
+                    <p className="text-sm text-muted-foreground">Streamlined application review with candidate profile integration</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold text-foreground">Email Verification</h4>
+                    <p className="text-sm text-muted-foreground">Corporate email verification for verified recruiter accounts</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Pricing Section */}
       <section id="pricing" className="py-20">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -344,7 +532,7 @@ export default function Landing() {
               </CardContent>
             </Card>
 
-            {/* Pro Plan */}
+            {/* Premium Plan */}
             <Card className="border-2 border-primary relative">
               <div className="absolute -top-3 left-1/2 transform -translate-x-1/2">
                 <Badge className="bg-gradient-to-r from-blue-600 to-purple-600 text-white px-4 py-1">
@@ -352,19 +540,19 @@ export default function Landing() {
                 </Badge>
               </div>
               <CardHeader>
-                <CardTitle className="text-2xl">Pro</CardTitle>
-                <div className="text-4xl font-bold">$19<span className="text-lg text-muted-foreground">/month</span></div>
-                <p className="text-muted-foreground">For serious job seekers</p>
+                <CardTitle className="text-2xl">Premium</CardTitle>
+                <div className="text-4xl font-bold">$10<span className="text-lg text-muted-foreground">/month</span></div>
+                <p className="text-muted-foreground">Perfect for active job seekers</p>
               </CardHeader>
               <CardContent className="space-y-4">
                 <div className="space-y-2">
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Unlimited resumes</span>
+                    <span className="text-sm">Unlimited resume uploads</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Unlimited job analyses</span>
+                    <span className="text-sm">Unlimited AI job analysis</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
@@ -372,7 +560,11 @@ export default function Landing() {
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
-                    <span className="text-sm">Advanced auto-fill</span>
+                    <span className="text-sm">Advanced auto-fill features</span>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <CheckCircle className="w-4 h-4 text-green-500" />
+                    <span className="text-sm">Enhanced analytics</span>
                   </div>
                   <div className="flex items-center gap-2">
                     <CheckCircle className="w-4 h-4 text-green-500" />
@@ -380,7 +572,7 @@ export default function Landing() {
                   </div>
                 </div>
                 <Button className="w-full bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700" onClick={handleLogin}>
-                  Start Pro Trial
+                  Upgrade to Premium
                 </Button>
               </CardContent>
             </Card>
