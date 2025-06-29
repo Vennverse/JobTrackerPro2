@@ -4,7 +4,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { Github, Mail, Linkedin } from "lucide-react";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useToast } from "@/hooks/use-toast";
+import { Github, Mail, Linkedin, Eye, EyeOff } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 
 export default function AuthPage() {
@@ -14,6 +16,16 @@ export default function AuthPage() {
     github: false,
     linkedin: false
   });
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [formData, setFormData] = useState({
+    email: '',
+    password: '',
+    confirmPassword: '',
+    firstName: '',
+    lastName: ''
+  });
+  const { toast } = useToast();
 
   useEffect(() => {
     // Check which OAuth providers are configured

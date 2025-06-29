@@ -32,7 +32,8 @@ import {
   Lightbulb,
   Zap,
   Crown,
-  Plus
+  Plus,
+  Download
 } from "lucide-react";
 
 export default function Dashboard() {
@@ -185,6 +186,67 @@ export default function Dashboard() {
     
     // Reset the input
     event.target.value = '';
+  };
+
+  // Set active resume mutation
+  const setActiveResumeMutation = useMutation({
+    mutationFn: async (resumeId: number) => {
+      const response = await apiRequest("POST", `/api/resumes/${resumeId}/set-active`);
+      return response.json();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
+      toast({
+        title: "Resume activated",
+        description: "This resume is now your active resume.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Failed to activate resume",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const setActiveResume = (resumeId: number) => {
+    setActiveResumeMutation.mutate(resumeId);
+  };
+
+  const downloadResume = async (resumeId: number, filename: string) => {
+    try {
+      const response = await fetch(`/api/resumes/${resumeId}/download`, {
+        method: 'GET',
+        credentials: 'include',
+      });
+      
+      if (!response.ok) {
+        throw new Error('Failed to download resume');
+      }
+      
+      const blob = await response.blob();
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.style.display = 'none';
+      a.href = url;
+      a.download = filename;
+      document.body.appendChild(a);
+      a.click();
+      window.URL.revokeObjectURL(url);
+      document.body.removeChild(a);
+      
+      toast({
+        title: "Resume downloaded",
+        description: "Your resume has been downloaded successfully.",
+      });
+    } catch (error) {
+      toast({
+        title: "Download failed",
+        description: "Failed to download resume. Please try again.",
+        variant: "destructive",
+      });
+    }
   };
 
   const handleJobAnalysis = async () => {
@@ -640,9 +702,29 @@ export default function Dashboard() {
                               ATS: {resume.atsScore || 0}% • {resume.isActive ? 'Active' : 'Inactive'}
                             </div>
                           </div>
-                          {resume.isActive && (
-                            <Badge variant="default" className="text-xs">Active</Badge>
-                          )}
+                          <div className="flex items-center gap-1">
+                            {!resume.isActive && (
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => setActiveResume(resume.id)}
+                                className="text-xs px-2 py-1"
+                              >
+                                Set Active
+                              </Button>
+                            )}
+                            {resume.isActive && (
+                              <Badge variant="default" className="text-xs">Active</Badge>
+                            )}
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => downloadResume(resume.id, resume.fileName || resume.name)}
+                              className="text-xs px-2 py-1"
+                            >
+                              <Download className="w-3 h-3" />
+                            </Button>
+                          </div>
                         </div>
                       ))}
                       

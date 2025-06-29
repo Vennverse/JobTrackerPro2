@@ -536,16 +536,70 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post('/api/resumes/:id/set-active', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const resumeId = req.params.id;
+      const resumeId = parseInt(req.params.id);
       
       if (userId === 'demo-user-id') {
-        return res.json({ message: "Resume set as active" });
+        // Handle setting active resume for demo user
+        if ((global as any).demoUserResumes) {
+          // Set all resumes to inactive
+          (global as any).demoUserResumes.forEach((resume: any) => {
+            resume.isActive = false;
+          });
+          
+          // Set the selected resume as active
+          const targetResume = (global as any).demoUserResumes.find((resume: any) => resume.id === resumeId);
+          if (targetResume) {
+            targetResume.isActive = true;
+            return res.json({ message: "Resume set as active", resume: targetResume });
+          }
+        }
+        return res.status(404).json({ message: "Resume not found" });
       }
       
+      // For non-demo users, implement real database update
+      await storage.setActiveResume?.(userId, resumeId);
       res.json({ message: "Resume set as active" });
     } catch (error) {
       console.error("Error setting active resume:", error);
       res.status(500).json({ message: "Failed to set active resume" });
+    }
+  });
+
+  // Resume download route
+  app.get('/api/resumes/:id/download', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const resumeId = parseInt(req.params.id);
+      
+      if (userId === 'demo-user-id') {
+        // For demo user, return demo file
+        const resume = (global as any).demoUserResumes?.find((r: any) => r.id === resumeId);
+        if (!resume) {
+          return res.status(404).json({ message: "Resume not found" });
+        }
+        
+        // Create a sample PDF buffer for demo purposes
+        const samplePdfContent = Buffer.from(
+          '%PDF-1.4\n1 0 obj\n<<\n/Type /Catalog\n/Pages 2 0 R\n>>\nendobj\n2 0 obj\n<<\n/Type /Pages\n/Kids [3 0 R]\n/Count 1\n>>\nendobj\n3 0 obj\n<<\n/Type /Page\n/Parent 2 0 R\n/MediaBox [0 0 612 792]\n/Contents 4 0 R\n>>\nendobj\n4 0 obj\n<<\n/Length 44\n>>\nstream\nBT\n/F1 12 Tf\n100 700 Td\n(Demo Resume Content) Tj\nET\nendstream\nendobj\nxref\n0 5\n0000000000 65535 f \n0000000009 00000 n \n0000000058 00000 n \n0000000115 00000 n \n0000000206 00000 n \ntrailer\n<<\n/Size 5\n/Root 1 0 R\n>>\nstartxref\n299\n%%EOF'
+        );
+        
+        res.setHeader('Content-Type', 'application/pdf');
+        res.setHeader('Content-Disposition', `attachment; filename="${resume.fileName}"`);
+        return res.send(samplePdfContent);
+      }
+      
+      // For non-demo users, implement real file retrieval
+      const resumeFile = await storage.getResumeFile?.(userId, resumeId);
+      if (!resumeFile) {
+        return res.status(404).json({ message: "Resume file not found" });
+      }
+      
+      res.setHeader('Content-Type', resumeFile.contentType);
+      res.setHeader('Content-Disposition', `attachment; filename="${resumeFile.filename}"`);
+      res.send(resumeFile.data);
+    } catch (error) {
+      console.error("Error downloading resume:", error);
+      res.status(500).json({ message: "Failed to download resume" });
     }
   });
 
