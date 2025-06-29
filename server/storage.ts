@@ -13,6 +13,7 @@ import {
   chatConversations,
   chatMessages,
   emailVerificationTokens,
+  passwordResetTokens,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -41,6 +42,8 @@ import {
   type InsertChatMessage,
   type EmailVerificationToken,
   type InsertEmailVerificationToken,
+  type PasswordResetToken,
+  type InsertPasswordResetToken,
 } from "@shared/schema";
 import { db } from "./db";
 
