@@ -105,7 +105,7 @@ export async function setupAuth(app: Express) {
       clientID: authConfig.providers.github.clientId!,
       clientSecret: authConfig.providers.github.clientSecret!,
       callbackURL: "/api/auth/github/callback"
-    }, async (accessToken, refreshToken, profile, done) => {
+    }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
       try {
         let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
         
@@ -116,14 +116,14 @@ export async function setupAuth(app: Express) {
             firstName: profile.displayName?.split(' ')[0] || '',
             lastName: profile.displayName?.split(' ').slice(1).join(' ') || '',
             profileImageUrl: profile.photos?.[0]?.value || '',
-            userType: 'job_seeker',
+            userType: null, // Let users choose their type
             emailVerified: true
           });
         }
         
         return done(null, user);
       } catch (error) {
-        return done(error, null);
+        return done(error, false);
       }
     }));
   }
@@ -135,7 +135,7 @@ export async function setupAuth(app: Express) {
       clientSecret: authConfig.providers.linkedin.clientSecret!,
       callbackURL: "/api/auth/linkedin/callback",
       scope: ['r_emailaddress', 'r_liteprofile']
-    }, async (accessToken, refreshToken, profile, done) => {
+    }, async (accessToken: any, refreshToken: any, profile: any, done: any) => {
       try {
         let user = await storage.getUserByEmail(profile.emails?.[0]?.value || '');
         
@@ -146,7 +146,7 @@ export async function setupAuth(app: Express) {
             firstName: profile.name?.givenName || '',
             lastName: profile.name?.familyName || '',
             profileImageUrl: profile.photos?.[0]?.value || '',
-            userType: 'job_seeker',
+            userType: null, // Let users choose their type
             emailVerified: true
           });
         }
@@ -212,6 +212,21 @@ export async function setupAuth(app: Express) {
     } else {
       res.status(400).json({ message: "Provider not supported or not configured" });
     }
+  });
+
+  // Logout route
+  app.post('/api/auth/logout', (req, res) => {
+    req.logout((err) => {
+      if (err) {
+        return res.status(500).json({ message: "Logout failed" });
+      }
+      req.session.destroy((err) => {
+        if (err) {
+          return res.status(500).json({ message: "Session cleanup failed" });
+        }
+        res.json({ message: "Logged out successfully" });
+      });
+    });
   });
 
   // User info endpoint
@@ -312,20 +327,22 @@ export async function setupAuth(app: Express) {
 // Middleware to check authentication
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   try {
-    const sessionUser = req.session?.user;
-    
-    if (!sessionUser) {
-      return res.status(401).json({ message: "Not authenticated" });
+    // Check if user is authenticated via Passport.js
+    if (req.isAuthenticated && req.isAuthenticated()) {
+      return next();
     }
 
-    // For demo user, use session data directly
-    if (sessionUser.id === 'demo-user-id') {
+    // Check for demo user session (backwards compatibility)
+    const sessionUser = req.session?.user;
+    if (sessionUser && sessionUser.id === 'demo-user-id') {
       req.user = {
         id: sessionUser.id,
         email: sessionUser.email,
         name: sessionUser.name,
         firstName: 'Demo',
         lastName: 'User',
+        userType: 'job_seeker',
+        onboardingCompleted: true
       };
       return next();
     }
