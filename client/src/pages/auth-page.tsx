@@ -21,7 +21,8 @@ export default function AuthPage() {
       try {
         const response = await fetch('/api/auth/providers');
         const data = await response.json();
-        setAvailableProviders(data);
+        // Handle the nested response format from the backend
+        setAvailableProviders(data.providers || data);
       } catch (error) {
         console.error('Failed to check provider availability:', error);
       }
