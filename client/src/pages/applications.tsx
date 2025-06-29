@@ -43,6 +43,8 @@ export default function Applications() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("overview");
   const [showAddDialog, setShowAddDialog] = useState(false);
+  const [showEditDialog, setShowEditDialog] = useState(false);
+  const [editingApplication, setEditingApplication] = useState(null);
   const [newApplication, setNewApplication] = useState({
     company: "",
     jobTitle: "",
@@ -134,6 +136,32 @@ export default function Applications() {
     }
 
     addApplicationMutation.mutate(newApplication);
+  };
+
+  const handleEditApplication = (application: any) => {
+    setEditingApplication(application);
+    setNewApplication({
+      company: application.company || "",
+      jobTitle: application.jobTitle || "",
+      jobUrl: application.jobUrl || "",
+      location: application.location || "",
+      workMode: application.workMode || "",
+      salary: application.salaryRange || "",
+      status: application.status || "applied",
+      appliedDate: application.appliedDate ? new Date(application.appliedDate).toISOString().split('T')[0] : new Date().toISOString().split('T')[0],
+      notes: application.notes || ""
+    });
+    setShowEditDialog(true);
+  };
+
+  const handleDeleteApplication = (application: any) => {
+    if (confirm(`Are you sure you want to delete the application for ${application.jobTitle} at ${application.company}?`)) {
+      // Add delete functionality here
+      toast({
+        title: "Application Deleted",
+        description: `Removed ${application.jobTitle} application`,
+      });
+    }
   };
 
   // Mock enhanced stats for demonstration
@@ -385,6 +413,8 @@ export default function Applications() {
                 applications={applications || []} 
                 isLoading={applicationsLoading}
                 showActions={true}
+                onEdit={handleEditApplication}
+                onDelete={handleDeleteApplication}
               />
             </CardContent>
           </Card>

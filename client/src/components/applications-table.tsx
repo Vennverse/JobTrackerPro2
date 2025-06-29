@@ -27,9 +27,11 @@ interface ApplicationsTableProps {
   applications: Application[];
   isLoading: boolean;
   showActions?: boolean;
+  onEdit?: (application: Application) => void;
+  onDelete?: (application: Application) => void;
 }
 
-export function ApplicationsTable({ applications, isLoading, showActions = false }: ApplicationsTableProps) {
+export function ApplicationsTable({ applications, isLoading, showActions = false, onEdit, onDelete }: ApplicationsTableProps) {
   if (isLoading) {
     return (
       <div className="space-y-4">
@@ -283,11 +285,14 @@ export function ApplicationsTable({ applications, isLoading, showActions = false
                           View Job
                         </DropdownMenuItem>
                       )}
-                      <DropdownMenuItem>
+                      <DropdownMenuItem onClick={() => onEdit?.(application)}>
                         <Edit className="w-4 h-4 mr-2" />
                         Edit
                       </DropdownMenuItem>
-                      <DropdownMenuItem className="text-destructive">
+                      <DropdownMenuItem 
+                        className="text-destructive"
+                        onClick={() => onDelete?.(application)}
+                      >
                         <Trash2 className="w-4 h-4 mr-2" />
                         Delete
                       </DropdownMenuItem>
