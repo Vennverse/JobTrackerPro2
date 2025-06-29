@@ -1,7 +1,8 @@
 import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
+import { apiRequest } from "@/lib/queryClient";
 import { Navbar } from "@/components/navbar";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -19,32 +20,38 @@ import {
   SlidersHorizontal,
   Briefcase,
   Star,
-  BookmarkPlus
+  BookmarkPlus,
+  Eye,
+  CheckCircle
 } from "lucide-react";
 
-interface Job {
-  id: string;
+interface JobPosting {
+  id: number;
   title: string;
-  company: string;
+  companyName: string;
   location: string;
   description: string;
-  salary_min?: number;
-  salary_max?: number;
-  created?: string;
-  url: string;
-  contract_type?: string;
-  category?: string;
+  salary?: string;
+  workMode: string;
+  jobType: string;
+  createdAt: string;
+  skillsRequired: string[];
+  benefits?: string[];
+  isActive: boolean;
+  applicationsCount?: number;
 }
 
 export default function Jobs() {
   const { toast } = useToast();
   const { user, isAuthenticated } = useAuth();
+  const queryClient = useQueryClient();
   const [searchQuery, setSearchQuery] = useState("");
-  const [location, setLocation] = useState("");
-  const [page, setPage] = useState(1);
+  const [locationFilter, setLocationFilter] = useState("");
+  const [filteredJobs, setFilteredJobs] = useState<JobPosting[]>([]);
 
-  const { data: jobsData, isLoading: jobsLoading, error } = useQuery({
-    queryKey: ["/api/jobs/postings", searchQuery, location],
+  // Fetch all job postings from recruiters
+  const { data: allJobs, isLoading: jobsLoading, error } = useQuery({
+    queryKey: ["/api/jobs/postings"],
     queryFn: async () => {
       const response = await fetch(`/api/jobs/postings`, {
         credentials: 'include'
@@ -55,71 +62,86 @@ export default function Jobs() {
         throw new Error(errorData.message || "Failed to fetch jobs");
       }
       
-      const jobs = await response.json();
-      
-      // Filter jobs based on search query and location if provided
-      let filteredJobs = jobs;
-      if (searchQuery.length >= 1) {
-        filteredJobs = jobs.filter((job: any) => 
-          job.title.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          job.companyName.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          job.description.toLowerCase().includes(searchQuery.toLowerCase())
-        );
-      }
-      if (location) {
-        filteredJobs = filteredJobs.filter((job: any) => 
-          job.location?.toLowerCase().includes(location.toLowerCase())
-        );
-      }
-      
-      return filteredJobs;
+      return await response.json() as JobPosting[];
     },
     retry: false,
   });
 
-  const { data: profile } = useQuery({
-    queryKey: ["/api/profile"],
+  // Get user's applications to show applied status
+  const { data: userApplications } = useQuery({
+    queryKey: ["/api/jobs/my-applications"],
     retry: false,
   });
 
-  const handleSearch = () => {
-    if (searchQuery.length < 3) {
+  // Filter jobs based on search criteria
+  useEffect(() => {
+    if (!allJobs) {
+      setFilteredJobs([]);
+      return;
+    }
+
+    let filtered = allJobs.filter((job: JobPosting) => job.isActive);
+
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase();
+      filtered = filtered.filter((job: JobPosting) => 
+        job.title.toLowerCase().includes(query) ||
+        job.companyName.toLowerCase().includes(query) ||
+        job.description.toLowerCase().includes(query) ||
+        job.skillsRequired.some(skill => skill.toLowerCase().includes(query))
+      );
+    }
+
+    if (locationFilter.trim()) {
+      const location = locationFilter.toLowerCase();
+      filtered = filtered.filter((job: JobPosting) => 
+        job.location?.toLowerCase().includes(location) ||
+        job.workMode.toLowerCase().includes(location)
+      );
+    }
+
+    setFilteredJobs(filtered);
+  }, [allJobs, searchQuery, locationFilter]);
+
+  // Application mutation
+  const applyToJobMutation = useMutation({
+    mutationFn: async ({ jobId }: { jobId: number }) => {
+      return await apiRequest("POST", `/api/jobs/postings/${jobId}/apply`, {});
+    },
+    onSuccess: () => {
       toast({
-        title: "Search too short",
-        description: "Please enter at least 3 characters to search",
-        variant: "destructive"
+        title: "Application Submitted",
+        description: "Your application has been sent to the recruiter.",
+      });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/my-applications"] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Application Failed",
+        description: error.message || "Failed to submit application. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApplyJob = (jobId: number) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please sign in to apply for jobs.",
+        variant: "destructive",
       });
       return;
     }
-    setPage(1);
+    applyToJobMutation.mutate({ jobId });
   };
 
-  const handleApplyJob = (job: Job) => {
-    window.open(job.url, '_blank');
-    
-    // Track application
-    fetch('/api/applications', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      credentials: 'include',
-      body: JSON.stringify({
-        jobTitle: job.title,
-        company: job.company,
-        jobUrl: job.url,
-        location: job.location,
-        status: 'applied',
-        source: 'job_search'
-      })
-    }).catch(console.error);
+  const handleViewJob = (jobId: number) => {
+    window.open(`/jobs/${jobId}`, '_blank');
   };
 
-  const formatSalary = (min?: number, max?: number) => {
-    if (!min && !max) return "Salary not specified";
-    if (min && max) return `$${min.toLocaleString()} - $${max.toLocaleString()}`;
-    if (min) return `From $${min.toLocaleString()}`;
-    if (max) return `Up to $${max.toLocaleString()}`;
+  const isJobApplied = (jobId: number) => {
+    return userApplications?.some((app: any) => app.jobPostingId === jobId);
   };
 
   return (
