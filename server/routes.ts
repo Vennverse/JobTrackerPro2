@@ -2247,6 +2247,23 @@ Additional Information:
     }
   });
 
+  // Get a single job posting by ID for job seekers
+  app.get('/api/jobs/postings/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const jobId = parseInt(req.params.id);
+      const jobPosting = await storage.getJobPosting(jobId);
+      
+      if (!jobPosting || !jobPosting.isActive) {
+        return res.status(404).json({ message: "Job posting not found" });
+      }
+
+      res.json(jobPosting);
+    } catch (error) {
+      console.error("Error fetching job posting:", error);
+      res.status(500).json({ message: "Failed to fetch job posting" });
+    }
+  });
+
   // Apply to a job posting
   app.post('/api/jobs/postings/:jobId/apply', isAuthenticated, async (req: any, res) => {
     try {

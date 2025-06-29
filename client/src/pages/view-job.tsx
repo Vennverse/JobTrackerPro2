@@ -17,7 +17,7 @@ export default function ViewJob() {
   const { toast } = useToast();
 
   const { data: job, isLoading } = useQuery({
-    queryKey: [`/api/recruiter/jobs/${jobId}`],
+    queryKey: [`/api/jobs/postings/${jobId}`],
     enabled: !!jobId,
   });
 
