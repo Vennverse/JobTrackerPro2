@@ -51,8 +51,28 @@ export default function UserTypeSelection() {
     },
   });
 
+  const setUserTypeMutation = useMutation({
+    mutationFn: async (userType: string) => {
+      return await apiRequest("POST", "/api/auth/set-user-type", { userType });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Account Setup Complete",
+        description: "Welcome to AutoJobr! You can now access your dashboard.",
+      });
+      setLocation("/");
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Setup Failed",
+        description: error.message || "Failed to set user type. Please try again.",
+        variant: "destructive",
+      });
+    },
+  });
+
   const handleJobSeekerSelect = () => {
-    setLocation("/auth");
+    setUserTypeMutation.mutate("job_seeker");
   };
 
   const handleRecruiterSelect = () => {

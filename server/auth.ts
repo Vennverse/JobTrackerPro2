@@ -179,22 +179,37 @@ export async function setupAuth(app: Express) {
   app.get('/api/auth/google/callback', 
     passport.authenticate('google', { failureRedirect: '/auth?error=google_failed' }),
     (req, res) => {
-      // Successful authentication, redirect to user type selection or dashboard
-      res.redirect('/user-type');
+      // Check if user has selected a user type
+      const user = req.user as any;
+      if (user && user.userType) {
+        res.redirect('/'); // Redirect to dashboard if user type is set
+      } else {
+        res.redirect('/user-type'); // Redirect to user type selection
+      }
     }
   );
 
   app.get('/api/auth/github/callback', 
     passport.authenticate('github', { failureRedirect: '/auth?error=github_failed' }),
     (req, res) => {
-      res.redirect('/user-type');
+      const user = req.user as any;
+      if (user && user.userType) {
+        res.redirect('/');
+      } else {
+        res.redirect('/user-type');
+      }
     }
   );
 
   app.get('/api/auth/linkedin/callback', 
     passport.authenticate('linkedin', { failureRedirect: '/auth?error=linkedin_failed' }),
     (req, res) => {
-      res.redirect('/user-type');
+      const user = req.user as any;
+      if (user && user.userType) {
+        res.redirect('/');
+      } else {
+        res.redirect('/user-type');
+      }
     }
   );
 
@@ -211,6 +226,37 @@ export async function setupAuth(app: Express) {
       res.json({ redirectUrl: '/api/auth/linkedin' });
     } else {
       res.status(400).json({ message: "Provider not supported or not configured" });
+    }
+  });
+
+  // Set user type after OAuth authentication
+  app.post('/api/auth/set-user-type', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userType } = req.body;
+      const userId = req.user.id;
+
+      if (!['job_seeker', 'recruiter'].includes(userType)) {
+        return res.status(400).json({ message: "Invalid user type" });
+      }
+
+      // Get current user and update user type in database
+      const currentUser = await storage.getUser(userId);
+      if (!currentUser) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
+      const updatedUser = await storage.upsertUser({
+        ...currentUser,
+        userType: userType
+      });
+
+      res.json({ 
+        message: "User type updated successfully", 
+        user: updatedUser 
+      });
+    } catch (error) {
+      console.error("Error setting user type:", error);
+      res.status(500).json({ message: "Failed to update user type" });
     }
   });
 
