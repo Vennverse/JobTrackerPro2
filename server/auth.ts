@@ -129,8 +129,31 @@ export async function setupAuth(app: Express) {
         console.error("Error fetching profile for onboarding status:", error);
       }
 
-      // For demo user, return session data directly
+      // For demo user, fetch complete user data from database
       if (sessionUser.id === 'demo-user-id') {
+        try {
+          const { storage } = await import("./storage");
+          const fullUser = await storage.getUser(sessionUser.id);
+          console.log("Full user data from database:", JSON.stringify(fullUser, null, 2));
+          if (fullUser) {
+            return res.json({
+              id: fullUser.id,
+              email: fullUser.email,
+              name: sessionUser.name,
+              firstName: fullUser.firstName,
+              lastName: fullUser.lastName,
+              userType: fullUser.userType,
+              emailVerified: fullUser.emailVerified,
+              companyName: fullUser.companyName,
+              companyWebsite: fullUser.companyWebsite,
+              onboardingCompleted,
+            });
+          }
+        } catch (error) {
+          console.error("Error fetching full demo user data:", error);
+        }
+        
+        // Fallback to session data if database fetch fails
         return res.json({
           id: sessionUser.id,
           email: sessionUser.email,
