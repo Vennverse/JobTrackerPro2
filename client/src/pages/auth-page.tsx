@@ -11,6 +11,7 @@ import { Github, Mail, Linkedin, Eye, EyeOff } from "lucide-react";
 import { FcGoogle } from "react-icons/fc";
 
 export default function AuthPage() {
+  const [, setLocation] = useLocation();
   const [isLoading, setIsLoading] = useState(false);
   const [availableProviders, setAvailableProviders] = useState({
     google: false,
@@ -116,6 +117,9 @@ export default function AuthPage() {
           description: "Welcome back!",
         });
         window.location.href = '/';
+      } else if (response.status === 403 && data.requiresVerification) {
+        // Email verification required
+        setLocation(`/email-verification?email=${encodeURIComponent(formData.email)}`);
       } else {
         toast({
           title: "Login Failed",
@@ -178,11 +182,8 @@ export default function AuthPage() {
       const data = await response.json();
 
       if (response.ok) {
-        toast({
-          title: "Account Created",
-          description: "Your account has been created successfully!",
-        });
-        window.location.href = '/';
+        // Redirect to email verification page
+        setLocation(`/email-verification?email=${encodeURIComponent(formData.email)}`);
       } else {
         toast({
           title: "Signup Failed",

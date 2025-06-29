@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -17,6 +17,15 @@ export default function EmailVerificationPage({ email: propEmail }: EmailVerific
   const [, setLocation] = useLocation();
   const [email, setEmail] = useState(propEmail || "");
   const { toast } = useToast();
+
+  // Extract email from URL parameters
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const emailParam = urlParams.get('email');
+    if (emailParam && !propEmail) {
+      setEmail(emailParam);
+    }
+  }, [propEmail]);
 
   const resendMutation = useMutation({
     mutationFn: async (email: string) => {
