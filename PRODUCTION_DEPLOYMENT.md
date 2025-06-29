@@ -55,6 +55,9 @@ STRIPE_SECRET_KEY=your-stripe-secret-key
 VITE_STRIPE_PUBLIC_KEY=your-stripe-public-key
 PAYPAL_CLIENT_ID=your-paypal-client-id
 PAYPAL_CLIENT_SECRET=your-paypal-client-secret
+RAZORPAY_KEY_ID=your-razorpay-key-id
+RAZORPAY_KEY_SECRET=your-razorpay-key-secret
+RAZORPAY_WEBHOOK_SECRET=your-razorpay-webhook-secret
 ```
 
 ### 3. Chrome Extension Configuration
@@ -163,10 +166,17 @@ railway deploy
 - [ ] Extension files updated with production domain
 - [ ] CORS settings include production domain
 
-**API Keys** (Optional but recommended):
-- [ ] OAuth providers configured
-- [ ] Payment processors configured
-- [ ] All secrets properly secured
+**Payment Integration** (Optional but recommended):
+- [ ] Stripe configured for credit card payments
+- [ ] PayPal configured for PayPal payments  
+- [ ] Razorpay configured for Indian market payments
+- [ ] All payment webhook secrets configured
+
+**File Storage** (Important):
+- [ ] Local file storage directory created (/tmp/autojobr-files for production)
+- [ ] File compression working correctly
+- [ ] Resume upload and download tested
+- [ ] Cloud storage configured for scale (AWS S3 recommended)
 
 ### 9. Post-Deployment Testing
 

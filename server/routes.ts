@@ -9,6 +9,7 @@ import { setupAuth, isAuthenticated } from "./auth";
 import { groqService } from "./groqService";
 import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
 import { sendEmail, generateVerificationEmail } from "./emailService";
+import { fileStorage } from "./fileStorage";
 import crypto from "crypto";
 import { 
   insertUserProfileSchema,

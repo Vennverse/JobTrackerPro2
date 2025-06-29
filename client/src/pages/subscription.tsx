@@ -79,7 +79,7 @@ export default function Subscription() {
     // Show message that proper payment integration is required
     toast({
       title: "Payment Integration Required",
-      description: "Please contact support to set up PayPal or Stripe payment integration for premium subscriptions.",
+      description: "Please contact support to set up PayPal, Stripe, or Razorpay payment integration for premium subscriptions.",
       variant: "destructive",
     });
   };
