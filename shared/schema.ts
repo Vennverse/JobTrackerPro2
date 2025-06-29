@@ -373,14 +373,15 @@ export const chatMessages = pgTable("chat_messages", {
 // Email verification tokens for recruiters
 export const emailVerificationTokens = pgTable("email_verification_tokens", {
   id: serial("id").primaryKey(),
-  userId: varchar("user_id").references(() => users.id).notNull(),
   token: varchar("token").notNull().unique(),
   email: varchar("email").notNull(),
+  companyName: varchar("company_name").notNull(),
+  companyWebsite: varchar("company_website"),
   expiresAt: timestamp("expires_at").notNull(),
   createdAt: timestamp("created_at").defaultNow(),
 }, (table) => [
-  index("email_verification_tokens_user_idx").on(table.userId),
   index("email_verification_tokens_token_idx").on(table.token),
+  index("email_verification_tokens_email_idx").on(table.email),
 ]);
 
 // Relations
@@ -462,12 +463,7 @@ export const chatMessagesRelations = relations(chatMessages, ({ one }) => ({
   }),
 }));
 
-export const emailVerificationTokensRelations = relations(emailVerificationTokens, ({ one }) => ({
-  user: one(users, {
-    fields: [emailVerificationTokens.userId],
-    references: [users.id],
-  }),
-}));
+// No relations needed for email verification tokens as they are temporary
 
 export const userProfilesRelations = relations(userProfiles, ({ one }) => ({
   user: one(users, {
