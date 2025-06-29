@@ -21,6 +21,8 @@ import VerifyEmail from "@/pages/verify-email";
 import EmailVerificationPage from "@/pages/email-verification";
 import ViewJob from "@/pages/view-job";
 import EditJob from "@/pages/edit-job";
+import ForgotPasswordPage from "@/pages/forgot-password";
+import ResetPasswordPage from "@/pages/reset-password";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -37,6 +39,8 @@ function Router() {
     <Switch>
       <Route path="/auth" component={AuthPage} />
       <Route path="/verify-email" component={VerifyEmail} />
+      <Route path="/forgot-password" component={ForgotPasswordPage} />
+      <Route path="/reset-password" component={ResetPasswordPage} />
       
       {/* Post Job route - accessible to everyone, handles verification internally */}
       <Route path="/post-job" component={PostJob} />

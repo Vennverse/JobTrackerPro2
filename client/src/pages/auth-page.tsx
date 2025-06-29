@@ -257,6 +257,16 @@ export default function AuthPage() {
                   <Mail className="w-4 h-4 mr-2" />
                   Sign in with Email
                 </Button>
+                
+                <div className="text-center">
+                  <Button 
+                    variant="link"
+                    className="text-sm text-muted-foreground p-0 h-auto"
+                    onClick={() => setLocation('/forgot-password')}
+                  >
+                    Forgot your password?
+                  </Button>
+                </div>
               </TabsContent>
               
               <TabsContent value="signup" className="space-y-4">
