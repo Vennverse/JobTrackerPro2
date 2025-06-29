@@ -483,9 +483,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Real implementation for non-demo users
+      // Implementation for all users (same as demo users)
+      if (!(global as any).userResumes) {
+        (global as any).userResumes = {};
+      }
+      if (!(global as any).userResumes[userId]) {
+        (global as any).userResumes[userId] = [];
+      }
+      
+      const existingResumes = (global as any).userResumes[userId];
       const user = await storage.getUser(userId);
-      const existingResumes = await storage.getUserResumes?.(userId) || [];
       
       // Free users: 2 resumes, Premium: unlimited
       if (user?.planType !== 'premium' && existingResumes.length >= 2) {
@@ -495,8 +502,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // TODO: Implement real file processing with Groq analysis
-      res.json({ message: "Resume uploaded successfully" });
+      // Process resume with Groq AI analysis (same as demo users)
+      const pdfParse = (await import('pdf-parse')).default;
+      const resumeTextResult = await pdfParse(file.buffer);
+      const analysisReal = await groqService.analyzeResume(resumeTextResult.text);
+      
+      const newResume = {
+        id: Date.now(),
+        name: name || file.originalname.replace(/\.[^/.]+$/, ""),
+        fileName: file.originalname,
+        isActive: existingResumes.length === 0, // First resume is active by default
+        atsScore: analysisReal.atsScore,
+        analysis: analysisReal,
+        resumeText: resumeTextResult.text,
+        uploadedAt: new Date(),
+        fileSize: file.size,
+        fileType: file.mimetype,
+        // Store file data as base64 for demo (in production, would use cloud storage)
+        fileData: file.buffer.toString('base64')
+      };
+      
+      existingResumes.push(newResume);
+      return res.json({ 
+        message: "Resume uploaded successfully",
+        resume: newResume 
+      });
     } catch (error) {
       console.error("Error uploading resume:", error);
       res.status(500).json({ message: "Failed to upload resume" });
@@ -508,45 +538,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       console.log(`[DEBUG] Fetching resumes for user: ${userId}`);
       
-      if (userId === 'demo-user-id') {
-        // Initialize global storage for demo user resumes if not exists
-        if (!(global as any).demoUserResumes) {
-          (global as any).demoUserResumes = [{
-            id: 1,
-            name: "Demo Resume",
-            fileName: "demo_resume.pdf",
-            isActive: true,
+      // For all users, check if they have resumes, if not, initialize with sample data
+      let resumes = await storage.getUserResumes?.(userId) || [];
+      
+      // If user has no resumes, give them a sample resume to start with
+      if (resumes.length === 0) {
+        const sampleResume = {
+          id: 1,
+          name: "Sample Resume",
+          fileName: "sample_resume.pdf",
+          isActive: true,
+          atsScore: 85,
+          uploadedAt: new Date(),
+          fileSize: 245000,
+          fileType: 'application/pdf',
+          analysis: {
             atsScore: 85,
-            uploadedAt: new Date(),
-            analysis: {
-              atsScore: 85,
-              recommendations: ["Add more technical keywords", "Improve formatting"],
-              keywordOptimization: {
-                missingKeywords: ["React", "TypeScript"],
-                overusedKeywords: [],
-                suggestions: ["Include specific technologies"]
-              },
-              formatting: {
-                score: 80,
-                issues: ["Inconsistent spacing"],
-                improvements: ["Use consistent bullet points"]
-              },
-              content: {
-                strengthsFound: ["Strong technical background"],
-                weaknesses: ["Could add more quantified achievements"],
-                suggestions: ["Include metrics and numbers"]
-              }
+            recommendations: ["Add more technical keywords", "Improve formatting", "Include more quantified achievements"],
+            keywordOptimization: {
+              missingKeywords: ["React", "TypeScript", "Node.js"],
+              overusedKeywords: ["responsible", "experience"],
+              suggestions: ["Include specific technologies and tools", "Add industry-specific keywords"]
+            },
+            formatting: {
+              score: 80,
+              issues: ["Inconsistent spacing", "Missing sections"],
+              improvements: ["Use consistent bullet points", "Add a skills section", "Improve contact information layout"]
+            },
+            content: {
+              strengthsFound: ["Strong technical background", "Good work experience"],
+              weaknesses: ["Could add more quantified achievements", "Missing key skills section"],
+              suggestions: ["Include metrics and numbers", "Add certifications", "Highlight key accomplishments"]
             }
-          }];
-        }
+          }
+        };
         
-        console.log(`[DEBUG] Demo user resumes count: ${(global as any).demoUserResumes.length}`);
-        return res.json((global as any).demoUserResumes);
+        // Store sample resume for this user
+        if (userId === 'demo-user-id') {
+          if (!(global as any).demoUserResumes) {
+            (global as any).demoUserResumes = [sampleResume];
+          }
+          resumes = (global as any).demoUserResumes;
+        } else {
+          // For real users, we'll store in memory for now (in production this would be database)
+          if (!(global as any).userResumes) {
+            (global as any).userResumes = {};
+          }
+          if (!(global as any).userResumes[userId]) {
+            (global as any).userResumes[userId] = [sampleResume];
+          }
+          resumes = (global as any).userResumes[userId];
+        }
       }
       
-      // For non-demo users, fetch from database
-      const resumes = await storage.getUserResumes?.(userId) || [];
-      console.log(`[DEBUG] Real user resumes count: ${resumes.length}`);
+      console.log(`[DEBUG] Returning ${resumes.length} resumes for user ${userId}`);
       res.json(resumes);
     } catch (error) {
       console.error("Error fetching resumes:", error);
@@ -559,27 +604,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const userId = req.user.id;
       const resumeId = parseInt(req.params.id);
       
+      let userResumes;
       if (userId === 'demo-user-id') {
-        // Handle setting active resume for demo user
-        if ((global as any).demoUserResumes) {
-          // Set all resumes to inactive
-          (global as any).demoUserResumes.forEach((resume: any) => {
-            resume.isActive = false;
-          });
-          
-          // Set the selected resume as active
-          const targetResume = (global as any).demoUserResumes.find((resume: any) => resume.id === resumeId);
-          if (targetResume) {
-            targetResume.isActive = true;
-            return res.json({ message: "Resume set as active", resume: targetResume });
-          }
-        }
-        return res.status(404).json({ message: "Resume not found" });
+        userResumes = (global as any).demoUserResumes;
+      } else {
+        userResumes = (global as any).userResumes?.[userId];
       }
       
-      // For non-demo users, implement real database update
-      await storage.setActiveResume?.(userId, resumeId);
-      res.json({ message: "Resume set as active" });
+      if (userResumes) {
+        // Set all resumes to inactive
+        userResumes.forEach((resume: any) => {
+          resume.isActive = false;
+        });
+        
+        // Set the selected resume as active
+        const targetResume = userResumes.find((resume: any) => resume.id === resumeId);
+        if (targetResume) {
+          targetResume.isActive = true;
+          return res.json({ message: "Resume set as active", resume: targetResume });
+        }
+      }
+      
+      return res.status(404).json({ message: "Resume not found" });
     } catch (error) {
       console.error("Error setting active resume:", error);
       res.status(500).json({ message: "Failed to set active resume" });
