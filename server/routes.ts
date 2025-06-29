@@ -506,6 +506,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/resumes', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      console.log(`[DEBUG] Fetching resumes for user: ${userId}`);
       
       if (userId === 'demo-user-id') {
         // Initialize global storage for demo user resumes if not exists
@@ -539,11 +540,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }];
         }
         
+        console.log(`[DEBUG] Demo user resumes count: ${(global as any).demoUserResumes.length}`);
         return res.json((global as any).demoUserResumes);
       }
       
       // For non-demo users, fetch from database
       const resumes = await storage.getUserResumes?.(userId) || [];
+      console.log(`[DEBUG] Real user resumes count: ${resumes.length}`);
       res.json(resumes);
     } catch (error) {
       console.error("Error fetching resumes:", error);
