@@ -6,9 +6,11 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Plus, Briefcase, Users, MessageSquare, Eye, Calendar, Building, Star } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { useLocation } from "wouter";
+import { useToast } from "@/hooks/use-toast";
 
 export default function RecruiterDashboard() {
   const [location, setLocation] = useLocation();
+  const { toast } = useToast();
 
   // Fetch recruiter's job postings
   const { data: jobPostings = [], isLoading: jobsLoading } = useQuery({
@@ -193,8 +195,20 @@ export default function RecruiterDashboard() {
                             </div>
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">View</Button>
-                            <Button variant="outline" size="sm">Edit</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => window.open(`/jobs/${job.id}`, '_blank')}
+                            >
+                              View
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => setLocation(`/recruiter/edit-job/${job.id}`)}
+                            >
+                              Edit
+                            </Button>
                           </div>
                         </div>
                       </div>
@@ -255,9 +269,44 @@ export default function RecruiterDashboard() {
                             )}
                           </div>
                           <div className="flex gap-2">
-                            <Button variant="outline" size="sm">View Resume</Button>
-                            <Button variant="outline" size="sm">Message</Button>
-                            <Button size="sm">Review</Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                // Show candidate profile dialog
+                                toast({
+                                  title: "Profile View",
+                                  description: "Candidate profile functionality coming soon",
+                                });
+                              }}
+                            >
+                              View Profile
+                            </Button>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                // Start chat with candidate
+                                toast({
+                                  title: "Chat Started",
+                                  description: "Chat functionality coming soon",
+                                });
+                              }}
+                            >
+                              Message
+                            </Button>
+                            <Button 
+                              size="sm"
+                              onClick={() => {
+                                // Update application status
+                                toast({
+                                  title: "Application Updated",
+                                  description: "Review functionality coming soon",
+                                });
+                              }}
+                            >
+                              Review
+                            </Button>
                           </div>
                         </div>
                       </div>
