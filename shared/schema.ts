@@ -33,6 +33,7 @@ export const users = pgTable("users", {
   email: varchar("email").unique(),
   firstName: varchar("first_name"),
   lastName: varchar("last_name"),
+  password: varchar("password"), // For email authentication
   profileImageUrl: varchar("profile_image_url"),
   userType: varchar("user_type").default("job_seeker"), // job_seeker, recruiter
   emailVerified: boolean("email_verified").default(false),
