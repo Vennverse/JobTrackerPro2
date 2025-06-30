@@ -24,6 +24,7 @@ import EditJob from "@/pages/edit-job";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import ChatPage from "@/pages/chat";
+import ResumesPage from "@/pages/resumes";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -73,6 +74,7 @@ function Router() {
                   <Route path="/" component={Dashboard} />
                   <Route path="/onboarding" component={Onboarding} />
                   <Route path="/profile" component={Profile} />
+                  <Route path="/resumes" component={ResumesPage} />
                   <Route path="/applications" component={Applications} />
                   <Route path="/jobs" component={Jobs} />
                   <Route path="/jobs/:id" component={ViewJob} />

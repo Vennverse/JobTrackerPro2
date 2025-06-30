@@ -582,6 +582,55 @@ Additional Information:
     }
   });
 
+  // Set active resume endpoint
+  app.post('/api/resumes/:id/set-active', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const resumeId = parseInt(req.params.id);
+      
+      console.log(`[DEBUG] Setting active resume for user: ${userId}, resumeId: ${resumeId}`);
+      
+      // Handle demo user
+      if (userId === 'demo-user-id') {
+        const resumes = (global as any).demoUserResumes || [];
+        
+        // Set all resumes to inactive
+        resumes.forEach((resume: any) => {
+          resume.isActive = false;
+        });
+        
+        // Set the selected resume to active
+        const targetResume = resumes.find((resume: any) => resume.id === resumeId);
+        if (targetResume) {
+          targetResume.isActive = true;
+          return res.json({ message: "Active resume updated successfully" });
+        } else {
+          return res.status(404).json({ message: "Resume not found" });
+        }
+      }
+      
+      // Handle regular users
+      const userResumes = (global as any).userResumes?.[userId] || [];
+      
+      // Set all resumes to inactive
+      userResumes.forEach((resume: any) => {
+        resume.isActive = false;
+      });
+      
+      // Set the selected resume to active
+      const targetResume = userResumes.find((resume: any) => resume.id === resumeId);
+      if (targetResume) {
+        targetResume.isActive = true;
+        return res.json({ message: "Active resume updated successfully" });
+      } else {
+        return res.status(404).json({ message: "Resume not found" });
+      }
+    } catch (error) {
+      console.error("Error setting active resume:", error);
+      res.status(500).json({ message: "Failed to set active resume" });
+    }
+  });
+
   app.get('/api/resumes', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;

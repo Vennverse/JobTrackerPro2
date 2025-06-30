@@ -592,25 +592,56 @@ export default function Dashboard() {
                   )}
 
                   {(resumes as any) && (resumes as any).length > 0 && (
-                    <div className="space-y-2">
-                      <div className="text-sm font-medium">Latest Resume:</div>
-                      <div className="bg-white/20 rounded-lg p-3">
+                    <div className="space-y-3">
+                      <div className="text-sm font-medium">Latest Resume Analysis:</div>
+                      <div className="bg-white/20 rounded-lg p-3 space-y-2">
                         <div className="flex items-center justify-between">
                           <div className="flex items-center gap-2">
                             <FileText className="h-4 w-4" />
-                            <span className="text-sm truncate">{resumes[0]?.originalName}</span>
+                            <span className="text-sm truncate">{(resumes as any)[0]?.name || 'Resume'}</span>
                           </div>
                           <Badge 
                             variant="secondary" 
                             className={`text-xs ${
-                              (resumes[0]?.atsScore || 0) >= 80 ? 'bg-green-100 text-green-800' :
-                              (resumes[0]?.atsScore || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              ((resumes as any)[0]?.atsScore || 0) >= 80 ? 'bg-green-100 text-green-800' :
+                              ((resumes as any)[0]?.atsScore || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
                               'bg-red-100 text-red-800'
                             }`}
                           >
-                            ATS: {resumes[0]?.atsScore || 'N/A'}%
+                            ATS: {(resumes as any)[0]?.atsScore || 'N/A'}%
                           </Badge>
                         </div>
+                        
+                        <div className="grid grid-cols-3 gap-2 text-xs">
+                          <div className="text-center">
+                            <div className="font-medium text-green-200">
+                              {(resumes as any)[0]?.analysis?.content?.strengthsFound?.length || 0}
+                            </div>
+                            <div>Strengths</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium text-orange-200">
+                              {(resumes as any)[0]?.analysis?.recommendations?.length || 0}
+                            </div>
+                            <div>Tips</div>
+                          </div>
+                          <div className="text-center">
+                            <div className="font-medium text-red-200">
+                              {(resumes as any)[0]?.analysis?.keywordOptimization?.missingKeywords?.length || 0}
+                            </div>
+                            <div>Missing</div>
+                          </div>
+                        </div>
+                        
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
+                          onClick={() => window.location.href = "/resumes"}
+                        >
+                          <Eye className="h-4 w-4 mr-2" />
+                          View Full Analysis
+                        </Button>
                       </div>
                     </div>
                   )}
