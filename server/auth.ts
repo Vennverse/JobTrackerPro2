@@ -349,11 +349,12 @@ export async function setupAuth(app: Express) {
           name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
         };
 
-        // Redirect based on user type: recruiters go to post-job, regular users go to auth
+        // Redirect based on user type: recruiters go to post-job, job seekers go to onboarding/dashboard
         if (user.userType === 'recruiter') {
           res.redirect('/post-job?verified=true');
         } else {
-          res.redirect('/auth?verified=true');
+          // For job seekers, check if onboarding is completed
+          res.redirect('/onboarding?verified=true');
         }
       } else {
         return res.status(400).json({ message: 'User not found' });
