@@ -11,6 +11,7 @@ import { groqService } from "./groqService";
 import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
 import { sendEmail, generateVerificationEmail } from "./emailService";
 import { fileStorage } from "./fileStorage";
+import { paymentService } from "./paymentService";
 import crypto from "crypto";
 import { 
   insertUserProfileSchema,
@@ -1546,7 +1547,8 @@ Additional Information:
         stripePaymentIntentId,
         razorpayPaymentId,
         razorpayOrderId,
-        razorpaySignature
+        razorpaySignature,
+        paymentMethod
       } = req.body;
       
       // Require either PayPal, Stripe, or Razorpay payment verification
@@ -1557,40 +1559,113 @@ Additional Information:
         });
       }
 
-      // TODO: Add actual PayPal/Stripe/Razorpay payment verification here
-      // For now, we require payment IDs but don't verify them (user should integrate payment processing)
-      if (paypalOrderId && !paypalSubscriptionId) {
+      let paymentVerified = false;
+      let paymentProvider = '';
+
+      // Verify Stripe payment
+      if (stripePaymentIntentId) {
+        paymentVerified = await paymentService.verifyStripePayment(stripePaymentIntentId);
+        paymentProvider = 'stripe';
+        
+        if (!paymentVerified) {
+          return res.status(400).json({ 
+            message: "Stripe payment verification failed. Please ensure payment was completed successfully.",
+            requiresPayment: true 
+          });
+        }
+      }
+
+      // Verify PayPal payment
+      if (paypalOrderId) {
+        if (!paypalSubscriptionId) {
+          return res.status(400).json({ 
+            message: "PayPal subscription ID required along with order ID",
+            requiresPayment: true 
+          });
+        }
+
+        const orderVerified = await paymentService.verifyPayPalOrder(paypalOrderId);
+        const subscriptionVerified = await paymentService.verifyPayPalSubscription(paypalSubscriptionId);
+        
+        paymentVerified = orderVerified && subscriptionVerified;
+        paymentProvider = 'paypal';
+        
+        if (!paymentVerified) {
+          return res.status(400).json({ 
+            message: "PayPal payment verification failed. Please ensure payment and subscription are active.",
+            requiresPayment: true 
+          });
+        }
+      }
+
+      // Verify Razorpay payment
+      if (razorpayPaymentId) {
+        if (!razorpayOrderId || !razorpaySignature) {
+          return res.status(400).json({ 
+            message: "Razorpay order ID and signature required along with payment ID",
+            requiresPayment: true 
+          });
+        }
+
+        // Verify signature
+        const signatureVerified = paymentService.verifyRazorpayPayment(
+          razorpayPaymentId, 
+          razorpayOrderId, 
+          razorpaySignature
+        );
+
+        if (!signatureVerified) {
+          return res.status(400).json({ 
+            message: "Razorpay signature verification failed.",
+            requiresPayment: true 
+          });
+        }
+
+        // Fetch payment details to verify amount and status
+        const paymentDetails = await paymentService.fetchRazorpayPayment(razorpayPaymentId);
+        
+        paymentVerified = paymentDetails && 
+                         paymentDetails.status === 'captured' && 
+                         paymentDetails.amount === 1000; // ₹10.00 in paise
+        paymentProvider = 'razorpay';
+        
+        if (!paymentVerified) {
+          return res.status(400).json({ 
+            message: "Razorpay payment verification failed. Please ensure payment was completed for the correct amount.",
+            requiresPayment: true 
+          });
+        }
+      }
+
+      if (!paymentVerified) {
         return res.status(400).json({ 
-          message: "PayPal subscription ID required along with order ID",
+          message: "Payment verification failed. Please try again or contact support.",
           requiresPayment: true 
         });
       }
 
-      if (razorpayPaymentId && (!razorpayOrderId || !razorpaySignature)) {
-        return res.status(400).json({ 
-          message: "Razorpay order ID and signature required along with payment ID",
-          requiresPayment: true 
-        });
-      }
-
-      // Update user subscription to premium only after payment verification
+      // Update user subscription to premium after successful payment verification
       await subscriptionService.updateUserSubscription(userId, {
         planType: 'premium',
         subscriptionStatus: 'active',
         paypalSubscriptionId: paypalSubscriptionId || undefined,
         paypalOrderId: paypalOrderId || undefined,
         stripeCustomerId: stripePaymentIntentId || undefined,
+        razorpayPaymentId: razorpayPaymentId || undefined,
+        razorpayOrderId: razorpayOrderId || undefined,
         subscriptionStartDate: new Date(),
-        subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000) // 30 days
+        subscriptionEndDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000), // 30 days
+        paymentProvider: paymentProvider
       });
 
       res.json({ 
         success: true, 
-        message: "Successfully upgraded to premium plan" 
+        message: "Successfully upgraded to premium plan! Welcome to AutoJobr Premium.",
+        paymentProvider: paymentProvider
       });
     } catch (error) {
       console.error("Error upgrading subscription:", error);
-      res.status(500).json({ message: "Failed to upgrade subscription" });
+      res.status(500).json({ message: "Failed to upgrade subscription. Please try again." });
     }
   });
 

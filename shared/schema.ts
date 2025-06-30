@@ -44,6 +44,9 @@ export const users = pgTable("users", {
   stripeSubscriptionId: varchar("stripe_subscription_id"),
   paypalSubscriptionId: varchar("paypal_subscription_id"),
   paypalOrderId: varchar("paypal_order_id"),
+  razorpayPaymentId: varchar("razorpay_payment_id"),
+  razorpayOrderId: varchar("razorpay_order_id"),
+  paymentProvider: varchar("payment_provider"), // stripe, paypal, razorpay
   subscriptionStatus: varchar("subscription_status").default("free"), // free, active, canceled, past_due
   planType: varchar("plan_type").default("free"), // free, premium
   subscriptionStartDate: timestamp("subscription_start_date"),

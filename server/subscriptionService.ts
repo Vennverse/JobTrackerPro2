@@ -132,6 +132,9 @@ export class SubscriptionService {
     stripeSubscriptionId?: string;
     paypalSubscriptionId?: string;
     paypalOrderId?: string;
+    razorpayPaymentId?: string;
+    razorpayOrderId?: string;
+    paymentProvider?: string;
     subscriptionStatus?: string;
     planType?: string;
     subscriptionStartDate?: Date;
