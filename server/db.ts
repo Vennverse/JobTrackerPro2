@@ -31,9 +31,10 @@ if ((isProduction && hasExternalDb) || (hasReplitDb && process.env.DATABASE_URL?
   const pool = new PgPool({ 
     connectionString: process.env.DATABASE_URL,
     ssl: false, // Disable SSL for Replit database
-    max: 20,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
+    max: 50, // Increased pool size for better concurrent handling
+    min: 5,  // Maintain minimum connections
+    idleTimeoutMillis: 60000, // Keep connections alive longer
+    connectionTimeoutMillis: 5000, // Faster timeout for failed connections
   });
   
   // Handle connection events

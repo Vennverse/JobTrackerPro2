@@ -4,6 +4,23 @@ import { WebSocketServer, WebSocket } from 'ws';
 import path from "path";
 import fs from "fs";
 import multer from "multer";
+
+// Simple in-memory cache for frequently accessed data
+const cache = new Map();
+const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+
+const getCached = (key: string) => {
+  const item = cache.get(key);
+  if (item && Date.now() - item.timestamp < CACHE_TTL) {
+    return item.data;
+  }
+  cache.delete(key);
+  return null;
+};
+
+const setCache = (key: string, data: any) => {
+  cache.set(key, { data, timestamp: Date.now() });
+};
 // Dynamic import for pdf-parse to avoid startup issues
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
@@ -259,6 +276,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/jobs/recommendations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      const cacheKey = `recommendations_${userId}`;
+      
+      // Check cache first
+      const cached = getCached(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
       
       // Get user profile to personalize recommendations
       const profile = await storage.getUserProfile(userId);
@@ -298,6 +322,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
               isBookmarked: false
             }));
             
+            // Cache the result
+            setCache(cacheKey, realJobs);
             return res.json(realJobs);
           }
         }
@@ -371,11 +397,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         ];
         
+        // Cache the result
+        setCache(cacheKey, mockJobs);
         return res.json(mockJobs);
       }
       
       // In real implementation, use AI to match jobs
-      res.json([]);
+      const emptyResult = [];
+      setCache(cacheKey, emptyResult);
+      res.json(emptyResult);
     } catch (error) {
       console.error("Error fetching job recommendations:", error);
       res.status(500).json({ message: "Failed to fetch job recommendations" });
@@ -651,7 +681,18 @@ Additional Information:
   app.get('/api/profile', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      const cacheKey = `profile_${userId}`;
+      
+      // Check cache first
+      const cached = getCached(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
+      
       const profile = await storage.getUserProfile(userId);
+      
+      // Cache the result
+      setCache(cacheKey, profile);
       res.json(profile);
     } catch (error) {
       console.error("Error fetching profile:", error);
@@ -671,6 +712,11 @@ Additional Information:
       
       const profileData = insertUserProfileSchema.parse(bodyData);
       const profile = await storage.upsertUserProfile(profileData);
+      
+      // Invalidate profile cache
+      cache.delete(`profile_${userId}`);
+      cache.delete(`recommendations_${userId}`);
+      
       res.json(profile);
     } catch (error) {
       console.error("Error updating profile:", error);
@@ -741,6 +787,13 @@ Additional Information:
   app.get('/api/applications', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      const cacheKey = `applications_${userId}`;
+      
+      // Check cache first
+      const cached = getCached(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
       
       // Get applications from job postings (recruiter-posted jobs)
       const jobPostingApplications = await storage.getApplicationsForJobSeeker(userId);
@@ -792,6 +845,8 @@ Additional Information:
       const allApplications = [...formattedJobPostingApps, ...formattedExtensionApps]
         .sort((a, b) => new Date(b.appliedDate).getTime() - new Date(a.appliedDate).getTime());
       
+      // Cache the result
+      setCache(cacheKey, allApplications);
       res.json(allApplications);
     } catch (error) {
       console.error("Error fetching applications:", error);
@@ -838,6 +893,13 @@ Additional Information:
   app.get('/api/applications/stats', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      const cacheKey = `app_stats_${userId}`;
+      
+      // Check cache first
+      const cached = getCached(cacheKey);
+      if (cached) {
+        return res.json(cached);
+      }
       
       // Get applications from both sources
       const jobPostingApplications = await storage.getApplicationsForJobSeeker(userId);
@@ -865,7 +927,7 @@ Additional Information:
         ? Math.round(appsWithScores.reduce((sum, app) => sum + (app.matchScore || 0), 0) / appsWithScores.length)
         : 0;
       
-      res.json({
+      const statsResult = {
         totalApplications,
         interviews,
         responseRate,
@@ -875,7 +937,11 @@ Additional Information:
           internalJobs: jobPostingApplications.length,
           externalJobs: extensionApplications.length
         }
-      });
+      };
+      
+      // Cache the result
+      setCache(cacheKey, statsResult);
+      res.json(statsResult);
     } catch (error) {
       console.error("Error fetching application stats:", error);
       res.status(500).json({ message: "Failed to fetch application stats" });
