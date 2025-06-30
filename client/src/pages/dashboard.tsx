@@ -100,6 +100,7 @@ export default function Dashboard() {
   const [analysisResult, setAnalysisResult] = useState(null);
   const [coverLetterResult, setCoverLetterResult] = useState("");
   const [selectedFilter, setSelectedFilter] = useState("all");
+  const [isUploadingResume, setIsUploadingResume] = useState(false);
 
   // Redirect to home if not authenticated
   useEffect(() => {
@@ -270,6 +271,48 @@ export default function Dashboard() {
       });
     } finally {
       setIsGenerating(false);
+    }
+  };
+
+  // Resume upload handler
+  const handleResumeUpload = async (file: File) => {
+    setIsUploadingResume(true);
+    
+    try {
+      const formData = new FormData();
+      formData.append('resume', file);
+
+      const response = await fetch('/api/resumes/upload', {
+        method: 'POST',
+        body: formData,
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        
+        // Invalidate queries to refresh data
+        queryClient.invalidateQueries({ queryKey: ["/api/resumes"] });
+        
+        toast({
+          title: "Resume Uploaded Successfully",
+          description: `ATS Score: ${result.atsScore || 'Analyzing...'}% - Your resume has been analyzed and optimized.`,
+        });
+      } else {
+        const errorData = await response.json();
+        throw new Error(errorData.message || "Failed to upload resume");
+      }
+    } catch (error: any) {
+      if (isUnauthorizedError(error)) {
+        window.location.href = "/";
+        return;
+      }
+      toast({
+        title: "Upload Failed",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    } finally {
+      setIsUploadingResume(false);
     }
   };
 
@@ -480,6 +523,97 @@ export default function Dashboard() {
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Resume
                   </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Resume Upload & Analysis */}
+            <motion.div
+              variants={cardHoverVariants}
+              initial="rest"
+              whileHover="hover"
+            >
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-green-500 to-teal-600 text-white">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Upload className="h-5 w-5" />
+                    Resume Analysis
+                  </CardTitle>
+                  <p className="text-sm text-green-100">
+                    Upload and optimize your resumes with AI-powered ATS scoring
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>Resumes uploaded:</span>
+                    <span className="font-medium">
+                      {(resumes as any)?.length || 0}/{user?.planType === 'premium' ? '∞' : '2'}
+                    </span>
+                  </div>
+                  
+                  {((resumes as any)?.length || 0) < (user?.planType === 'premium' ? 999 : 2) ? (
+                    <div>
+                      <Input
+                        type="file"
+                        accept=".pdf,.doc,.docx"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            handleResumeUpload(file);
+                          }
+                        }}
+                        className="bg-white/20 border-white/30 text-white placeholder:text-white/70"
+                        disabled={isUploadingResume}
+                      />
+                      {isUploadingResume && (
+                        <div className="mt-2 text-center">
+                          <div className="animate-spin rounded-full h-6 w-6 border-2 border-white/30 border-t-white mx-auto"></div>
+                          <p className="text-xs mt-1 text-green-100">Analyzing resume...</p>
+                        </div>
+                      )}
+                    </div>
+                  ) : (
+                    <div className="text-center py-2">
+                      <p className="text-sm text-green-100 mb-2">
+                        {user?.planType === 'premium' ? 'Unlimited uploads available' : 'Upload limit reached'}
+                      </p>
+                      {user?.planType !== 'premium' && (
+                        <Button
+                          variant="secondary"
+                          size="sm"
+                          className="bg-white/20 hover:bg-white/30 text-white border-0"
+                          onClick={() => window.location.href = "/pricing"}
+                        >
+                          <Crown className="h-4 w-4 mr-2" />
+                          Upgrade for Unlimited
+                        </Button>
+                      )}
+                    </div>
+                  )}
+
+                  {(resumes as any) && (resumes as any).length > 0 && (
+                    <div className="space-y-2">
+                      <div className="text-sm font-medium">Latest Resume:</div>
+                      <div className="bg-white/20 rounded-lg p-3">
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center gap-2">
+                            <FileText className="h-4 w-4" />
+                            <span className="text-sm truncate">{resumes[0]?.originalName}</span>
+                          </div>
+                          <Badge 
+                            variant="secondary" 
+                            className={`text-xs ${
+                              (resumes[0]?.atsScore || 0) >= 80 ? 'bg-green-100 text-green-800' :
+                              (resumes[0]?.atsScore || 0) >= 60 ? 'bg-yellow-100 text-yellow-800' :
+                              'bg-red-100 text-red-800'
+                            }`}
+                          >
+                            ATS: {resumes[0]?.atsScore || 'N/A'}%
+                          </Badge>
+                        </div>
+                      </div>
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>

@@ -9,6 +9,7 @@ interface User {
   firstName?: string;
   lastName?: string;
   onboardingCompleted?: boolean;
+  planType?: string;
 }
 
 export function useAuth() {
