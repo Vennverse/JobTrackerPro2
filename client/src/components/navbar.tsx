@@ -112,7 +112,10 @@ export function Navbar() {
                       alt={`${user?.firstName} ${user?.lastName}`} 
                     />
                     <AvatarFallback>
-                      {user?.firstName?.[0]}{user?.lastName?.[0]}
+                      {user?.firstName?.[0] && user?.lastName?.[0] 
+                        ? `${user.firstName[0]}${user.lastName[0]}` 
+                        : user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'
+                      }
                     </AvatarFallback>
                   </Avatar>
                 </Button>
@@ -120,7 +123,12 @@ export function Navbar() {
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
-                    <p className="font-medium">{user?.firstName} {user?.lastName}</p>
+                    <p className="font-medium">
+                      {user?.firstName && user?.lastName 
+                        ? `${user.firstName} ${user.lastName}` 
+                        : user?.name || user?.email?.split('@')[0] || 'User'
+                      }
+                    </p>
                     <p className="w-[200px] truncate text-sm text-muted-foreground">
                       {user?.email}
                     </p>
@@ -196,11 +204,19 @@ export function Navbar() {
                           alt={`${user?.firstName} ${user?.lastName}`} 
                         />
                         <AvatarFallback>
-                          {user?.firstName?.[0]}{user?.lastName?.[0]}
+                          {user?.firstName?.[0] && user?.lastName?.[0] 
+                            ? `${user.firstName[0]}${user.lastName[0]}` 
+                            : user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'
+                          }
                         </AvatarFallback>
                       </Avatar>
                       <div>
-                        <p className="text-sm font-medium">{user?.firstName} {user?.lastName}</p>
+                        <p className="text-sm font-medium">
+                          {user?.firstName && user?.lastName 
+                            ? `${user.firstName} ${user.lastName}` 
+                            : user?.name || user?.email?.split('@')[0] || 'User'
+                          }
+                        </p>
                         <p className="text-xs text-muted-foreground">{user?.email}</p>
                       </div>
                     </div>
