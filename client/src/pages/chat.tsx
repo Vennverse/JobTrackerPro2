@@ -62,11 +62,7 @@ export default function ChatPage() {
   // Send message mutation
   const sendMessageMutation = useMutation({
     mutationFn: async (messageData: { message: string }) => {
-      return apiRequest(`/api/chat/conversations/${selectedConversation}/messages`, {
-        method: 'POST',
-        body: JSON.stringify({ message: messageData.message }),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('POST', `/api/chat/conversations/${selectedConversation}/messages`, { message: messageData.message });
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations', selectedConversation, 'messages'] });
@@ -83,11 +79,7 @@ export default function ChatPage() {
       jobPostingId?: number;
       applicationId?: number;
     }) => {
-      return apiRequest('/api/chat/conversations', {
-        method: 'POST',
-        body: JSON.stringify(conversationData),
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('POST', '/api/chat/conversations', conversationData);
     },
     onSuccess: (response: any) => {
       setSelectedConversation(response.id);
@@ -98,10 +90,7 @@ export default function ChatPage() {
   // Mark messages as read mutation
   const markAsReadMutation = useMutation({
     mutationFn: async (conversationId: number) => {
-      return apiRequest(`/api/chat/conversations/${conversationId}/read`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return apiRequest('POST', `/api/chat/conversations/${conversationId}/read`, {});
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
@@ -110,7 +99,7 @@ export default function ChatPage() {
 
   // Update messages when conversation messages change
   useEffect(() => {
-    if (conversationMessages) {
+    if (conversationMessages && Array.isArray(conversationMessages)) {
       setMessages(conversationMessages);
     }
   }, [conversationMessages]);
