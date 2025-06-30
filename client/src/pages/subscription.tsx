@@ -103,54 +103,93 @@ export default function Subscription() {
   };
 
   const handleStripePayment = async () => {
-    // For demo purposes - in production, integrate with Stripe Elements
-    const mockPaymentIntentId = `pi_${Date.now()}_demo`;
-    
-    const result = await upgradeMutation.mutateAsync({
-      stripePaymentIntentId: mockPaymentIntentId,
-      paymentMethod: 'stripe'
-    });
-    
-    toast({
-      title: "Upgrade Successful!",
-      description: "Your Stripe payment has been processed. Welcome to Premium!",
-    });
+    // Create Stripe Checkout session
+    try {
+      const response = await apiRequest('POST', '/api/payments/stripe/create-checkout', {
+        amount: 1000, // $10 in cents
+        currency: 'usd'
+      });
+      
+      if (response.url) {
+        // Redirect to Stripe Checkout
+        window.location.href = response.url;
+      } else {
+        throw new Error('Failed to create Stripe checkout session');
+      }
+    } catch (error) {
+      console.error('Stripe payment error:', error);
+      throw error;
+    }
   };
 
   const handlePayPalPayment = async () => {
-    // For demo purposes - in production, integrate with PayPal SDK
-    const mockOrderId = `ORDER_${Date.now()}_DEMO`;
-    const mockSubscriptionId = `SUB_${Date.now()}_DEMO`;
-    
-    const result = await upgradeMutation.mutateAsync({
-      paypalOrderId: mockOrderId,
-      paypalSubscriptionId: mockSubscriptionId,
-      paymentMethod: 'paypal'
-    });
-    
-    toast({
-      title: "Upgrade Successful!",
-      description: "Your PayPal payment has been processed. Welcome to Premium!",
-    });
+    // Create PayPal order
+    try {
+      const response = await apiRequest('POST', '/api/payments/paypal/create-order', {
+        amount: '10.00',
+        currency: 'USD'
+      });
+      
+      if (response.approvalUrl) {
+        // Redirect to PayPal for approval
+        window.location.href = response.approvalUrl;
+      } else {
+        throw new Error('Failed to create PayPal order');
+      }
+    } catch (error) {
+      console.error('PayPal payment error:', error);
+      throw error;
+    }
   };
 
   const handleRazorpayPayment = async () => {
-    // For demo purposes - in production, integrate with Razorpay SDK
-    const mockPaymentId = `pay_${Date.now()}_demo`;
-    const mockOrderId = `order_${Date.now()}_demo`;
-    const mockSignature = `signature_${Date.now()}_demo`;
-    
-    const result = await upgradeMutation.mutateAsync({
-      razorpayPaymentId: mockPaymentId,
-      razorpayOrderId: mockOrderId,
-      razorpaySignature: mockSignature,
-      paymentMethod: 'razorpay'
-    });
-    
-    toast({
-      title: "Upgrade Successful!",
-      description: "Your Razorpay payment has been processed. Welcome to Premium!",
-    });
+    // Create Razorpay order
+    try {
+      const response = await apiRequest('POST', '/api/payments/razorpay/create-order', {
+        amount: 1000, // ₹10 in paise
+        currency: 'INR'
+      });
+      
+      if (response.orderId) {
+        // Initialize Razorpay payment
+        const options = {
+          key: response.keyId,
+          amount: response.amount,
+          currency: response.currency,
+          name: 'AutoJobr Premium',
+          description: 'Monthly Premium Subscription',
+          order_id: response.orderId,
+          handler: async function (response: any) {
+            try {
+              await upgradeMutation.mutateAsync({
+                razorpayPaymentId: response.razorpay_payment_id,
+                razorpayOrderId: response.razorpay_order_id,
+                razorpaySignature: response.razorpay_signature,
+                paymentMethod: 'razorpay'
+              });
+            } catch (error) {
+              console.error('Payment verification error:', error);
+            }
+          },
+          prefill: {
+            name: 'Customer',
+            email: 'customer@example.com'
+          },
+          theme: {
+            color: '#3B82F6'
+          }
+        };
+        
+        // @ts-ignore
+        const razorpay = new window.Razorpay(options);
+        razorpay.open();
+      } else {
+        throw new Error('Failed to create Razorpay order');
+      }
+    } catch (error) {
+      console.error('Razorpay payment error:', error);
+      throw error;
+    }
   };
 
   const getUsagePercentage = (used: number, limit: number) => {

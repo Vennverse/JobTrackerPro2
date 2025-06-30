@@ -1691,6 +1691,147 @@ Additional Information:
     }
   });
 
+  // Payment API endpoints for proper payment flows
+  
+  // Stripe Checkout Session
+  app.post('/api/payments/stripe/create-checkout', isAuthenticated, async (req: any, res) => {
+    try {
+      const { amount, currency } = req.body;
+      const userId = req.user.id;
+      
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      
+      const session = await stripe.checkout.sessions.create({
+        payment_method_types: ['card'],
+        line_items: [{
+          price_data: {
+            currency: currency || 'usd',
+            product_data: {
+              name: 'AutoJobr Premium Subscription',
+              description: 'Monthly premium subscription with unlimited features'
+            },
+            unit_amount: amount || 1000, // $10 in cents
+          },
+          quantity: 1,
+        }],
+        mode: 'payment',
+        success_url: `${req.get('origin')}/subscription?session_id={CHECKOUT_SESSION_ID}&payment=success`,
+        cancel_url: `${req.get('origin')}/subscription?payment=cancelled`,
+        metadata: {
+          userId: userId,
+          planType: 'premium'
+        }
+      });
+
+      res.json({ url: session.url, sessionId: session.id });
+    } catch (error) {
+      console.error('Stripe checkout error:', error);
+      res.status(500).json({ message: 'Failed to create Stripe checkout session' });
+    }
+  });
+
+  // PayPal Order Creation
+  app.post('/api/payments/paypal/create-order', isAuthenticated, async (req: any, res) => {
+    try {
+      const { amount, currency } = req.body;
+      const userId = req.user.id;
+
+      // Get PayPal access token
+      const authResponse = await fetch('https://api-m.paypal.com/v1/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'grant_type=client_credentials'
+      });
+
+      const authData = await authResponse.json();
+      const accessToken = authData.access_token;
+
+      // Create PayPal order
+      const orderResponse = await fetch('https://api-m.paypal.com/v2/checkout/orders', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          intent: 'CAPTURE',
+          purchase_units: [{
+            amount: {
+              currency_code: currency || 'USD',
+              value: amount || '10.00'
+            },
+            description: 'AutoJobr Premium Subscription'
+          }],
+          application_context: {
+            return_url: `${req.get('origin')}/subscription?payment=success`,
+            cancel_url: `${req.get('origin')}/subscription?payment=cancelled`,
+            user_action: 'PAY_NOW'
+          }
+        })
+      });
+
+      const orderData = await orderResponse.json();
+      
+      if (orderData.id) {
+        const approvalUrl = orderData.links.find((link: any) => link.rel === 'approve')?.href;
+        res.json({ orderId: orderData.id, approvalUrl });
+      } else {
+        throw new Error('Failed to create PayPal order');
+      }
+    } catch (error) {
+      console.error('PayPal order creation error:', error);
+      res.status(500).json({ message: 'Failed to create PayPal order' });
+    }
+  });
+
+  // Razorpay Order Creation
+  app.post('/api/payments/razorpay/create-order', isAuthenticated, async (req: any, res) => {
+    try {
+      const { amount, currency } = req.body;
+      const userId = req.user.id;
+
+      const orderData = {
+        amount: amount || 1000, // Amount in paise
+        currency: currency || 'INR',
+        receipt: `receipt_${userId}_${Date.now()}`,
+        notes: {
+          userId: userId,
+          planType: 'premium'
+        }
+      };
+
+      const auth = Buffer.from(`${process.env.RAZORPAY_KEY_ID}:${process.env.RAZORPAY_KEY_SECRET}`).toString('base64');
+      
+      const response = await fetch('https://api.razorpay.com/v1/orders', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${auth}`,
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(orderData)
+      });
+
+      const order = await response.json();
+      
+      if (order.id) {
+        res.json({
+          orderId: order.id,
+          amount: order.amount,
+          currency: order.currency,
+          keyId: process.env.RAZORPAY_KEY_ID
+        });
+      } else {
+        throw new Error('Failed to create Razorpay order');
+      }
+    } catch (error) {
+      console.error('Razorpay order creation error:', error);
+      res.status(500).json({ message: 'Failed to create Razorpay order' });
+    }
+  });
+
   // Auto-fill usage tracking route
   app.post('/api/usage/autofill', isAuthenticated, async (req: any, res) => {
     try {
