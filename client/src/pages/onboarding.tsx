@@ -497,8 +497,8 @@ export default function Onboarding() {
                     <div className="flex items-center gap-2">
                       <Star className="w-5 h-5 text-yellow-500" />
                       <span className="font-medium">ATS Score:</span>
-                      <Badge variant={resumeAnalysis.atsScore >= 80 ? "default" : resumeAnalysis.atsScore >= 60 ? "secondary" : "destructive"}>
-                        {resumeAnalysis.atsScore}/100
+                      <Badge variant={(onboardingStatus?.atsScore || 0) >= 80 ? "default" : (onboardingStatus?.atsScore || 0) >= 60 ? "secondary" : "destructive"}>
+                        {onboardingStatus?.atsScore || 'N/A'}/100
                       </Badge>
                     </div>
                   </div>
