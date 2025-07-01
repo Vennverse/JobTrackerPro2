@@ -36,6 +36,8 @@ export const users = pgTable("users", {
   password: varchar("password"), // For email authentication
   profileImageUrl: varchar("profile_image_url"),
   userType: varchar("user_type").default("job_seeker"), // job_seeker, recruiter
+  availableRoles: text("available_roles").default("job_seeker"), // comma-separated: job_seeker,recruiter
+  currentRole: varchar("current_role").default("job_seeker"), // active role for current session
   emailVerified: boolean("email_verified").default(false),
   companyName: varchar("company_name"), // For recruiters
   companyWebsite: varchar("company_website"), // For recruiters

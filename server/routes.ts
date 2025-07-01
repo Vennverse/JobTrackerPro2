@@ -775,6 +775,91 @@ Additional Information:
     }
   });
 
+  // Role switching API
+  app.post('/api/user/switch-role', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { role } = req.body;
+      
+      if (!role || !['job_seeker', 'recruiter'].includes(role)) {
+        return res.status(400).json({ message: "Invalid role. Must be 'job_seeker' or 'recruiter'" });
+      }
+      
+      // Get current user
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      // Check if user has access to this role
+      const availableRoles = user.availableRoles ? user.availableRoles.split(',') : ['job_seeker'];
+      if (!availableRoles.includes(role)) {
+        return res.status(403).json({ 
+          message: `Access denied. Available roles: ${availableRoles.join(', ')}`,
+          availableRoles 
+        });
+      }
+      
+      // Update user's current role
+      await storage.updateUserRole(userId, role);
+      
+      // Update session
+      req.session.user = {
+        ...req.session.user,
+        userType: role,
+        currentRole: role
+      };
+      
+      // Force session save
+      req.session.save((err: any) => {
+        if (err) {
+          console.error('Session save error during role switch:', err);
+          return res.status(500).json({ message: 'Role switch failed - session error' });
+        }
+        
+        console.log(`User ${userId} switched to ${role} role`);
+        res.json({ 
+          message: `Successfully switched to ${role} mode`,
+          currentRole: role,
+          availableRoles,
+          user: {
+            ...req.session.user,
+            userType: role,
+            currentRole: role
+          }
+        });
+      });
+      
+    } catch (error) {
+      console.error("Error switching role:", error);
+      res.status(500).json({ message: "Failed to switch role" });
+    }
+  });
+
+  // Get user roles and current role
+  app.get('/api/user/roles', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+      
+      const availableRoles = user.availableRoles ? user.availableRoles.split(',') : ['job_seeker'];
+      const currentRole = user.currentRole || user.userType || 'job_seeker';
+      
+      res.json({
+        currentRole,
+        availableRoles,
+        canSwitchRoles: availableRoles.length > 1
+      });
+    } catch (error) {
+      console.error("Error fetching user roles:", error);
+      res.status(500).json({ message: "Failed to fetch user roles" });
+    }
+  });
+
   // Skills routes
   app.get('/api/skills', isAuthenticated, async (req: any, res) => {
     try {

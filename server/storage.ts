@@ -70,6 +70,7 @@ export interface IStorage {
   getUser(id: string): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   upsertUser(user: UpsertUser): Promise<User>;
+  updateUserRole(userId: string, role: string): Promise<User>;
   
   // Resume operations
   getUserResumes(userId: string): Promise<any[]>;
@@ -197,6 +198,21 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return user;
     }, userData as User);
+  }
+
+  async updateUserRole(userId: string, role: string): Promise<User> {
+    return await handleDbOperation(async () => {
+      const [user] = await db
+        .update(users)
+        .set({ 
+          currentRole: role,
+          userType: role,
+          updatedAt: new Date() 
+        })
+        .where(eq(users.id, userId))
+        .returning();
+      return user;
+    });
   }
 
   // Profile operations
