@@ -163,10 +163,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           token,
           expiresAt,
           userId: `pending-${Date.now()}-${Math.random().toString(36).substring(2)}`, // Temporary ID for pending verification
+          userType: "recruiter",
         });
 
         // Send actual email with Resend
-        const emailHtml = generateVerificationEmail(token, companyName);
+        const emailHtml = generateVerificationEmail(token, companyName, "recruiter");
         const emailSent = await sendEmail({
           to: email,
           subject: `Verify your company email - ${companyName}`,

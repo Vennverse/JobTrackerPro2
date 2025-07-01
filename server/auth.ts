@@ -6,7 +6,7 @@ import { storage } from "./storage";
 import { users } from "@shared/schema";
 import { eq } from "drizzle-orm";
 import type { Express, RequestHandler } from "express";
-import { sendEmail, generatePasswordResetEmail } from "./emailService";
+import { sendEmail, generatePasswordResetEmail, generateVerificationEmail } from "./emailService";
 import crypto from "crypto";
 
 // Simple auth configuration
@@ -362,6 +362,56 @@ export async function setupAuth(app: Express) {
     } catch (error) {
       console.error('Email verification error:', error);
       res.status(500).json({ message: 'Email verification failed' });
+    }
+  });
+
+  // Send verification email for job seekers
+  app.post('/api/auth/send-user-verification', async (req, res) => {
+    try {
+      const { email, firstName, lastName } = req.body;
+
+      if (!email || !firstName) {
+        return res.status(400).json({ message: 'Email and first name are required' });
+      }
+
+      // Generate verification token
+      const token = crypto.randomUUID();
+      const expiresAt = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+      try {
+        // Save verification token
+        await storage.createEmailVerificationToken({
+          email,
+          token,
+          expiresAt,
+          userId: `pending-jobseeker-${Date.now()}-${Math.random().toString(36).substring(2)}`,
+          userType: "job_seeker",
+        });
+
+        // Send email with appropriate template
+        const userName = `${firstName} ${lastName || ''}`.trim();
+        const emailHtml = generateVerificationEmail(token, userName, "job_seeker");
+        const emailSent = await sendEmail({
+          to: email,
+          subject: 'Verify Your Email - AutoJobr',
+          html: emailHtml,
+        });
+
+        if (emailSent) {
+          res.json({ 
+            message: 'Verification email sent successfully',
+            email: email
+          });
+        } else {
+          res.status(500).json({ message: 'Failed to send verification email' });
+        }
+      } catch (error) {
+        console.error('Database error during verification:', error);
+        res.status(500).json({ message: 'Database connection issue. Please try again later.' });
+      }
+    } catch (error) {
+      console.error('Email verification error:', error);
+      res.status(500).json({ message: 'Failed to send verification email' });
     }
   });
 

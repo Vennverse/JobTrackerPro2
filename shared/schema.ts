@@ -393,6 +393,7 @@ export const emailVerificationTokens = pgTable("email_verification_tokens", {
   token: varchar("token").notNull().unique(),
   email: varchar("email").notNull(),
   userId: varchar("user_id").notNull(),
+  userType: varchar("user_type").default("job_seeker"), // 'job_seeker' or 'recruiter'
   companyName: varchar("company_name"), // Optional: for recruiter verification
   companyWebsite: varchar("company_website"), // Optional: for recruiter verification
   verified: boolean("verified").default(false),
