@@ -389,14 +389,34 @@ export async function setupAuth(app: Express) {
         return res.status(400).json({ message: 'Invalid or expired verification token' });
       }
 
-      // Update user's email verification status
-      const user = await storage.getUser(tokenRecord.userId);
-      if (user) {
+      // Find user by email from the token record
+      let [user] = await db.select().from(users).where(eq(users.email, tokenRecord.email));
+      
+      if (!user && tokenRecord.userType === 'recruiter') {
+        // For recruiters, create the user account during verification
+        const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const newUser = await storage.upsertUser({
+          id: userId,
+          email: tokenRecord.email,
+          firstName: tokenRecord.companyName || 'Recruiter',
+          lastName: '',
+          password: null, // Recruiter accounts don't use password initially
+          userType: 'recruiter',
+          emailVerified: true, // Verified during this process
+          profileImageUrl: null,
+          companyName: tokenRecord.companyName,
+          companyWebsite: tokenRecord.companyWebsite
+        });
+        user = newUser;
+      } else if (user) {
+        // Update existing user's verification status
         await storage.upsertUser({
           ...user,
           emailVerified: true,
         });
+      }
 
+      if (user) {
         // Delete used token
         await storage.deleteEmailVerificationToken(token as string);
 
@@ -404,16 +424,30 @@ export async function setupAuth(app: Express) {
         (req as any).session.user = {
           id: user.id,
           email: user.email,
-          name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          name: user.userType === 'recruiter' 
+            ? (user.companyName || 'Recruiter')
+            : `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          firstName: user.firstName,
+          lastName: user.lastName,
+          userType: user.userType
         };
 
-        // Redirect based on user type: recruiters go to post-job, job seekers go to onboarding/dashboard
-        if (user.userType === 'recruiter') {
-          res.redirect('/post-job?verified=true');
-        } else {
-          // For job seekers, check if onboarding is completed
-          res.redirect('/onboarding?verified=true');
-        }
+        // Force session save before redirecting
+        (req as any).session.save((err: any) => {
+          if (err) {
+            console.error('Session save error during verification:', err);
+            return res.status(500).json({ message: 'Verification failed - session error' });
+          }
+          
+          console.log('Verification session saved successfully for user:', user.id);
+          
+          // Redirect based on user type
+          if (user.userType === 'recruiter') {
+            res.redirect('/post-job?verified=true');
+          } else {
+            res.redirect('/onboarding?verified=true');
+          }
+        });
       } else {
         return res.status(400).json({ message: 'User not found' });
       }
