@@ -38,14 +38,16 @@ const authConfig = {
 };
 
 export async function setupAuth(app: Express) {
-  // Setup session middleware
+  // Setup session middleware with memory store for development
   app.use(session({
     secret: authConfig.session.secret,
     resave: false,
     saveUninitialized: false,
     cookie: {
-      secure: process.env.NODE_ENV === 'production',
+      secure: false, // Set to false for development
+      httpOnly: true,
       maxAge: authConfig.session.maxAge,
+      sameSite: 'lax',
     },
   }));
 
@@ -299,19 +301,75 @@ export async function setupAuth(app: Express) {
         id: user.id,
         email: user.email,
         name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userType: user.userType
       };
 
-      res.json({ 
-        message: 'Login successful', 
-        user: {
-          id: user.id,
-          email: user.email,
-          name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+      // Force session save before responding
+      (req as any).session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Login failed - session error' });
         }
+        
+        console.log('Session saved successfully for user:', user.id);
+        res.json({ 
+          message: 'Login successful', 
+          user: {
+            id: user.id,
+            email: user.email,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            userType: user.userType
+          }
+        });
       });
     } catch (error) {
       console.error('Email login error:', error);
       res.status(500).json({ message: 'Login failed' });
+    }
+  });
+
+  // Demo login endpoint for testing
+  app.post('/api/auth/demo-login', async (req, res) => {
+    try {
+      // Get the existing user
+      const [user] = await db.select().from(users).where(eq(users.email, 'shubhamdubeyskd2001@gmail.com'));
+      if (!user) {
+        return res.status(404).json({ message: 'Demo user not found' });
+      }
+
+      // Store session
+      (req as any).session.user = {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userType: user.userType || 'job_seeker'
+      };
+
+      // Force session save before responding
+      (req as any).session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Login failed - session error' });
+        }
+        
+        console.log('Demo session saved successfully for user:', user.id);
+        res.json({ 
+          message: 'Demo login successful', 
+          user: {
+            id: user.id,
+            email: user.email,
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            userType: user.userType || 'job_seeker'
+          }
+        });
+      });
+    } catch (error) {
+      console.error('Demo login error:', error);
+      res.status(500).json({ message: 'Demo login failed' });
     }
   });
 
@@ -580,21 +638,26 @@ export async function setupAuth(app: Express) {
 // Middleware to check authentication
 export const isAuthenticated: RequestHandler = async (req: any, res, next) => {
   try {
+    console.log('Session check:', req.session?.user ? 'User found' : 'No user in session');
+    console.log('Session ID:', req.sessionID);
+    
     const sessionUser = req.session?.user;
     
     if (!sessionUser) {
+      console.log('No authenticated user in session');
       return res.status(401).json({ message: "Not authenticated" });
     }
 
-
-
-    // For real users, also use session data (avoid database calls for now)
+    console.log('Authenticated user:', sessionUser.id);
+    
+    // For real users, use session data
     req.user = {
       id: sessionUser.id,
       email: sessionUser.email,
-      name: sessionUser.name,
-      firstName: 'User',
-      lastName: 'Name',
+      name: sessionUser.name || `${sessionUser.firstName || ''} ${sessionUser.lastName || ''}`.trim(),
+      firstName: sessionUser.firstName || 'User',
+      lastName: sessionUser.lastName || 'Name',
+      userType: sessionUser.userType || 'job_seeker'
     };
     next();
   } catch (error) {
