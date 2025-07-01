@@ -58,57 +58,55 @@ class GroqService {
     const analysisId = Math.random().toString(36).substring(7);
     
     const prompt = `
-You are an expert ATS (Applicant Tracking System) analyzer. Analyze this resume thoroughly and provide a detailed, objective assessment.
+You are an expert ATS (Applicant Tracking System) analyzer and career coach. Analyze this resume comprehensively and provide a detailed, personalized assessment.
 
-RESUME TEXT TO ANALYZE:
+RESUME CONTENT:
 ${resumeText}
 
 ${userProfile ? `
-USER PROFILE CONTEXT:
-- Professional Title: ${userProfile.professionalTitle || 'Not specified'}
-- Years Experience: ${userProfile.yearsExperience || 'Not specified'}
+CANDIDATE PROFILE:
+- Role: ${userProfile.professionalTitle || 'Not specified'}
+- Experience: ${userProfile.yearsExperience || 'Not specified'} years
 - Target Industries: ${userProfile.targetIndustries?.join(', ') || 'Not specified'}
 ` : ''}
 
-ANALYSIS ID: ${analysisId}
+ANALYSIS REQUIREMENTS:
+1. Calculate ATS score (15-95 range) based on:
+   - Quantifiable achievements and metrics (25 points max)
+   - Technical skills and industry keywords (20 points max)
+   - Professional formatting and structure (15 points max)
+   - Action verbs and impact statements (15 points max)
+   - Contact information and sections (10 points max)
+   - Education and certifications (10 points max)
 
-Provide your analysis in VALID JSON format only. Calculate the ATS score based on actual resume content analysis:
+2. Provide specific, actionable feedback based on what you actually see in this resume
 
-SCORING METHODOLOGY:
-- Examine the actual resume content for quantifiable achievements, skills, keywords
-- Assess formatting quality, section organization, and ATS-friendly structure
-- Consider industry relevance and keyword optimization
-- Score range: 0-100 (calculate based on actual content, not fixed responses)
-
-Return ONLY valid JSON in this exact format:
+Return ONLY valid JSON:
 {
-  "atsScore": [calculate score 0-100 based on actual resume analysis],
+  "atsScore": [realistic score 15-95 based on actual content analysis],
   "recommendations": [
-    "actionable recommendations based on actual resume content"
+    "Add specific metrics: Instead of 'improved processes', write 'improved processes by 30%'",
+    "Include relevant technical skills for your target role",
+    "Use stronger action verbs like 'spearheaded', 'optimized', 'architected'"
   ],
   "keywordOptimization": {
-    "missingKeywords": ["specific keywords missing from this resume"],
-    "overusedKeywords": ["keywords that appear too frequently in this resume"],
-    "suggestions": ["specific keyword recommendations for this resume"]
+    "missingKeywords": ["role-specific keywords you should add"],
+    "overusedKeywords": ["words that appear too frequently"],
+    "suggestions": ["industry-specific terms to include"]
   },
   "formatting": {
-    "score": [calculate formatting score 0-100],
-    "issues": ["actual formatting issues found in this resume"],
-    "improvements": ["specific formatting improvements for this resume"]
+    "score": [0-100 based on structure, readability, ATS-friendliness],
+    "issues": ["specific formatting problems observed"],
+    "improvements": ["concrete formatting fixes needed"]
   },
   "content": {
-    "strengthsFound": ["actual strengths found in this specific resume"],
-    "weaknesses": ["actual weaknesses in this specific resume"],
-    "suggestions": ["specific content improvements for this resume"]
+    "strengthsFound": ["specific strong points in this resume"],
+    "weaknesses": ["actual content gaps identified"],
+    "suggestions": ["targeted content improvements"]
   }
 }
 
-IMPORTANT: 
-- Analyze the ACTUAL resume content, not generic advice
-- Calculate scores based on what you observe in this specific resume
-- Provide specific, personalized recommendations
-- Different resumes should get different scores based on their actual content
-- Return ONLY the JSON object, no additional text`;
+Focus on THIS specific resume content. Provide personalized, actionable advice that will genuinely improve ATS performance.`;
 
     try {
       const completion = await this.client.chat.completions.create({
@@ -144,101 +142,134 @@ IMPORTANT:
         
         console.log("Parsed analysis - ATS Score:", analysis.atsScore);
         
-        // Always override the AI score with our dynamic scoring to ensure variation
-        // The AI seems to consistently return 42, so we'll calculate based on actual content
-        const contentLength = resumeText.length;
-        const hasNumbers = /\d+|percent|%|\$|dollars|years?|months?|weeks?|days?/i.test(resumeText);
-        const hasStrongSkills = /javascript|python|react|node|sql|aws|azure|docker|kubernetes|machine learning|data science|project management|leadership|agile|scrum/i.test(resumeText);
-        const hasBasicSkills = /skill|experience|project|achieve|develop|manage|design|implement|create|build/i.test(resumeText);
-        const hasEducation = /education|degree|university|college|school|bachelor|master|phd|certification/i.test(resumeText);
-        const hasContact = /email|phone|linkedin|github|portfolio|website/i.test(resumeText);
-        const hasActionVerbs = /led|managed|developed|created|implemented|designed|optimized|improved|increased|reduced|achieved/i.test(resumeText);
-        const hasCompanyNames = /inc\.|llc|corp|company|technologies|systems|solutions/i.test(resumeText);
-        
-        // Advanced content-based scoring
-        let dynamicScore = 25; // Base score
-        
-        // Content quality factors
-        if (contentLength > 2000) dynamicScore += 20;
-        else if (contentLength > 1000) dynamicScore += 15;
-        else if (contentLength > 500) dynamicScore += 10;
-        
-        if (hasNumbers) dynamicScore += 18; // Quantifiable achievements are crucial
-        if (hasStrongSkills) dynamicScore += 20; // Industry-specific skills
-        else if (hasBasicSkills) dynamicScore += 12;
-        
-        if (hasEducation) dynamicScore += 12;
-        if (hasContact) dynamicScore += 8;
-        if (hasActionVerbs) dynamicScore += 15; // Strong action verbs
-        if (hasCompanyNames) dynamicScore += 10; // Professional experience
-        
-        // Add content-based variation to ensure different scores for different resumes
-        const contentHash = resumeText.split('').reduce((a, b) => {
-          a = ((a << 5) - a) + b.charCodeAt(0);
-          return a & a;
-        }, 0);
-        const variation = Math.abs(contentHash % 20) - 10; // ±10 points variation
-        dynamicScore += variation;
-        
-        // Ensure reasonable bounds
-        dynamicScore = Math.max(25, Math.min(92, dynamicScore));
-        
-        // Override the AI score with our calculated score
-        analysis.atsScore = dynamicScore;
-        console.log("Dynamic ATS score calculated:", analysis.atsScore, "for content length:", contentLength);
+        // Use AI score if it's reasonable, otherwise calculate dynamic score
+        if (analysis.atsScore && analysis.atsScore >= 20 && analysis.atsScore <= 95) {
+          // AI provided a reasonable score, use it with minor adjustments
+          console.log("Using AI-provided ATS score:", analysis.atsScore);
+        } else {
+          // Calculate a more realistic content-based score
+          const contentLength = resumeText.length;
+          const sections = resumeText.toLowerCase().split(/(?:experience|education|skills|projects|summary|objective|contact)/i).length - 1;
+          
+          // Detailed analysis patterns
+          const patterns = {
+            quantifiableResults: /(\d+%|\d+\+|increased|decreased|improved|reduced|achieved|generated|\$\d+|saved|revenue|profit|efficiency)/gi,
+            technicalSkills: /javascript|python|java|react|angular|vue|node\.?js|sql|mongodb|postgresql|aws|azure|gcp|docker|kubernetes|git|api|html|css|bootstrap|tailwind|typescript|c\+\+|c#|php|ruby|go|rust|scala|r|matlab|tableau|powerbi|excel|salesforce|adobe|figma|sketch|photoshop|illustrator/gi,
+            softSkills: /leadership|management|communication|teamwork|problem.solving|analytical|creative|adaptable|organized|detail.oriented|time.management|collaboration|negotiation|presentation|mentoring|training/gi,
+            actionVerbs: /\b(led|managed|developed|created|implemented|designed|optimized|analyzed|coordinated|supervised|established|executed|delivered|achieved|maintained|collaborated|improved|streamlined|initiated|facilitated)\b/gi,
+            education: /bachelor|master|phd|degree|university|college|certification|coursework|gpa|graduated|studied|major|minor/gi,
+            contactInfo: /email|phone|linkedin|github|portfolio|website|address/gi,
+            companyExperience: /\b(google|microsoft|amazon|apple|facebook|meta|netflix|uber|airbnb|tesla|ibm|oracle|salesforce|adobe|intel|nvidia|twitter|spotify|slack|zoom|atlassian|shopify|stripe|paypal|visa|mastercard|jp.?morgan|goldman.sachs|mckinsey|deloitte|accenture|pwc|ey|kpmg)\b/gi
+          };
+          
+          // Count matches for each category
+          const scores = {
+            quantifiableResults: Math.min((resumeText.match(patterns.quantifiableResults) || []).length * 4, 25),
+            technicalSkills: Math.min((resumeText.match(patterns.technicalSkills) || []).length * 2, 20),
+            softSkills: Math.min((resumeText.match(patterns.softSkills) || []).length * 1.5, 15),
+            actionVerbs: Math.min((resumeText.match(patterns.actionVerbs) || []).length * 1, 15),
+            education: Math.min((resumeText.match(patterns.education) || []).length * 2, 10),
+            contactInfo: Math.min((resumeText.match(patterns.contactInfo) || []).length * 2, 8),
+            companyExperience: Math.min((resumeText.match(patterns.companyExperience) || []).length * 3, 12)
+          };
+          
+          // Base scoring factors
+          let baseScore = 20;
+          
+          // Content length scoring (optimal range: 1000-2500 chars)
+          if (contentLength > 2500) baseScore += 8;
+          else if (contentLength > 1500) baseScore += 12;
+          else if (contentLength > 800) baseScore += 10;
+          else if (contentLength > 400) baseScore += 6;
+          else baseScore += 2;
+          
+          // Section organization bonus
+          baseScore += Math.min(sections * 2, 8);
+          
+          // Calculate final score
+          const totalScore = baseScore + Object.values(scores).reduce((sum, score) => sum + score, 0);
+          
+          // Add content uniqueness factor
+          const uniqueWords = new Set(resumeText.toLowerCase().match(/\b\w+\b/g) || []).size;
+          const uniquenessBonus = Math.min(Math.floor(uniqueWords / 50), 5);
+          
+          const finalScore = Math.max(15, Math.min(95, totalScore + uniquenessBonus));
+          
+          analysis.atsScore = finalScore;
+          console.log("Calculated enhanced ATS score:", finalScore, "based on content analysis");
+          console.log("Score breakdown:", { baseScore, ...scores, uniquenessBonus, sections, contentLength });
+        }
         
       } catch (parseError) {
         console.error("Failed to parse Groq response as JSON:", content);
         console.error("Parse error:", parseError);
         
-        // Generate a dynamic fallback score based on resume content
+        // Generate realistic fallback score using comprehensive content analysis
         const contentLength = resumeText.length;
-        const hasNumbers = /\d+/.test(resumeText);
-        const hasSkills = /skill|experience|project|achieve|develop|manage/i.test(resumeText);
-        const hasEducation = /education|degree|university|college|school/i.test(resumeText);
-        const hasContact = /email|phone|linkedin|github/i.test(resumeText);
+        const sections = resumeText.toLowerCase().split(/(?:experience|education|skills|projects|summary|objective|contact)/i).length - 1;
         
-        // Content-based dynamic scoring
-        let dynamicScore = 25; // Base score
-        if (contentLength > 1000) dynamicScore += 20;
-        else if (contentLength > 500) dynamicScore += 10;
+        // Use the same detailed patterns as the main scoring system
+        const patterns = {
+          quantifiableResults: /(\d+%|\d+\+|increased|decreased|improved|reduced|achieved|generated|\$\d+|saved|revenue|profit|efficiency)/gi,
+          technicalSkills: /javascript|python|java|react|angular|vue|node\.?js|sql|mongodb|postgresql|aws|azure|gcp|docker|kubernetes|git|api|html|css|bootstrap|tailwind|typescript|c\+\+|c#|php|ruby|go|rust|scala|r|matlab|tableau|powerbi|excel|salesforce|adobe|figma|sketch|photoshop|illustrator/gi,
+          softSkills: /leadership|management|communication|teamwork|problem.solving|analytical|creative|adaptable|organized|detail.oriented|time.management|collaboration|negotiation|presentation|mentoring|training/gi,
+          actionVerbs: /\b(led|managed|developed|created|implemented|designed|optimized|analyzed|coordinated|supervised|established|executed|delivered|achieved|maintained|collaborated|improved|streamlined|initiated|facilitated)\b/gi,
+          education: /bachelor|master|phd|degree|university|college|certification|coursework|gpa|graduated|studied|major|minor/gi,
+          contactInfo: /email|phone|linkedin|github|portfolio|website|address/gi
+        };
         
-        if (hasNumbers) dynamicScore += 15;
-        if (hasSkills) dynamicScore += 20;
-        if (hasEducation) dynamicScore += 15;
-        if (hasContact) dynamicScore += 10;
+        // Calculate category scores
+        const scores = {
+          quantifiableResults: Math.min((resumeText.match(patterns.quantifiableResults) || []).length * 4, 25),
+          technicalSkills: Math.min((resumeText.match(patterns.technicalSkills) || []).length * 2, 20),
+          softSkills: Math.min((resumeText.match(patterns.softSkills) || []).length * 1.5, 15),
+          actionVerbs: Math.min((resumeText.match(patterns.actionVerbs) || []).length * 1, 15),
+          education: Math.min((resumeText.match(patterns.education) || []).length * 2, 10),
+          contactInfo: Math.min((resumeText.match(patterns.contactInfo) || []).length * 2, 8)
+        };
         
-        // Add some variation based on content hash
-        const contentHash = resumeText.length + resumeText.charCodeAt(0) + resumeText.charCodeAt(Math.floor(resumeText.length / 2));
-        const variation = (contentHash % 15) - 7; // ±7 points variation
-        dynamicScore += variation;
+        // Base scoring factors
+        let baseScore = 15;
         
-        dynamicScore = Math.max(20, Math.min(85, dynamicScore)); // Keep within reasonable bounds
+        // Content length scoring (realistic expectations)
+        if (contentLength > 2500) baseScore += 8;
+        else if (contentLength > 1500) baseScore += 12;
+        else if (contentLength > 800) baseScore += 10;
+        else if (contentLength > 400) baseScore += 6;
+        else baseScore += 2;
         
-        console.log("Generated dynamic fallback score:", dynamicScore);
+        // Section organization bonus
+        baseScore += Math.min(sections * 2, 8);
+        
+        // Calculate final realistic score
+        const totalScore = baseScore + Object.values(scores).reduce((sum, score) => sum + score, 0);
+        const dynamicScore = Math.max(15, Math.min(85, totalScore));
+        
+        console.log("Generated enhanced fallback score:", dynamicScore);
+        console.log("Fallback score breakdown:", { baseScore, ...scores, sections, contentLength });
         
         analysis = {
           atsScore: dynamicScore,
           recommendations: [
-            "Resume analysis completed with content-based scoring",
-            "Consider adding more quantifiable achievements with numbers",
-            "Include relevant technical skills and keywords for your industry",
-            "Ensure proper formatting with clear sections"
+            "Add specific metrics and numbers to quantify your achievements",
+            "Include more relevant technical skills for your target industry",
+            "Use stronger action verbs to describe your accomplishments",
+            "Ensure all contact information is clearly visible"
           ],
           keywordOptimization: {
-            missingKeywords: hasSkills ? ["industry-specific terms", "advanced technical skills"] : ["technical skills", "relevant experience", "industry keywords"],
+            missingKeywords: scores.technicalSkills < 10 ? ["technical skills", "industry-specific tools"] : ["advanced technical skills", "leadership keywords"],
             overusedKeywords: [],
-            suggestions: ["Add more specific technical terms", "Include metrics and numbers", "Use action verbs"]
+            suggestions: ["Add role-specific technical terms", "Include metrics and percentages", "Use action-oriented language"]
           },
           formatting: {
-            score: Math.max(50, dynamicScore - 10),
-            issues: contentLength < 500 ? ["Resume appears too brief"] : [],
-            improvements: ["Use consistent formatting", "Include clear section headers", "Add bullet points for achievements"]
+            score: Math.max(45, Math.min(85, dynamicScore - 5)),
+            issues: contentLength < 500 ? ["Resume appears too brief for ATS systems"] : sections < 3 ? ["Missing standard resume sections"] : [],
+            improvements: ["Use consistent bullet points", "Include clear section headers", "Ensure proper spacing and alignment"]
           },
           content: {
-            strengthsFound: hasEducation ? ["Educational background included"] : ["Basic resume structure present"],
-            weaknesses: contentLength < 500 ? ["Resume lacks detail"] : hasNumbers ? [] : ["Missing quantifiable achievements"],
-            suggestions: ["Add specific accomplishments with metrics", "Include more detailed work experience", "Highlight relevant skills"]
+            strengthsFound: scores.education > 5 ? ["Strong educational background"] : scores.actionVerbs > 8 ? ["Good use of action verbs"] : ["Well-structured content"],
+            weaknesses: scores.quantifiableResults < 10 ? ["Lacks quantifiable achievements"] : scores.technicalSkills < 8 ? ["Missing technical skills"] : ["Could benefit from more specific details"],
+            suggestions: ["Add specific numbers and percentages to achievements", "Include more detailed work experience descriptions", "Highlight measurable impact and results"]
           }
         };
       }
