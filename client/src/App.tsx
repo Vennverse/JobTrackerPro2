@@ -63,14 +63,15 @@ function Router() {
             </>
           ) : user?.userType === 'job_seeker' ? (
             <>
-              {/* Job seeker routes */}
-              {!user?.onboardingCompleted ? (
+              {/* Job seeker routes - check onboarding status */}
+              {user?.onboardingCompleted === false ? (
                 <>
                   <Route path="/onboarding" component={Onboarding} />
                   <Route path="/" component={Onboarding} />
                 </>
               ) : (
                 <>
+                  {/* Main dashboard routes for completed job seekers */}
                   <Route path="/" component={Dashboard} />
                   <Route path="/onboarding" component={Onboarding} />
                   <Route path="/profile" component={Profile} />
@@ -85,7 +86,7 @@ function Router() {
             </>
           ) : (
             <>
-              {/* Default to dashboard for users without explicit type */}
+              {/* Default routes for users without explicit type (treat as job seekers) */}
               <Route path="/" component={Dashboard} />
               <Route path="/onboarding" component={Onboarding} />
               <Route path="/profile" component={Profile} />

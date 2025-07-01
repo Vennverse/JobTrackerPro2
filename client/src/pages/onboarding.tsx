@@ -213,19 +213,22 @@ export default function Onboarding() {
       await profileMutation.mutateAsync({ ...formData, onboardingCompleted: true });
       
       // Invalidate queries to refresh user auth state
-      queryClient.invalidateQueries({ queryKey: ["/api/user"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/onboarding/status"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/user"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/onboarding/status"] });
+      await queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
+      
+      // Force refetch user data to ensure onboarding status is updated
+      await queryClient.refetchQueries({ queryKey: ["/api/user"] });
       
       toast({
         title: "Onboarding Complete!",
         description: "Your profile is ready for job applications.",
       });
       
-      // Small delay to ensure backend is updated before redirect
+      // Small delay to ensure all queries are updated before redirect
       setTimeout(() => {
-        setLocation("/dashboard");
-      }, 500);
+        setLocation("/");
+      }, 1000);
     }
   };
 

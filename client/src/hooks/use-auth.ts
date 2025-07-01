@@ -10,6 +10,8 @@ interface User {
   lastName?: string;
   onboardingCompleted?: boolean;
   planType?: string;
+  userType?: string;
+  emailVerified?: boolean;
 }
 
 export function useAuth() {

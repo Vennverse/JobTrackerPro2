@@ -102,10 +102,22 @@ export default function Dashboard() {
   const [selectedFilter, setSelectedFilter] = useState("all");
   const [isUploadingResume, setIsUploadingResume] = useState(false);
 
-  // Redirect to home if not authenticated
+  // Show loading while checking authentication
+  if (isLoading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-indigo-50 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading dashboard...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Redirect to auth if not authenticated
   useEffect(() => {
     if (!isLoading && !isAuthenticated) {
-      window.location.href = "/";
+      window.location.href = "/auth";
       return;
     }
   }, [isAuthenticated, isLoading]);
