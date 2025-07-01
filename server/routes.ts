@@ -162,6 +162,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           companyWebsite,
           token,
           expiresAt,
+          userId: `pending-${Date.now()}-${Math.random().toString(36).substring(2)}`, // Temporary ID for pending verification
         });
 
         // Send actual email with Resend
