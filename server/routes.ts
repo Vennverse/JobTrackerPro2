@@ -1334,6 +1334,109 @@ Additional Information:
     }
   });
 
+  // Job Compatibility Analysis for Recruiters
+  app.get('/api/recruiter/job-compatibility/:applicantId/:jobId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const applicantId = req.params.applicantId;
+      const jobId = parseInt(req.params.jobId);
+      
+      const user = await storage.getUser(userId);
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Get job posting details
+      const jobPosting = await storage.getJobPosting(jobId);
+      if (!jobPosting || jobPosting.recruiterId !== userId) {
+        return res.status(404).json({ message: "Job posting not found or unauthorized" });
+      }
+
+      // Get applicant profile and details
+      const [applicantUser, applicantProfile] = await Promise.all([
+        storage.getUser(applicantId),
+        storage.getUserProfile(applicantId)
+      ]);
+
+      if (!applicantUser || !applicantProfile) {
+        return res.status(404).json({ message: "Applicant not found" });
+      }
+
+      // Create job data for analysis
+      const jobData = {
+        title: jobPosting.title,
+        company: jobPosting.companyName,
+        description: jobPosting.description,
+        requirements: jobPosting.requirements || "",
+        qualifications: jobPosting.qualifications || "",
+        benefits: jobPosting.benefits || ""
+      };
+
+      // Create applicant profile for analysis
+      const userProfile = {
+        fullName: applicantProfile.fullName || "",
+        professionalTitle: applicantProfile.professionalTitle || "",
+        yearsExperience: applicantProfile.yearsExperience || 0,
+        summary: applicantProfile.summary || "",
+        skills: [] as any[],
+        workExperience: [] as any[],
+        education: [] as any[]
+      };
+
+      try {
+        // Get applicant's skills, work experience, and education
+        const [skills, workExperience, education] = await Promise.all([
+          storage.getUserSkills(applicantId).catch(() => []),
+          storage.getUserWorkExperience(applicantId).catch(() => []),
+          storage.getUserEducation(applicantId).catch(() => [])
+        ]);
+
+        userProfile.skills = skills.map(skill => ({
+          skillName: skill.skillName,
+          proficiencyLevel: skill.proficiencyLevel || "intermediate",
+          yearsExperience: skill.yearsExperience || 1
+        }));
+
+        userProfile.workExperience = workExperience.map(exp => ({
+          position: exp.position,
+          company: exp.company,
+          description: exp.description || ""
+        }));
+
+        userProfile.education = education.map(edu => ({
+          degree: edu.degree,
+          fieldOfStudy: edu.fieldOfStudy || "",
+          institution: edu.institution
+        }));
+      } catch (error) {
+        console.log("Could not fetch additional applicant data:", error);
+      }
+      
+      // Analyze job compatibility with Groq AI
+      const analysis = await groqService.analyzeJobMatch(jobData, userProfile);
+
+      res.json({
+        matchScore: analysis.matchScore,
+        matchingSkills: analysis.matchingSkills,
+        missingSkills: analysis.missingSkills,
+        skillGaps: analysis.skillGaps,
+        seniorityLevel: analysis.seniorityLevel,
+        workMode: analysis.workMode,
+        jobType: analysis.jobType,
+        roleComplexity: analysis.roleComplexity,
+        careerProgression: analysis.careerProgression,
+        industryFit: analysis.industryFit,
+        cultureFit: analysis.cultureFit,
+        applicationRecommendation: analysis.applicationRecommendation,
+        tailoringAdvice: analysis.tailoringAdvice,
+        interviewPrepTips: analysis.interviewPrepTips
+      });
+    } catch (error) {
+      console.error("Error analyzing job compatibility:", error);
+      res.status(500).json({ message: "Failed to analyze job compatibility" });
+    }
+  });
+
   // Onboarding Status and Completion Routes
   app.get('/api/onboarding/status', isAuthenticated, async (req: any, res) => {
     try {

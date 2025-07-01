@@ -22,6 +22,10 @@ export default function RecruiterDashboard() {
   const [applicationStatus, setApplicationStatus] = useState("");
   const [recruiterNotes, setRecruiterNotes] = useState("");
   const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(null);
+  const [showResumePreview, setShowResumePreview] = useState(false);
+  const [resumePreview, setResumePreview] = useState("");
+  const [jobCompatibility, setJobCompatibility] = useState<any>(null);
+  const [loadingCompatibility, setLoadingCompatibility] = useState(false);
 
   // Fetch recruiter's job postings
   const { data: jobPostings = [], isLoading: jobsLoading } = useQuery({
@@ -43,6 +47,19 @@ export default function RecruiterDashboard() {
     queryKey: [`/api/recruiter/applicant/${selectedApplicantId}`],
     enabled: !!selectedApplicantId,
   });
+
+  // Get job compatibility analysis
+  const getJobCompatibility = async (applicantId: string, jobId: number) => {
+    try {
+      const response = await fetch(`/api/recruiter/job-compatibility/${applicantId}/${jobId}`, {
+        credentials: 'include'
+      });
+      return response.json();
+    } catch (error) {
+      console.error('Failed to get job compatibility:', error);
+      return null;
+    }
+  };
 
   // Mutation for updating application status
   const updateApplicationMutation = useMutation({
@@ -619,6 +636,99 @@ export default function RecruiterDashboard() {
                                         </CardContent>
                                       </Card>
                                     )}
+
+                                    {/* Job Compatibility Analysis */}
+                                    <Card>
+                                      <CardHeader>
+                                        <div className="flex items-center justify-between">
+                                          <CardTitle className="flex items-center gap-2">
+                                            <Star className="w-5 h-5 text-yellow-500" />
+                                            Job Compatibility Analysis
+                                          </CardTitle>
+                                          <Button 
+                                            variant="outline" 
+                                            size="sm"
+                                            onClick={async () => {
+                                              setLoadingCompatibility(true);
+                                              const compatibility = await getJobCompatibility(
+                                                application.applicantId, 
+                                                application.jobPostingId
+                                              );
+                                              setJobCompatibility(compatibility);
+                                              setLoadingCompatibility(false);
+                                            }}
+                                            disabled={loadingCompatibility}
+                                          >
+                                            {loadingCompatibility ? "Analyzing..." : "Analyze Fit"}
+                                          </Button>
+                                        </div>
+                                      </CardHeader>
+                                      <CardContent>
+                                        {loadingCompatibility ? (
+                                          <div className="flex items-center justify-center py-4">
+                                            <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
+                                          </div>
+                                        ) : jobCompatibility ? (
+                                          <div className="space-y-4">
+                                            <div className="flex items-center gap-4">
+                                              <div className="flex-1">
+                                                <div className="flex items-center gap-2 mb-2">
+                                                  <span className="text-sm font-medium">Overall Match</span>
+                                                  <Badge variant="secondary" className="bg-blue-100 text-blue-700">
+                                                    {jobCompatibility.matchScore || application.matchScore || 0}%
+                                                  </Badge>
+                                                </div>
+                                                <div className="w-full bg-gray-200 rounded-full h-2">
+                                                  <div 
+                                                    className="bg-blue-600 h-2 rounded-full" 
+                                                    style={{ width: `${jobCompatibility.matchScore || application.matchScore || 0}%` }}
+                                                  ></div>
+                                                </div>
+                                              </div>
+                                            </div>
+                                            
+                                            {jobCompatibility.matchingSkills && (
+                                              <div>
+                                                <Label className="text-sm font-medium text-green-700">Matching Skills</Label>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {jobCompatibility.matchingSkills.slice(0, 5).map((skill: string, index: number) => (
+                                                    <Badge key={index} variant="secondary" className="bg-green-100 text-green-700 text-xs">
+                                                      {skill}
+                                                    </Badge>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                            
+                                            {jobCompatibility.missingSkills && (
+                                              <div>
+                                                <Label className="text-sm font-medium text-orange-700">Skills to Develop</Label>
+                                                <div className="flex flex-wrap gap-1 mt-1">
+                                                  {jobCompatibility.missingSkills.slice(0, 5).map((skill: string, index: number) => (
+                                                    <Badge key={index} variant="secondary" className="bg-orange-100 text-orange-700 text-xs">
+                                                      {skill}
+                                                    </Badge>
+                                                  ))}
+                                                </div>
+                                              </div>
+                                            )}
+                                            
+                                            {jobCompatibility.applicationRecommendation && (
+                                              <div>
+                                                <Label className="text-sm font-medium">AI Recommendation</Label>
+                                                <p className="text-sm text-gray-700 mt-1 p-3 bg-gray-50 rounded-md">
+                                                  {jobCompatibility.applicationRecommendation}
+                                                </p>
+                                              </div>
+                                            )}
+                                          </div>
+                                        ) : (
+                                          <div className="text-center py-4 text-gray-500">
+                                            <p>Click "Analyze Fit" to get AI-powered compatibility analysis</p>
+                                          </div>
+                                        )}
+                                      </CardContent>
+                                    </Card>
                                   </div>
                                 ) : (
                                   <div className="text-center py-8">
@@ -628,12 +738,21 @@ export default function RecruiterDashboard() {
                               </DialogContent>
                             </Dialog>
                             
-                            <Dialog>
+
+                            <Dialog open={selectedApplication?.id === application.id} onOpenChange={(open) => {
+                              if (!open) {
+                                setSelectedApplication(null);
+                              }
+                            }}>
                               <DialogTrigger asChild>
                                 <Button 
                                   variant="outline" 
                                   size="sm"
-                                  onClick={() => openApplicationDialog(application)}
+                                  onClick={() => {
+                                    setSelectedApplication(application);
+                                    setApplicationStatus(application.status || "pending");
+                                    setRecruiterNotes(application.recruiterNotes || "");
+                                  }}
                                 >
                                   <CheckCircle className="w-4 h-4 mr-1" />
                                   Review
@@ -641,9 +760,9 @@ export default function RecruiterDashboard() {
                               </DialogTrigger>
                               <DialogContent>
                                 <DialogHeader>
-                                  <DialogTitle>Update Application Status</DialogTitle>
+                                  <DialogTitle>Review Application</DialogTitle>
                                   <DialogDescription>
-                                    Change the status of this application and add notes
+                                    Update the status and add notes for this application
                                   </DialogDescription>
                                 </DialogHeader>
                                 <div className="space-y-4">
@@ -694,10 +813,8 @@ export default function RecruiterDashboard() {
                               variant="outline" 
                               size="sm"
                               onClick={() => {
-                                toast({
-                                  title: "Message Feature",
-                                  description: "Direct messaging will be available in the next update.",
-                                });
+                                // Start a conversation with the applicant
+                                setLocation(`/chat?with=${application.applicantId}&context=application_${application.id}`);
                               }}
                             >
                               <Mail className="w-4 h-4 mr-1" />
@@ -758,6 +875,23 @@ export default function RecruiterDashboard() {
           </TabsContent>
         </Tabs>
       </div>
+      
+      {/* Resume Preview Modal */}
+      <Dialog open={showResumePreview} onOpenChange={setShowResumePreview}>
+        <DialogContent className="max-w-4xl max-h-[90vh] overflow-auto">
+          <DialogHeader>
+            <DialogTitle>Resume Preview</DialogTitle>
+            <DialogDescription>
+              Full text content of the candidate's resume
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="p-4 bg-gray-50 rounded-lg whitespace-pre-wrap text-sm">
+              {resumePreview || "No resume content available"}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
