@@ -488,34 +488,54 @@ export default function RecruiterDashboard() {
                                                 </p>
                                               </div>
                                               <div className="flex gap-2">
-                                                {applicantDetails.profile?.resumeData && (
-                                                  <Button 
-                                                    variant="outline" 
-                                                    size="sm"
-                                                    onClick={() => {
-                                                      // Download resume functionality
-                                                      const downloadUrl = `/api/resume/download/${applicantDetails.user?.id}`;
-                                                      window.open(downloadUrl, '_blank');
-                                                    }}
-                                                  >
-                                                    <Download className="w-4 h-4 mr-1" />
-                                                    Download
-                                                  </Button>
-                                                )}
-                                                {applicantDetails.profile?.resumeText && (
-                                                  <Button 
-                                                    variant="ghost" 
-                                                    size="sm"
-                                                    onClick={() => {
-                                                      // Show resume preview modal
-                                                      setResumePreview(applicantDetails.profile?.resumeText || '');
-                                                      setShowResumePreview(true);
-                                                    }}
-                                                  >
-                                                    <Eye className="w-4 h-4 mr-1" />
-                                                    Preview
-                                                  </Button>
-                                                )}
+                                                <Button 
+                                                  variant="outline" 
+                                                  size="sm"
+                                                  onClick={async () => {
+                                                    try {
+                                                      const response = await fetch(`/api/recruiter/resume/download/${application.id}`, {
+                                                        credentials: 'include'
+                                                      });
+                                                      if (response.ok) {
+                                                        const blob = await response.blob();
+                                                        const url = window.URL.createObjectURL(blob);
+                                                        const a = document.createElement('a');
+                                                        a.href = url;
+                                                        a.download = applicantDetails.profile?.resumeFileName || 'resume.pdf';
+                                                        document.body.appendChild(a);
+                                                        a.click();
+                                                        window.URL.revokeObjectURL(url);
+                                                        document.body.removeChild(a);
+                                                      } else {
+                                                        toast({
+                                                          title: "Download Failed",
+                                                          description: "Resume not available for download",
+                                                          variant: "destructive",
+                                                        });
+                                                      }
+                                                    } catch (error) {
+                                                      toast({
+                                                        title: "Download Failed", 
+                                                        description: "Failed to download resume",
+                                                        variant: "destructive",
+                                                      });
+                                                    }
+                                                  }}
+                                                >
+                                                  <Download className="w-4 h-4 mr-1" />
+                                                  Download
+                                                </Button>
+                                                <Button 
+                                                  variant="ghost" 
+                                                  size="sm"
+                                                  onClick={() => {
+                                                    setResumePreview(applicantDetails.profile?.resumeText || 'Resume content not available');
+                                                    setShowResumePreview(true);
+                                                  }}
+                                                >
+                                                  <Eye className="w-4 h-4 mr-1" />
+                                                  Preview
+                                                </Button>
                                               </div>
                                             </div>
                                           </div>

@@ -688,6 +688,59 @@ Additional Information:
     }
   });
 
+  // Resume download route for recruiters (from job applications)
+  app.get('/api/recruiter/resume/download/:applicationId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const applicationId = parseInt(req.params.applicationId);
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter' && user?.currentRole !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Get application  
+      const application = await storage.getJobPostingApplication(applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Get job posting to verify recruiter owns it
+      const jobPosting = await storage.getJobPosting(application.jobPostingId);
+      if (!jobPosting || jobPosting.recruiterId !== userId) {
+        return res.status(403).json({ message: "Access denied. You can only download resumes from your job postings." });
+      }
+
+      // Try to get applicant's active resume
+      const applicantId = application.applicantId;
+      let resume;
+      
+      if (applicantId === 'demo-user-id') {
+        const demoResumes = (global as any).demoUserResumes || [];
+        resume = demoResumes.find((r: any) => r.isActive) || demoResumes[0];
+      } else {
+        const userResumes = (global as any).userResumes?.[applicantId] || [];
+        resume = userResumes.find((r: any) => r.isActive) || userResumes[0];
+      }
+      
+      if (!resume) {
+        return res.status(404).json({ message: "Resume not found or not available for download" });
+      }
+      
+      const fileBuffer = Buffer.from(resume.fileData, 'base64');
+      
+      res.setHeader('Content-Type', resume.fileType || 'application/pdf');
+      res.setHeader('Content-Disposition', `attachment; filename="${resume.fileName}"`);
+      res.setHeader('Content-Length', fileBuffer.length.toString());
+      
+      console.log(`[DEBUG] Recruiter ${userId} downloading resume: ${resume.fileName}`);
+      return res.send(fileBuffer);
+    } catch (error) {
+      console.error("Error downloading resume:", error);
+      res.status(500).json({ message: "Failed to download resume" });
+    }
+  });
+
   // Resume download route
   app.get('/api/resumes/:id/download', isAuthenticated, async (req: any, res) => {
     try {
@@ -857,6 +910,166 @@ Additional Information:
     } catch (error) {
       console.error("Error fetching user roles:", error);
       res.status(500).json({ message: "Failed to fetch user roles" });
+    }
+  });
+
+  // Recruiter analytics endpoint
+  app.get('/api/recruiter/analytics', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter' && user?.currentRole !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Get recruiter's job postings
+      const jobPostings = await storage.getRecruiterJobs(userId);
+      
+      // Get applications for recruiter's jobs
+      const applications = await storage.getRecruiterApplications(userId);
+      
+      // Calculate analytics
+      const totalJobs = jobPostings.length;
+      const totalApplications = applications.length;
+      const totalViews = jobPostings.reduce((sum: number, job: any) => sum + (job.viewsCount || 0), 0);
+      
+      // Calculate application statuses
+      const statusCounts = applications.reduce((acc: any, app: any) => {
+        const status = app.status || 'pending';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+      }, {});
+      
+      // Calculate average time to hire (mock data for now)
+      const averageTimeToHire = 18; // days
+      
+      // Calculate success rate (hired / total applications)
+      const hiredCount = statusCounts.hired || 0;
+      const successRate = totalApplications > 0 ? Math.round((hiredCount / totalApplications) * 100) : 0;
+      
+      // Calculate monthly growth (mock data)
+      const monthlyGrowth = 12; // percentage
+      const weeklyGrowth = 8; // percentage
+      
+      // Get recent activity (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      
+      const recentApplications = applications.filter((app: any) => 
+        new Date(app.appliedAt || app.createdAt) > thirtyDaysAgo
+      );
+      
+      // Get this week's interviews (mock data)
+      const thisWeekInterviews = statusCounts.interviewed || 0;
+      
+      const analytics = {
+        overview: {
+          totalJobs,
+          totalApplications,
+          totalViews,
+          averageTimeToHire,
+          successRate,
+          monthlyGrowth,
+          weeklyGrowth,
+          thisWeekInterviews
+        },
+        applicationsByStatus: statusCounts,
+        recentActivity: {
+          last30Days: recentApplications.length,
+          thisWeek: recentApplications.filter((app: any) => {
+            const appDate = new Date(app.appliedAt || app.createdAt);
+            const weekAgo = new Date();
+            weekAgo.setDate(weekAgo.getDate() - 7);
+            return appDate > weekAgo;
+          }).length
+        },
+        topPerformingJobs: jobPostings
+          .sort((a: any, b: any) => (b.applicationsCount || 0) - (a.applicationsCount || 0))
+          .slice(0, 5)
+          .map((job: any) => ({
+            id: job.id,
+            title: job.title,
+            applicationsCount: job.applicationsCount || 0,
+            viewsCount: job.viewsCount || 0
+          }))
+      };
+      
+      res.json(analytics);
+    } catch (error) {
+      console.error("Error fetching recruiter analytics:", error);
+      res.status(500).json({ message: "Failed to fetch analytics" });
+    }
+  });
+
+  // Bulk actions endpoint for recruiters
+  app.post('/api/recruiter/bulk-actions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { candidateIds, action } = req.body;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter' && user?.currentRole !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      if (!candidateIds || !Array.isArray(candidateIds) || candidateIds.length === 0) {
+        return res.status(400).json({ message: "Invalid candidate IDs" });
+      }
+
+      let statusUpdate = '';
+      
+      switch (action) {
+        case 'move_to_screening':
+          statusUpdate = 'screening';
+          break;
+        case 'schedule_interview':
+          statusUpdate = 'interview';
+          break;
+        case 'send_rejection':
+          statusUpdate = 'rejected';
+          break;
+        case 'export_resumes':
+          // Handle resume export (simplified for now)
+          return res.json({ 
+            message: "Resume export initiated",
+            downloadUrl: "/api/recruiter/export-resumes",
+            candidateIds 
+          });
+        default:
+          return res.status(400).json({ message: "Invalid action" });
+      }
+
+      // Update application statuses for selected candidates
+      const updatePromises = candidateIds.map(async (candidateId: string) => {
+        try {
+          // Find applications for this candidate
+          const applications = await storage.getRecruiterApplications(userId);
+          const candidateApps = applications.filter((app: any) => app.applicantId === candidateId);
+          
+          // Update each application
+          for (const app of candidateApps) {
+            await storage.updateJobPostingApplicationStatus(app.id, {
+              status: statusUpdate,
+              reviewedAt: new Date().toISOString(),
+              recruiterNotes: `Bulk action: ${action} applied by recruiter`
+            });
+          }
+        } catch (error) {
+          console.error(`Failed to update candidate ${candidateId}:`, error);
+        }
+      });
+
+      await Promise.all(updatePromises);
+      
+      res.json({ 
+        message: `Successfully applied ${action} to ${candidateIds.length} candidates`,
+        action,
+        candidateCount: candidateIds.length
+      });
+    } catch (error) {
+      console.error("Error performing bulk action:", error);
+      res.status(500).json({ message: "Failed to perform bulk action" });
     }
   });
 
