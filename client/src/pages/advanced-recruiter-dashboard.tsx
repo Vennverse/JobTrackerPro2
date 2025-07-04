@@ -168,17 +168,19 @@ export default function AdvancedRecruiterDashboard() {
   });
 
   // Filter candidates based on search and filters
-  const filteredCandidates = candidateMatches.filter((candidate) => {
-    const matchesSearch = candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         candidate.email.toLowerCase().includes(searchTerm.toLowerCase());
+  const filteredCandidates = (candidateMatches || []).filter((candidate) => {
+    if (!candidate) return false;
+    
+    const matchesSearch = (candidate.name || '').toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         (candidate.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilters = 
-      (!selectedFilters.experienceLevel || candidate.experience.includes(selectedFilters.experienceLevel)) &&
-      (!selectedFilters.location || candidate.location.includes(selectedFilters.location)) &&
-      (!selectedFilters.skillMatch || candidate.matchScore >= parseInt(selectedFilters.skillMatch));
+      (!selectedFilters.experienceLevel || (candidate.experience || '').includes(selectedFilters.experienceLevel)) &&
+      (!selectedFilters.location || (candidate.location || '').includes(selectedFilters.location)) &&
+      (!selectedFilters.skillMatch || (candidate.matchScore || 0) >= parseInt(selectedFilters.skillMatch || '0'));
     
     return matchesSearch && matchesFilters;
-  }).sort((a, b) => b.matchScore - a.matchScore);
+  }).sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
 
   const getMatchScoreColor = (score: number) => {
     if (score >= 90) return 'bg-green-500';
@@ -274,7 +276,7 @@ export default function AdvancedRecruiterDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">High Quality Matches</p>
-                <p className="text-2xl font-bold">{candidateMatches.filter(m => m.matchScore >= 80).length}</p>
+                <p className="text-2xl font-bold">{(candidateMatches || []).filter(m => (m?.matchScore || 0) >= 80).length}</p>
               </div>
               <Target className="w-8 h-8 text-purple-500" />
             </div>
@@ -286,7 +288,7 @@ export default function AdvancedRecruiterDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-600">Interviews Scheduled</p>
-                <p className="text-2xl font-bold">{interviews.filter(i => i.status === 'scheduled').length}</p>
+                <p className="text-2xl font-bold">{(interviews || []).filter(i => i?.status === 'scheduled').length}</p>
               </div>
               <Calendar className="w-8 h-8 text-orange-500" />
             </div>
@@ -343,7 +345,7 @@ export default function AdvancedRecruiterDashboard() {
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {filteredCandidates.map((candidate) => (
+            {filteredCandidates.length > 0 ? filteredCandidates.map((candidate) => (
               <Card key={candidate.id} className="hover:shadow-lg transition-shadow">
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
@@ -377,7 +379,7 @@ export default function AdvancedRecruiterDashboard() {
                   <div>
                     <p className="text-sm text-gray-600 mb-2">Skills Match</p>
                     <div className="flex flex-wrap gap-1">
-                      {candidate.matchingSkills.map((skill, index) => (
+                      {(candidate.matchingSkills || []).map((skill, index) => (
                         <Badge key={index} variant="secondary" className="text-xs">
                           {skill}
                         </Badge>
@@ -414,7 +416,13 @@ export default function AdvancedRecruiterDashboard() {
                   </div>
                 </CardContent>
               </Card>
-            ))}
+            )) : (
+              <div className="col-span-2 text-center py-12">
+                <Users className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No candidates found</h3>
+                <p className="text-gray-500">No candidate matches available yet. Candidates will appear here as applications are received.</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
@@ -437,7 +445,7 @@ export default function AdvancedRecruiterDashboard() {
         {/* Interviews Tab */}
         <TabsContent value="interviews" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            {interviews.map((interview) => (
+            {(interviews || []).length > 0 ? (interviews || []).map((interview) => (
               <Card key={interview.id}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
@@ -479,7 +487,13 @@ export default function AdvancedRecruiterDashboard() {
                   )}
                 </CardContent>
               </Card>
-            ))}
+            )) : (
+              <div className="col-span-2 text-center py-12">
+                <Calendar className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No interviews scheduled</h3>
+                <p className="text-gray-500">Interview schedules will appear here once candidates progress in the pipeline.</p>
+              </div>
+            )}
           </div>
         </TabsContent>
 
