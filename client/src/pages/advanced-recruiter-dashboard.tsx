@@ -552,7 +552,7 @@ export default function AdvancedRecruiterDashboard() {
               </CardHeader>
               <CardContent>
                 <div className="space-y-2">
-                  {aiInsights?.recommendations.map((rec, index) => (
+                  {aiInsights?.recommendations?.map((rec, index) => (
                     <div key={index} className="flex items-start gap-2">
                       <Zap className="w-4 h-4 text-yellow-500 mt-0.5" />
                       <p className="text-sm">{rec}</p>
@@ -563,7 +563,7 @@ export default function AdvancedRecruiterDashboard() {
             </Card>
           </div>
           <div className="space-y-4">
-            {aiInsights?.insights.map((insight, index) => (
+            {aiInsights?.insights?.map((insight, index) => (
               <Card key={index}>
                 <CardHeader>
                   <div className="flex justify-between items-start">
