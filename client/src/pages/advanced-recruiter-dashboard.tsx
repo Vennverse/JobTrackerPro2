@@ -429,7 +429,7 @@ export default function AdvancedRecruiterDashboard() {
         {/* Pipeline Tab */}
         <TabsContent value="pipeline" className="space-y-4">
           <div className="grid grid-cols-1 lg:grid-cols-6 gap-4">
-            {analytics && Object.entries(analytics.applicationsByStatus).map(([status, count]) => (
+            {analytics && analytics.applicationsByStatus && Object.entries(analytics.applicationsByStatus).map(([status, count]) => (
               <Card key={status}>
                 <CardContent className="p-4">
                   <div className="text-center">
@@ -538,7 +538,7 @@ export default function AdvancedRecruiterDashboard() {
                 <CardTitle>Performance Metrics</CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                {aiInsights && Object.entries(aiInsights.performanceMetrics).map(([key, value]) => (
+                {aiInsights && aiInsights.performanceMetrics && Object.entries(aiInsights.performanceMetrics).map(([key, value]) => (
                   <div key={key} className="flex justify-between items-center">
                     <span className="text-sm text-gray-600 capitalize">{key.replace(/([A-Z])/g, ' $1').trim()}</span>
                     <span className="font-medium">{value}%</span>

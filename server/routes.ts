@@ -222,8 +222,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Find existing user by email and update them to recruiter status
       const existingUser = await storage.getUserByEmail(tokenRecord.email);
+      let updatedUserId = '';
+      
       if (existingUser) {
-        // Update existing user to recruiter
+        // Update existing user to recruiter with complete data
         await storage.upsertUser({
           id: existingUser.id,
           email: tokenRecord.email,
@@ -234,7 +236,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           firstName: existingUser.firstName,
           lastName: existingUser.lastName,
           profileImageUrl: existingUser.profileImageUrl,
+          password: existingUser.password, // Preserve existing password
+          availableRoles: "job_seeker,recruiter", // Allow both roles
+          currentRole: "recruiter" // Set active role to recruiter
         });
+        updatedUserId = existingUser.id;
 
         // Record company email verification
         await db.insert(companyEmailVerifications).values({
@@ -257,6 +263,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           emailVerified: true,
           companyName: tokenRecord.companyName,
           companyWebsite: tokenRecord.companyWebsite,
+          firstName: tokenRecord.companyName || 'Recruiter',
+          lastName: '',
+          availableRoles: "recruiter",
+          currentRole: "recruiter"
         });
 
         // Record company email verification
@@ -270,13 +280,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           verifiedAt: new Date(),
           expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
         });
+        updatedUserId = userId;
       }
 
       // Delete used token
       await storage.deleteEmailVerificationToken(token as string);
 
       // Get the updated user data
-      const updatedUser = await storage.getUserByEmail(tokenRecord.email);
+      const updatedUser = await storage.getUser(updatedUserId);
       
       if (updatedUser) {
         // Create session for the verified user
