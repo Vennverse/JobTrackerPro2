@@ -98,8 +98,7 @@ export default function AuthPage() {
           title: "Login Successful",
           description: "Welcome back!",
         });
-        // Force page reload to properly initialize auth state
-        window.location.reload();
+        window.location.href = '/';
       } else if (response.status === 403 && data.requiresVerification) {
         // Email verification required
         setLocation(`/email-verification?email=${encodeURIComponent(formData.email)}`);
