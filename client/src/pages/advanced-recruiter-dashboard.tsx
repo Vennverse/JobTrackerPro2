@@ -1,5 +1,8 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient, useMutation } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
+import { useToast } from '@/hooks/use-toast';
+import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -7,6 +10,8 @@ import { Progress } from '@/components/ui/progress';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Input } from '@/components/ui/input';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Textarea } from '@/components/ui/textarea';
 import { 
   Users, 
   TrendingUp, 
@@ -37,7 +42,12 @@ import {
   UserCheck,
   Building,
   Timer,
-  Percent
+  Percent,
+  Lightbulb,
+  Plus,
+  Edit,
+  Activity,
+  Sparkles
 } from 'lucide-react';
 
 interface CandidateMatch {
@@ -132,6 +142,11 @@ interface AIInsights {
 }
 
 export default function AdvancedRecruiterDashboard() {
+  const [location, setLocation] = useLocation();
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // State management
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedFilters, setSelectedFilters] = useState({
     experienceLevel: '',
@@ -139,9 +154,25 @@ export default function AdvancedRecruiterDashboard() {
     skillMatch: '',
     availability: ''
   });
-  const [activeTab, setActiveTab] = useState('matches');
+  const [activeTab, setActiveTab] = useState('overview');
+  const [selectedApplication, setSelectedApplication] = useState<any>(null);
+  const [applicationStatus, setApplicationStatus] = useState("");
+  const [recruiterNotes, setRecruiterNotes] = useState("");
+  const [selectedApplicantId, setSelectedApplicantId] = useState<string | null>(null);
 
-  // Fetch data with proper typing
+  // Fetch all dashboard data with proper typing
+  const { data: jobPostings = [], isLoading: jobsLoading } = useQuery<any[]>({
+    queryKey: ['/api/recruiter/jobs'],
+  });
+
+  const { data: applications = [], isLoading: applicationsLoading } = useQuery<any[]>({
+    queryKey: ['/api/recruiter/applications'],
+  });
+
+  const { data: conversations = [], isLoading: conversationsLoading } = useQuery<any[]>({
+    queryKey: ['/api/chat/conversations'],
+  });
+
   const { data: candidateMatches = [], isLoading: matchesLoading } = useQuery<CandidateMatch[]>({
     queryKey: ['/api/recruiter/candidate-matches'],
     enabled: true
@@ -166,6 +197,54 @@ export default function AdvancedRecruiterDashboard() {
     queryKey: ['/api/recruiter/ai-insights'],
     enabled: true
   });
+
+  // Get applicant details when selected
+  const { data: applicantDetails, isLoading: applicantLoading } = useQuery({
+    queryKey: [`/api/recruiter/applicant/${selectedApplicantId}`],
+    enabled: !!selectedApplicantId,
+  });
+
+  // Mutation for updating application status
+  const updateApplicationMutation = useMutation({
+    mutationFn: async ({ applicationId, status, notes }: { applicationId: number; status: string; notes?: string }) => {
+      return await apiRequest("PUT", `/api/recruiter/applications/${applicationId}`, {
+        status,
+        recruiterNotes: notes,
+        reviewedAt: new Date().toISOString(),
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Application Updated",
+        description: "Application status has been updated successfully.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/recruiter/applications'] });
+      setSelectedApplication(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Update Failed",
+        description: error.message || "Failed to update application status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleUpdateApplication = (status: string) => {
+    if (selectedApplication) {
+      updateApplicationMutation.mutate({
+        applicationId: selectedApplication.id,
+        status,
+        notes: recruiterNotes,
+      });
+    }
+  };
+
+  const openApplicationDialog = (application: any) => {
+    setSelectedApplication(application);
+    setApplicationStatus(application.status || "pending");
+    setRecruiterNotes(application.recruiterNotes || "");
+  };
 
   // Filter candidates based on search and filters
   const filteredCandidates = (candidateMatches || []).filter((candidate) => {
@@ -222,27 +301,105 @@ export default function AdvancedRecruiterDashboard() {
 
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
-      {/* Header */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">Advanced Recruiter Dashboard</h1>
-          <p className="text-gray-600">AI-powered recruitment intelligence and candidate matching</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm">
-            <Eye className="w-4 h-4 mr-2" />
-            Pipeline View
-          </Button>
-          <Button variant="outline" size="sm">
-            <BarChart3 className="w-4 h-4 mr-2" />
-            Analytics
-          </Button>
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
+      {/* Enhanced Header */}
+      <div className="bg-white dark:bg-gray-800 border-b shadow-sm">
+        <div className="container mx-auto px-6 py-4">
+          <div className="flex items-center justify-between">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                <div className="w-10 h-10 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
+                  <Building className="w-6 h-6 text-white" />
+                </div>
+                Recruiter Dashboard
+                <Badge variant="secondary" className="text-xs bg-gradient-to-r from-blue-100 to-purple-100 text-blue-700">
+                  <Sparkles className="w-3 h-3 mr-1" />
+                  AI-Powered
+                </Badge>
+              </h1>
+              <p className="text-gray-600 dark:text-gray-400 mt-1 flex items-center gap-2">
+                <Activity className="w-4 h-4" />
+                Manage job postings, track applications, and find the best candidates
+              </p>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button variant="outline" size="sm">
+                <BarChart3 className="w-4 h-4 mr-2" />
+                Reports
+              </Button>
+              <Button 
+                onClick={() => setLocation('/recruiter/post-job')}
+                className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Post New Job
+              </Button>
+            </div>
+          </div>
         </div>
       </div>
 
-      {/* Key Metrics */}
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="container mx-auto p-6 space-y-6">
+        {/* Stats Cards */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                  <Briefcase className="w-6 h-6 text-blue-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{jobPostings.length}</p>
+                  <p className="text-sm text-gray-600">Active Jobs</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
+                  <Users className="w-6 h-6 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{applications.length}</p>
+                  <p className="text-sm text-gray-600">Applications</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
+                  <MessageCircle className="w-6 h-6 text-purple-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">{conversations.length}</p>
+                  <p className="text-sm text-gray-600">Conversations</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
+                  <Eye className="w-6 h-6 text-orange-600" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold">
+                    {jobPostings.reduce((total: number, job: any) => total + (job.viewsCount || 0), 0)}
+                  </p>
+                  <p className="text-sm text-gray-600">Total Views</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -294,15 +451,295 @@ export default function AdvancedRecruiterDashboard() {
 
       {/* Main Content Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full grid-cols-5">
-          <TabsTrigger value="matches">Smart Matching</TabsTrigger>
-          <TabsTrigger value="pipeline">Pipeline</TabsTrigger>
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="jobs">Job Postings</TabsTrigger>
+          <TabsTrigger value="applications">Applications</TabsTrigger>
+          <TabsTrigger value="matches">AI Matches</TabsTrigger>
           <TabsTrigger value="interviews">Interviews</TabsTrigger>
-          <TabsTrigger value="analytics">Analytics</TabsTrigger>
           <TabsTrigger value="insights">AI Insights</TabsTrigger>
         </TabsList>
 
-        {/* Smart Matching Tab */}
+        {/* Overview Tab */}
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            {/* Recent Job Postings */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Briefcase className="w-5 h-5 text-blue-600" />
+                  Recent Job Postings
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {jobPostings.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Briefcase className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No job postings yet</p>
+                    <Button 
+                      className="mt-3"
+                      onClick={() => setLocation('/recruiter/post-job')}
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Post Your First Job
+                    </Button>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {jobPostings.slice(0, 3).map((job: any) => (
+                      <div key={job.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <h4 className="font-medium">{job.title}</h4>
+                          <p className="text-sm text-gray-600">{job.companyName}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant="secondary">{job.status || 'Active'}</Badge>
+                          <p className="text-xs text-gray-500 mt-1">{job.viewsCount || 0} views</p>
+                        </div>
+                      </div>
+                    ))}
+                    {jobPostings.length > 3 && (
+                      <Button variant="outline" className="w-full" onClick={() => setActiveTab('jobs')}>
+                        View All {jobPostings.length} Jobs
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+
+            {/* Recent Applications */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Users className="w-5 h-5 text-green-600" />
+                  Recent Applications
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {applications.length === 0 ? (
+                  <div className="text-center py-8 text-gray-500">
+                    <Users className="w-12 h-12 mx-auto mb-3 opacity-50" />
+                    <p>No applications yet</p>
+                    <p className="text-sm">Applications will appear when candidates apply to your jobs</p>
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {applications.slice(0, 3).map((app: any) => (
+                      <div key={app.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div>
+                          <h4 className="font-medium">{app.candidateName || 'Candidate'}</h4>
+                          <p className="text-sm text-gray-600">{app.jobTitle}</p>
+                        </div>
+                        <div className="text-right">
+                          <Badge variant={app.status === 'pending' ? 'secondary' : 'default'}>
+                            {app.status || 'pending'}
+                          </Badge>
+                          <p className="text-xs text-gray-500 mt-1">
+                            {app.appliedAt ? new Date(app.appliedAt).toLocaleDateString() : 'Recently'}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                    {applications.length > 3 && (
+                      <Button variant="outline" className="w-full" onClick={() => setActiveTab('applications')}>
+                        View All {applications.length} Applications
+                      </Button>
+                    )}
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        </TabsContent>
+
+        {/* Job Postings Tab */}
+        <TabsContent value="jobs" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Your Job Postings</h3>
+            <Button onClick={() => setLocation('/recruiter/post-job')}>
+              <Plus className="w-4 h-4 mr-2" />
+              Post New Job
+            </Button>
+          </div>
+          
+          {jobPostings.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Briefcase className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-xl font-semibold mb-2">No job postings yet</h3>
+                <p className="text-gray-600 mb-6">Start attracting top talent by posting your first job</p>
+                <Button onClick={() => setLocation('/recruiter/post-job')}>
+                  <Plus className="w-4 h-4 mr-2" />
+                  Post Your First Job
+                </Button>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {jobPostings.map((job: any) => (
+                <Card key={job.id}>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold mb-2">{job.title}</h3>
+                        <p className="text-gray-600 mb-4">{job.companyName}</p>
+                        <div className="flex items-center gap-4 text-sm text-gray-500">
+                          <div className="flex items-center gap-1">
+                            <MapPin className="w-4 h-4" />
+                            {job.location || 'Remote'}
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Eye className="w-4 h-4" />
+                            {job.viewsCount || 0} views
+                          </div>
+                          <div className="flex items-center gap-1">
+                            <Users className="w-4 h-4" />
+                            {applications.filter((app: any) => app.jobPostingId === job.id).length} applications
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={job.status === 'active' ? 'default' : 'secondary'}>
+                          {job.status || 'Active'}
+                        </Badge>
+                        <Button variant="outline" size="sm">
+                          <Edit className="w-4 h-4 mr-2" />
+                          Edit
+                        </Button>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* Applications Tab */}
+        <TabsContent value="applications" className="space-y-4">
+          <div className="flex justify-between items-center">
+            <h3 className="text-lg font-semibold">Job Applications</h3>
+            <div className="flex gap-2">
+              <Select defaultValue="all">
+                <SelectTrigger className="w-40">
+                  <SelectValue placeholder="Filter by status" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Status</SelectItem>
+                  <SelectItem value="pending">Pending</SelectItem>
+                  <SelectItem value="reviewed">Reviewed</SelectItem>
+                  <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                  <SelectItem value="interviewed">Interviewed</SelectItem>
+                  <SelectItem value="hired">Hired</SelectItem>
+                  <SelectItem value="rejected">Rejected</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+
+          {applications.length === 0 ? (
+            <Card className="text-center py-12">
+              <CardContent>
+                <Users className="w-16 h-16 mx-auto mb-4 text-gray-400" />
+                <h3 className="text-xl font-semibold mb-2">No applications yet</h3>
+                <p className="text-gray-600 mb-6">Applications will appear here when candidates apply to your job postings</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid gap-4">
+              {applications.map((application: any) => (
+                <Card key={application.id}>
+                  <CardContent className="p-6">
+                    <div className="flex justify-between items-start">
+                      <div className="flex-1">
+                        <h3 className="text-lg font-semibold mb-2">{application.candidateName || 'Candidate'}</h3>
+                        <p className="text-gray-600 mb-2">{application.jobTitle}</p>
+                        <div className="flex items-center gap-4 text-sm text-gray-500 mb-4">
+                          <div className="flex items-center gap-1">
+                            <Calendar className="w-4 h-4" />
+                            Applied {application.appliedAt ? new Date(application.appliedAt).toLocaleDateString() : 'Recently'}
+                          </div>
+                          {application.matchScore && (
+                            <div className="flex items-center gap-1">
+                              <Star className="w-4 h-4" />
+                              {application.matchScore}% match
+                            </div>
+                          )}
+                        </div>
+                        {application.recruiterNotes && (
+                          <p className="text-sm text-gray-600 bg-gray-50 p-2 rounded">
+                            <strong>Notes:</strong> {application.recruiterNotes}
+                          </p>
+                        )}
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Badge variant={application.status === 'pending' ? 'secondary' : 'default'}>
+                          {application.status || 'pending'}
+                        </Badge>
+                        <Dialog>
+                          <DialogTrigger asChild>
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => openApplicationDialog(application)}
+                            >
+                              Review
+                            </Button>
+                          </DialogTrigger>
+                          <DialogContent>
+                            <DialogHeader>
+                              <DialogTitle>Review Application</DialogTitle>
+                              <DialogDescription>
+                                Update the status and add notes for this application
+                              </DialogDescription>
+                            </DialogHeader>
+                            <div className="space-y-4">
+                              <div>
+                                <label className="text-sm font-medium">Status</label>
+                                <Select value={applicationStatus} onValueChange={setApplicationStatus}>
+                                  <SelectTrigger>
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="pending">Pending</SelectItem>
+                                    <SelectItem value="reviewed">Reviewed</SelectItem>
+                                    <SelectItem value="shortlisted">Shortlisted</SelectItem>
+                                    <SelectItem value="interviewed">Interviewed</SelectItem>
+                                    <SelectItem value="hired">Hired</SelectItem>
+                                    <SelectItem value="rejected">Rejected</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                              </div>
+                              <div>
+                                <label className="text-sm font-medium">Notes</label>
+                                <Textarea 
+                                  value={recruiterNotes}
+                                  onChange={(e) => setRecruiterNotes(e.target.value)}
+                                  placeholder="Add your notes about this candidate..."
+                                />
+                              </div>
+                              <div className="flex gap-2">
+                                <Button 
+                                  onClick={() => handleUpdateApplication(applicationStatus)}
+                                  disabled={updateApplicationMutation.isPending}
+                                >
+                                  {updateApplicationMutation.isPending ? 'Updating...' : 'Update Application'}
+                                </Button>
+                              </div>
+                            </div>
+                          </DialogContent>
+                        </Dialog>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        {/* AI Matches Tab */}
         <TabsContent value="matches" className="space-y-4">
           <div className="flex flex-col lg:flex-row gap-4">
             <div className="flex-1">
@@ -577,6 +1014,7 @@ export default function AdvancedRecruiterDashboard() {
           </div>
         </TabsContent>
       </Tabs>
+      </div>
     </div>
   );
 }
