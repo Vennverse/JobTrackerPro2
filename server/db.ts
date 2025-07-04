@@ -22,7 +22,13 @@ if ((isProduction && hasExternalDb) || (hasReplitDb && process.env.DATABASE_URL?
   console.log('Using external database for production');
   neonConfig.webSocketConstructor = ws;
   
-  const pool = new Pool({ connectionString: process.env.DATABASE_URL });
+  // Decode the DATABASE_URL if it's URL-encoded
+  let connectionString = process.env.DATABASE_URL;
+  if (connectionString?.includes('%')) {
+    connectionString = decodeURIComponent(connectionString);
+  }
+  
+  const pool = new Pool({ connectionString });
   db = drizzle({ client: pool, schema });
 } else if (hasReplitDb) {
   // Replit database (PostgreSQL)
