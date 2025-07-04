@@ -4306,7 +4306,7 @@ Host: https://autojobr.com`;
         return res.status(403).json({ message: "Access denied. Recruiter account required." });
       }
 
-      // Get applications and create mock interview data based on real applications
+      // Get applications and create interview data based on real applications
       const applications = await storage.getApplicationsForRecruiter(userId);
       const interviews = [];
 

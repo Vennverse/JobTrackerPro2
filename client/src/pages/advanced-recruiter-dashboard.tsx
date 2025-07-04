@@ -175,9 +175,9 @@ export default function AdvancedRecruiterDashboard() {
                          (candidate.email || '').toLowerCase().includes(searchTerm.toLowerCase());
     
     const matchesFilters = 
-      (!selectedFilters.experienceLevel || (candidate.experience || '').includes(selectedFilters.experienceLevel)) &&
-      (!selectedFilters.location || (candidate.location || '').includes(selectedFilters.location)) &&
-      (!selectedFilters.skillMatch || (candidate.matchScore || 0) >= parseInt(selectedFilters.skillMatch || '0'));
+      (!selectedFilters.experienceLevel || selectedFilters.experienceLevel === 'all' || (candidate.experience || '').includes(selectedFilters.experienceLevel)) &&
+      (!selectedFilters.location || selectedFilters.location === 'all' || (candidate.location || '').includes(selectedFilters.location)) &&
+      (!selectedFilters.skillMatch || selectedFilters.skillMatch === 'all' || (candidate.matchScore || 0) >= parseInt(selectedFilters.skillMatch || '0'));
     
     return matchesSearch && matchesFilters;
   }).sort((a, b) => (b.matchScore || 0) - (a.matchScore || 0));
@@ -211,19 +211,15 @@ export default function AdvancedRecruiterDashboard() {
   if (matchesLoading || templatesLoading || interviewsLoading || analyticsLoading || insightsLoading) {
     return (
       <div className="container mx-auto p-6">
-        <div className="grid grid-cols-1 lg:grid-cols-4 gap-6">
-          {[...Array(8)].map((_, i) => (
-            <Card key={i} className="animate-pulse">
-              <CardContent className="p-6">
-                <div className="h-4 bg-gray-200 rounded w-3/4 mb-2"></div>
-                <div className="h-8 bg-gray-200 rounded w-1/2"></div>
-              </CardContent>
-            </Card>
-          ))}
+        <div className="text-center py-12">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+          <p className="text-gray-600">Loading your recruiter dashboard...</p>
         </div>
       </div>
     );
   }
+
+
 
   return (
     <div className="container mx-auto p-6 space-y-6">
@@ -323,7 +319,7 @@ export default function AdvancedRecruiterDashboard() {
                   <SelectValue placeholder="Experience Level" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Levels</SelectItem>
+                  <SelectItem value="all">All Levels</SelectItem>
                   <SelectItem value="Entry">Entry Level</SelectItem>
                   <SelectItem value="Mid">Mid Level</SelectItem>
                   <SelectItem value="Senior">Senior Level</SelectItem>
@@ -335,7 +331,7 @@ export default function AdvancedRecruiterDashboard() {
                   <SelectValue placeholder="Match Score" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Scores</SelectItem>
+                  <SelectItem value="all">All Scores</SelectItem>
                   <SelectItem value="90">90%+ Match</SelectItem>
                   <SelectItem value="80">80%+ Match</SelectItem>
                   <SelectItem value="70">70%+ Match</SelectItem>
