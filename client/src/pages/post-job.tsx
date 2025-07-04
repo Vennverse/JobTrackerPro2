@@ -49,19 +49,36 @@ export default function PostJob() {
   const [skillInput, setSkillInput] = useState("");
 
   useEffect(() => {
+    // Check for verification success in URL params
+    const urlParams = new URLSearchParams(window.location.search);
+    const verified = urlParams.get('verified');
+    
+    if (verified === 'true') {
+      // Refresh user data after verification with a slight delay to ensure database update is complete
+      setTimeout(() => {
+        queryClient.invalidateQueries({ queryKey: ['/api/user'] });
+      }, 1000);
+      // Remove the verified param from URL
+      window.history.replaceState({}, '', window.location.pathname);
+    }
+    
     // Determine which step to show based on authentication and verification status
     if (!isAuthenticated) {
       setCurrentStep('auth');
     } else if (user?.id === 'demo-user-id' || ((user as any)?.userType === 'recruiter' && (user as any)?.emailVerified)) {
       // Demo user or verified recruiter can post jobs
       setCurrentStep('post');
+      // Set company name from user data if available
+      if ((user as any)?.companyName && !formData.companyName) {
+        setFormData(prev => ({ ...prev, companyName: (user as any).companyName }));
+      }
     } else if ((user as any)?.userType === 'recruiter') {
       setCurrentStep('verify');
     } else {
       // User needs to verify company email to become recruiter
       setCurrentStep('verify');
     }
-  }, [isAuthenticated, user]);
+  }, [isAuthenticated, user, queryClient]);
 
   const verificationMutation = useMutation({
     mutationFn: async (data: typeof verificationData) => {
