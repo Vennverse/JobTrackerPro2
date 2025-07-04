@@ -17,62 +17,14 @@ const hasExternalDb = process.env.DATABASE_URL &&
 
 let db: ReturnType<typeof drizzle> | ReturnType<typeof drizzlePg>;
 
-if ((isProduction && hasExternalDb) || (hasReplitDb && process.env.DATABASE_URL?.includes('neon'))) {
-  // Production with external database (Neon, Supabase, etc.)
-  console.log('Using external database for production');
-  neonConfig.webSocketConstructor = ws;
-  
-  // Clean up the DATABASE_URL if it contains psql command wrapper
-  let connectionString = process.env.DATABASE_URL;
-  if (connectionString?.includes('psql')) {
-    // Extract the actual URL from psql command format
-    const match = connectionString.match(/postgresql:\/\/[^']+/);
-    if (match) {
-      connectionString = match[0];
-    }
-  }
-  if (connectionString?.includes('%')) {
-    connectionString = decodeURIComponent(connectionString);
-  }
-  
-  const pool = new Pool({ connectionString });
-  db = drizzle({ client: pool, schema });
-} else if (hasReplitDb) {
-  // Replit database (PostgreSQL)
-  console.log('Using Replit PostgreSQL database');
-  
-  const pool = new PgPool({ 
-    connectionString: process.env.DATABASE_URL,
-    ssl: false, // Disable SSL for Replit database
-    max: 50, // Increased pool size for better concurrent handling
-    min: 5,  // Maintain minimum connections
-    idleTimeoutMillis: 60000, // Keep connections alive longer
-    connectionTimeoutMillis: 5000, // Faster timeout for failed connections
-  });
-  
-  // Handle connection events
-  pool.on('connect', () => {
-    console.log('Database connected successfully');
-  });
-  
-  pool.on('error', (err) => {
-    console.error('Database connection error:', err.message);
-  });
-  
-  db = drizzlePg(pool, { schema });
-} else {
-  // Fallback to local development
-  console.log('Using local database for development');
-  
-  const pool = new PgPool({ 
-    connectionString: 'postgresql://localhost:5432/autojobr',
-    ssl: false,
-    max: 10,
-    idleTimeoutMillis: 30000,
-    connectionTimeoutMillis: 10000,
-  });
-  
-  db = drizzlePg(pool, { schema });
-}
+// Force use of Neon database connection
+console.log('Using Neon database for production');
+neonConfig.webSocketConstructor = ws;
+
+// Use the explicit connection string for Neon
+const connectionString = 'postgresql://neondb_owner:npg_LXMUh9KdQB0q@ep-fragrant-feather-a88g5mva-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require';
+
+const pool = new Pool({ connectionString });
+db = drizzle({ client: pool, schema });
 
 export { db };
