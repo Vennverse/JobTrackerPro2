@@ -18,6 +18,7 @@ import UserTypeSelection from "@/pages/user-type-selection";
 import RecruiterDashboard from "@/pages/recruiter-dashboard";
 import EnhancedRecruiterDashboard from "@/pages/enhanced-recruiter-dashboard";
 import MergedRecruiterDashboard from "@/pages/merged-recruiter-dashboard";
+import AdvancedRecruiterDashboard from "@/pages/advanced-recruiter-dashboard";
 import PostJob from "@/pages/post-job";
 import VerifyEmail from "@/pages/verify-email";
 import EmailVerificationPage from "@/pages/email-verification";
@@ -54,9 +55,10 @@ function Router() {
           {/* Handle different user types */}
           {user?.userType === 'recruiter' ? (
             <>
-              <Route path="/" component={MergedRecruiterDashboard} />
-              <Route path="/recruiter-dashboard" component={MergedRecruiterDashboard} />
-              <Route path="/enhanced-dashboard" component={MergedRecruiterDashboard} />
+              <Route path="/" component={AdvancedRecruiterDashboard} />
+              <Route path="/recruiter-dashboard" component={AdvancedRecruiterDashboard} />
+              <Route path="/enhanced-dashboard" component={AdvancedRecruiterDashboard} />
+              <Route path="/advanced-dashboard" component={AdvancedRecruiterDashboard} />
               <Route path="/recruiter/post-job" component={PostJob} />
               <Route path="/recruiter/edit-job/:id" component={EditJob} />
               <Route path="/jobs/:id" component={ViewJob} />

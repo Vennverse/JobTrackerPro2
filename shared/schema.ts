@@ -425,6 +425,309 @@ export const companyEmailVerifications = pgTable("company_email_verifications", 
   index("company_email_verifications_token_idx").on(table.verificationToken),
 ]);
 
+// Advanced recruiter features - Job templates for faster posting
+export const jobTemplates = pgTable("job_templates", {
+  id: serial("id").primaryKey(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  templateName: varchar("template_name").notNull(),
+  title: varchar("title").notNull(),
+  description: text("description").notNull(),
+  requirements: text("requirements"),
+  responsibilities: text("responsibilities"),
+  benefits: text("benefits"),
+  skills: text("skills").array(),
+  experienceLevel: varchar("experience_level"),
+  workMode: varchar("work_mode"),
+  jobType: varchar("job_type"),
+  isActive: boolean("is_active").default(true),
+  usageCount: integer("usage_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Smart candidate matching and AI insights
+export const candidateMatches = pgTable("candidate_matches", {
+  id: serial("id").primaryKey(),
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id).notNull(),
+  candidateId: varchar("candidate_id").references(() => users.id).notNull(),
+  matchScore: integer("match_score").notNull(), // 0-100
+  skillMatchScore: integer("skill_match_score").notNull(),
+  experienceMatchScore: integer("experience_match_score").notNull(),
+  locationMatchScore: integer("location_match_score").notNull(),
+  salaryMatchScore: integer("salary_match_score").notNull(),
+  
+  // AI insights
+  joinProbability: integer("join_probability"), // 0-100
+  engagementScore: integer("engagement_score"), // 0-100
+  flightRisk: varchar("flight_risk"), // low, medium, high
+  
+  // Matching details
+  matchingSkills: text("matching_skills").array(),
+  missingSkills: text("missing_skills").array(),
+  skillGaps: jsonb("skill_gaps"),
+  
+  // Recommendations
+  approachRecommendation: text("approach_recommendation"),
+  personalizedMessage: text("personalized_message"),
+  salaryBenchmark: jsonb("salary_benchmark"),
+  
+  // Status
+  isViewed: boolean("is_viewed").default(false),
+  isContacted: boolean("is_contacted").default(false),
+  recruiterRating: integer("recruiter_rating"), // 1-5 stars
+  recruiterNotes: text("recruiter_notes"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("candidate_matches_job_idx").on(table.jobPostingId),
+  index("candidate_matches_candidate_idx").on(table.candidateId),
+  index("candidate_matches_score_idx").on(table.matchScore),
+]);
+
+// Interview scheduling and management
+export const interviews = pgTable("interviews", {
+  id: serial("id").primaryKey(),
+  applicationId: integer("application_id").references(() => jobPostingApplications.id).notNull(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  candidateId: varchar("candidate_id").references(() => users.id).notNull(),
+  interviewType: varchar("interview_type").notNull(), // phone, video, onsite, technical
+  scheduledDate: timestamp("scheduled_date").notNull(),
+  duration: integer("duration").default(60), // minutes
+  meetingLink: varchar("meeting_link"),
+  location: varchar("location"),
+  
+  // Interview details
+  interviewerName: varchar("interviewer_name"),
+  interviewerEmail: varchar("interviewer_email"),
+  instructions: text("instructions"),
+  questionsTemplate: text("questions_template"),
+  
+  // Status and results
+  status: varchar("status").default("scheduled"), // scheduled, confirmed, completed, cancelled, no_show
+  candidateConfirmed: boolean("candidate_confirmed").default(false),
+  recruiterNotes: text("recruiter_notes"),
+  candidateFeedback: text("candidate_feedback"),
+  score: integer("score"), // 1-10
+  recommendation: varchar("recommendation"), // hire, maybe, no_hire
+  
+  // Notifications
+  reminderSent: boolean("reminder_sent").default(false),
+  confirmationSent: boolean("confirmation_sent").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("interviews_application_idx").on(table.applicationId),
+  index("interviews_recruiter_idx").on(table.recruiterId),
+  index("interviews_candidate_idx").on(table.candidateId),
+  index("interviews_date_idx").on(table.scheduledDate),
+]);
+
+// Team collaboration and permissions
+export const recruiterTeams = pgTable("recruiter_teams", {
+  id: serial("id").primaryKey(),
+  companyId: varchar("company_id").notNull(), // Company identifier
+  teamName: varchar("team_name").notNull(),
+  teamLead: varchar("team_lead").references(() => users.id).notNull(),
+  description: text("description"),
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("recruiter_teams_company_idx").on(table.companyId),
+  index("recruiter_teams_lead_idx").on(table.teamLead),
+]);
+
+export const teamMembers = pgTable("team_members", {
+  id: serial("id").primaryKey(),
+  teamId: integer("team_id").references(() => recruiterTeams.id).notNull(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  role: varchar("role").notNull(), // admin, recruiter, viewer
+  permissions: text("permissions").array(), // view_jobs, edit_jobs, view_applications, edit_applications, etc.
+  addedBy: varchar("added_by").references(() => users.id).notNull(),
+  joinedAt: timestamp("joined_at").defaultNow(),
+  isActive: boolean("is_active").default(true),
+}, (table) => [
+  index("team_members_team_idx").on(table.teamId),
+  index("team_members_recruiter_idx").on(table.recruiterId),
+]);
+
+// Shared notes and collaboration
+export const sharedNotes = pgTable("shared_notes", {
+  id: serial("id").primaryKey(),
+  applicationId: integer("application_id").references(() => jobPostingApplications.id).notNull(),
+  authorId: varchar("author_id").references(() => users.id).notNull(),
+  note: text("note").notNull(),
+  noteType: varchar("note_type").default("general"), // general, interview, technical, cultural
+  isPrivate: boolean("is_private").default(false),
+  taggedUsers: text("tagged_users").array(), // user IDs who should be notified
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("shared_notes_application_idx").on(table.applicationId),
+  index("shared_notes_author_idx").on(table.authorId),
+]);
+
+// ATS/CRM integrations
+export const atsIntegrations = pgTable("ats_integrations", {
+  id: serial("id").primaryKey(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  platformName: varchar("platform_name").notNull(), // greenhouse, workday, lever, etc.
+  apiKey: varchar("api_key"),
+  apiSecret: varchar("api_secret"),
+  webhookUrl: varchar("webhook_url"),
+  isActive: boolean("is_active").default(true),
+  lastSync: timestamp("last_sync"),
+  syncStatus: varchar("sync_status"), // success, failed, pending
+  syncErrors: text("sync_errors"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("ats_integrations_recruiter_idx").on(table.recruiterId),
+  index("ats_integrations_platform_idx").on(table.platformName),
+]);
+
+// Employer branding and career pages
+export const careerPages = pgTable("career_pages", {
+  id: serial("id").primaryKey(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  companyName: varchar("company_name").notNull(),
+  pageName: varchar("page_name").notNull(),
+  customUrl: varchar("custom_url").unique(),
+  
+  // Branding
+  logo: varchar("logo"),
+  coverImage: varchar("cover_image"),
+  brandColors: jsonb("brand_colors"),
+  companyDescription: text("company_description"),
+  mission: text("mission"),
+  values: text("values").array(),
+  
+  // Content
+  videoIntro: varchar("video_intro"),
+  teamPhotos: text("team_photos").array(),
+  officePhotos: text("office_photos").array(),
+  testimonials: jsonb("testimonials"),
+  perks: text("perks").array(),
+  
+  // Settings
+  isPublic: boolean("is_public").default(true),
+  allowApplications: boolean("allow_applications").default(true),
+  customDomain: varchar("custom_domain"),
+  
+  // Analytics
+  viewsCount: integer("views_count").default(0),
+  applicationsCount: integer("applications_count").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("career_pages_recruiter_idx").on(table.recruiterId),
+  index("career_pages_url_idx").on(table.customUrl),
+]);
+
+// Candidate feedback and surveys
+export const candidateFeedback = pgTable("candidate_feedback", {
+  id: serial("id").primaryKey(),
+  applicationId: integer("application_id").references(() => jobPostingApplications.id).notNull(),
+  candidateId: varchar("candidate_id").references(() => users.id).notNull(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  
+  // Feedback scores (1-5)
+  applicationProcessRating: integer("application_process_rating"),
+  communicationRating: integer("communication_rating"),
+  interviewExperienceRating: integer("interview_experience_rating"),
+  overallExperienceRating: integer("overall_experience_rating"),
+  
+  // Feedback details
+  whatWorkedWell: text("what_worked_well"),
+  whatCouldImprove: text("what_could_improve"),
+  wouldRecommend: boolean("would_recommend"),
+  additionalComments: text("additional_comments"),
+  
+  // Status
+  surveyCompleted: boolean("survey_completed").default(false),
+  feedbackPublic: boolean("feedback_public").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("candidate_feedback_application_idx").on(table.applicationId),
+  index("candidate_feedback_candidate_idx").on(table.candidateId),
+  index("candidate_feedback_recruiter_idx").on(table.recruiterId),
+]);
+
+// Security and verification
+export const securityVerifications = pgTable("security_verifications", {
+  id: serial("id").primaryKey(),
+  applicationId: integer("application_id").references(() => jobPostingApplications.id).notNull(),
+  candidateId: varchar("candidate_id").references(() => users.id).notNull(),
+  verificationType: varchar("verification_type").notNull(), // identity, employment, education, background
+  
+  // Verification details
+  documentType: varchar("document_type"),
+  documentUrl: varchar("document_url"),
+  verificationStatus: varchar("verification_status").default("pending"), // pending, verified, failed, expired
+  verificationProvider: varchar("verification_provider"),
+  verificationId: varchar("verification_id"),
+  
+  // Results
+  verificationScore: integer("verification_score"), // 0-100
+  riskLevel: varchar("risk_level"), // low, medium, high
+  flaggedReasons: text("flagged_reasons").array(),
+  verificationReport: jsonb("verification_report"),
+  
+  // Metadata
+  requestedBy: varchar("requested_by").references(() => users.id).notNull(),
+  verifiedAt: timestamp("verified_at"),
+  expiresAt: timestamp("expires_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("security_verifications_application_idx").on(table.applicationId),
+  index("security_verifications_candidate_idx").on(table.candidateId),
+  index("security_verifications_type_idx").on(table.verificationType),
+]);
+
+// Performance metrics and analytics
+export const recruiterAnalytics = pgTable("recruiter_analytics", {
+  id: serial("id").primaryKey(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  date: date("date").notNull(),
+  
+  // Job posting metrics
+  jobsPosted: integer("jobs_posted").default(0),
+  jobsActive: integer("jobs_active").default(0),
+  jobViews: integer("job_views").default(0),
+  jobApplications: integer("job_applications").default(0),
+  
+  // Application metrics
+  applicationsReviewed: integer("applications_reviewed").default(0),
+  applicationsShortlisted: integer("applications_shortlisted").default(0),
+  interviewsScheduled: integer("interviews_scheduled").default(0),
+  interviewsCompleted: integer("interviews_completed").default(0),
+  offersExtended: integer("offers_extended").default(0),
+  hires: integer("hires").default(0),
+  
+  // Performance metrics
+  averageTimeToReview: integer("average_time_to_review"), // hours
+  averageTimeToInterview: integer("average_time_to_interview"), // hours  
+  averageTimeToHire: integer("average_time_to_hire"), // hours
+  conversionRate: integer("conversion_rate"), // percentage
+  
+  // Candidate experience
+  averageCandidateRating: integer("average_candidate_rating"), // 1-5
+  responseRate: integer("response_rate"), // percentage
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("recruiter_analytics_recruiter_idx").on(table.recruiterId),
+  index("recruiter_analytics_date_idx").on(table.date),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
