@@ -22,8 +22,15 @@ if ((isProduction && hasExternalDb) || (hasReplitDb && process.env.DATABASE_URL?
   console.log('Using external database for production');
   neonConfig.webSocketConstructor = ws;
   
-  // Decode the DATABASE_URL if it's URL-encoded
+  // Clean up the DATABASE_URL if it contains psql command wrapper
   let connectionString = process.env.DATABASE_URL;
+  if (connectionString?.includes('psql')) {
+    // Extract the actual URL from psql command format
+    const match = connectionString.match(/postgresql:\/\/[^']+/);
+    if (match) {
+      connectionString = match[0];
+    }
+  }
   if (connectionString?.includes('%')) {
     connectionString = decodeURIComponent(connectionString);
   }
