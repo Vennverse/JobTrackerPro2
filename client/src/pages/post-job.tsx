@@ -62,22 +62,39 @@ export default function PostJob() {
       window.history.replaceState({}, '', window.location.pathname);
     }
     
-    // Determine which step to show based on authentication and verification status
-    if (!isAuthenticated) {
-      setCurrentStep('auth');
-    } else if (user?.id === 'demo-user-id' || ((user as any)?.userType === 'recruiter' && (user as any)?.emailVerified)) {
-      // Demo user or verified recruiter can post jobs
-      setCurrentStep('post');
-      // Set company name from user data if available
-      if ((user as any)?.companyName && !formData.companyName) {
-        setFormData(prev => ({ ...prev, companyName: (user as any).companyName }));
+    // Check company verification status if user is authenticated
+    const checkCompanyVerification = async () => {
+      if (isAuthenticated && user?.id && user.id !== 'demo-user-id') {
+        try {
+          const response = await fetch(`/api/auth/company-verification/${user.id}`);
+          const verification = await response.json();
+          
+          if (verification.isVerified) {
+            setCurrentStep('post');
+            // Set company name from verification data if available
+            if (verification.companyName && !formData.companyName) {
+              setFormData(prev => ({ ...prev, companyName: verification.companyName }));
+            }
+          } else {
+            setCurrentStep('verify');
+          }
+        } catch (error) {
+          console.error('Error checking verification:', error);
+          // Fallback to user type check
+          if ((user as any)?.userType === 'recruiter' && (user as any)?.emailVerified) {
+            setCurrentStep('post');
+          } else {
+            setCurrentStep('verify');
+          }
+        }
+      } else if (!isAuthenticated) {
+        setCurrentStep('auth');
+      } else if (user?.id === 'demo-user-id') {
+        setCurrentStep('post');
       }
-    } else if ((user as any)?.userType === 'recruiter') {
-      setCurrentStep('verify');
-    } else {
-      // User needs to verify company email to become recruiter
-      setCurrentStep('verify');
-    }
+    };
+    
+    checkCompanyVerification();
   }, [isAuthenticated, user, queryClient]);
 
   const verificationMutation = useMutation({

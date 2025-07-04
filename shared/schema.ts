@@ -407,6 +407,24 @@ export const emailVerificationTokens = pgTable("email_verification_tokens", {
   index("email_verification_tokens_user_id_idx").on(table.userId),
 ]);
 
+// Company email verification tracking
+export const companyEmailVerifications = pgTable("company_email_verifications", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  email: varchar("email").notNull(),
+  companyName: varchar("company_name").notNull(),
+  companyWebsite: varchar("company_website"),
+  verificationToken: varchar("verification_token").notNull().unique(),
+  isVerified: boolean("is_verified").default(false),
+  verifiedAt: timestamp("verified_at"),
+  expiresAt: timestamp("expires_at").notNull(),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("company_email_verifications_user_idx").on(table.userId),
+  index("company_email_verifications_email_idx").on(table.email),
+  index("company_email_verifications_token_idx").on(table.verificationToken),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {

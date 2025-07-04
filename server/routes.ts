@@ -29,6 +29,7 @@ import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
 import { sendEmail, generateVerificationEmail } from "./emailService";
 import { fileStorage } from "./fileStorage";
 import { paymentService } from "./paymentService";
+import { db } from "./db";
 import crypto from "crypto";
 import { 
   insertUserProfileSchema,
@@ -37,8 +38,10 @@ import {
   insertEducationSchema,
   insertJobApplicationSchema,
   insertJobRecommendationSchema,
-  insertAiJobAnalysisSchema 
+  insertAiJobAnalysisSchema,
+  companyEmailVerifications
 } from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 
 // Middleware to check usage limits
@@ -232,6 +235,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           lastName: existingUser.lastName,
           profileImageUrl: existingUser.profileImageUrl,
         });
+
+        // Record company email verification
+        await db.insert(companyEmailVerifications).values({
+          userId: existingUser.id,
+          email: tokenRecord.email,
+          companyName: tokenRecord.companyName || "Company",
+          companyWebsite: tokenRecord.companyWebsite,
+          verificationToken: token as string,
+          isVerified: true,
+          verifiedAt: new Date(),
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        });
       } else {
         // Create new recruiter user if no existing user found
         const userId = `recruiter-${Date.now()}`;
@@ -243,6 +258,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           companyName: tokenRecord.companyName,
           companyWebsite: tokenRecord.companyWebsite,
         });
+
+        // Record company email verification
+        await db.insert(companyEmailVerifications).values({
+          userId: userId,
+          email: tokenRecord.email,
+          companyName: tokenRecord.companyName || "Company",
+          companyWebsite: tokenRecord.companyWebsite,
+          verificationToken: token as string,
+          isVerified: true,
+          verifiedAt: new Date(),
+          expiresAt: new Date(Date.now() + 365 * 24 * 60 * 60 * 1000), // 1 year
+        });
       }
 
       // Delete used token
@@ -253,6 +280,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error verifying email:", error);
       res.status(500).json({ message: "Failed to verify email" });
+    }
+  });
+
+  // Check company email verification status
+  app.get('/api/auth/company-verification/:userId', async (req, res) => {
+    try {
+      const { userId } = req.params;
+      
+      // Fallback to checking user table emailVerified field
+      const user = await storage.getUser(userId);
+      const verification = user?.emailVerified && user?.userType === 'recruiter' ? {
+        company_name: user.companyName,
+        verified_at: new Date()
+      } : null;
+      
+      res.json({ 
+        isVerified: !!verification,
+        companyName: verification?.company_name,
+        verifiedAt: verification?.verified_at 
+      });
+    } catch (error) {
+      console.error("Error checking company verification:", error);
+      res.status(500).json({ message: "Failed to check verification status" });
     }
   });
 
