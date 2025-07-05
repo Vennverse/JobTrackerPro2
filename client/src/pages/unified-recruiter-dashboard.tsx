@@ -678,6 +678,54 @@ export default function RecruiterDashboard() {
                                               Years of Experience
                                             </Label>
                                             <p className="text-sm text-gray-700">
+                                              {applicantDetails.profile?.yearsExperience || "Not specified"}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">
+                                              Expected Salary
+                                            </Label>
+                                            <p className="text-sm text-gray-700">
+                                              {applicantDetails.profile?.expectedSalary || "Not specified"}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">
+                                              Work Authorization
+                                            </Label>
+                                            <p className="text-sm text-gray-700">
+                                              {applicantDetails.profile?.workAuthorization || "Not specified"}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">
+                                              Preferred Job Type
+                                            </Label>
+                                            <p className="text-sm text-gray-700">
+                                              {applicantDetails.profile?.preferredJobType || "Not specified"}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">
+                                              Willing to Relocate
+                                            </Label>
+                                            <p className="text-sm text-gray-700">
+                                              {applicantDetails.profile?.willingToRelocate ? "Yes" : "No"}
+                                            </p>
+                                          </div>
+                                          <div className="col-span-2">
+                                            <Label className="text-sm font-medium">
+                                              Professional Summary
+                                            </Label>
+                                            <p className="text-sm text-gray-700">
+                                              {applicantDetails.profile?.summary || "No summary provided"}
+                                            </p>
+                                          </div>
+                                          <div>
+                                            <Label className="text-sm font-medium">
+                                              Years of Experience
+                                            </Label>
+                                            <p className="text-sm text-gray-700">
                                               {applicantDetails.profile
                                                 ?.yearsExperience || 0}{" "}
                                               years
@@ -1338,19 +1386,7 @@ export default function RecruiterDashboard() {
                               </DialogContent>
                             </Dialog>
 
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => {
-                                // Start a conversation with the applicant
-                                setLocation(
-                                  `/chat?with=${application.applicantId}&context=application_${application.id}`,
-                                );
-                              }}
-                            >
-                              <Mail className="w-4 h-4 mr-1" />
-                              Message
-                            </Button>
+
                           </div>
                         </div>
                       </div>

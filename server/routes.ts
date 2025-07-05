@@ -3434,7 +3434,49 @@ Additional Information:
     try {
       const userId = req.user.id;
       const conversations = await storage.getChatConversations(userId);
-      res.json(conversations);
+      
+      // Enhance conversations with user names and job titles
+      const enhancedConversations = await Promise.all(
+        conversations.map(async (conversation: any) => {
+          try {
+            // Get recruiter and job seeker details
+            const recruiter = await storage.getUser(conversation.recruiterId);
+            const jobSeeker = await storage.getUser(conversation.jobSeekerId);
+            
+            // Get job posting details if available
+            let jobTitle = null;
+            if (conversation.jobPostingId) {
+              const jobPosting = await storage.getJobPosting(conversation.jobPostingId);
+              jobTitle = jobPosting?.title || null;
+            }
+            
+            // Get unread message count
+            const messages = await storage.getChatMessages(conversation.id);
+            const unreadCount = messages.filter(msg => 
+              !msg.isRead && msg.senderId !== userId
+            ).length;
+            
+            return {
+              ...conversation,
+              recruiterName: recruiter?.username || recruiter?.email || 'Recruiter',
+              jobSeekerName: jobSeeker?.username || jobSeeker?.email || 'Job Seeker',
+              jobTitle,
+              unreadCount
+            };
+          } catch (err) {
+            console.error('Error enhancing conversation:', err);
+            return {
+              ...conversation,
+              recruiterName: 'Recruiter',
+              jobSeekerName: 'Job Seeker',
+              jobTitle: null,
+              unreadCount: 0
+            };
+          }
+        })
+      );
+      
+      res.json(enhancedConversations);
     } catch (error) {
       console.error("Error fetching conversations:", error);
       res.status(500).json({ message: "Failed to fetch conversations" });
