@@ -163,17 +163,7 @@ export default function ChatPage() {
   };
 
   const formatMessageTime = (timestamp: string) => {
-    const messageDate = new Date(timestamp);
-    const now = new Date();
-    const diffHours = (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
-    
-    if (diffHours < 24) {
-      return format(messageDate, 'HH:mm');
-    } else if (diffHours < 168) { // 7 days
-      return format(messageDate, 'EEE HH:mm');
-    } else {
-      return format(messageDate, 'MMM d, HH:mm');
-    }
+    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
   };
 
   const filteredConversations = conversations.filter(conv => {

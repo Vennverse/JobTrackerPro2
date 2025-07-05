@@ -24,6 +24,7 @@ import EditJob from "@/pages/edit-job";
 import ForgotPasswordPage from "@/pages/forgot-password";
 import ResetPasswordPage from "@/pages/reset-password";
 import ChatPage from "@/pages/chat";
+import MessagingPage from "@/pages/messaging";
 import ResumesPage from "@/pages/resumes";
 
 function Router() {
@@ -61,7 +62,7 @@ function Router() {
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={Subscription} />
-              <Route path="/chat" component={ChatPage} />
+              <Route path="/chat" component={MessagingPage} />
             </>
           ) : user?.userType === 'job_seeker' ? (
             <>
@@ -82,7 +83,7 @@ function Router() {
                   <Route path="/jobs" component={Jobs} />
                   <Route path="/jobs/:id" component={ViewJob} />
                   <Route path="/subscription" component={Subscription} />
-                  <Route path="/chat" component={ChatPage} />
+                  <Route path="/chat" component={MessagingPage} />
                 </>
               )}
             </>
@@ -96,7 +97,7 @@ function Router() {
               <Route path="/jobs" component={Jobs} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/subscription" component={Subscription} />
-              <Route path="/chat" component={ChatPage} />
+              <Route path="/chat" component={MessagingPage} />
             </>
           )}
         </>
