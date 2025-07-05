@@ -88,7 +88,7 @@ export async function setupAuth(app: Express) {
         (req as any).session.user = {
           id: user.id,
           email: user.email,
-          name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+          name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
         };
 
         res.json({ 
@@ -96,7 +96,7 @@ export async function setupAuth(app: Express) {
           user: {
             id: user.id,
             email: user.email,
-            name: user.name || `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+            name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
           }
         });
       } catch (error) {
@@ -105,8 +105,16 @@ export async function setupAuth(app: Express) {
       }
     } else {
       // For OAuth providers, redirect to their auth URLs
+      const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'http://localhost:5000';
+      
       if (provider === 'google' && authConfig.providers.google.enabled) {
-        const authUrl = `https://accounts.google.com/oauth2/v2/auth?client_id=${authConfig.providers.google.clientId}&redirect_uri=${encodeURIComponent('http://localhost:5000/api/auth/callback/google')}&scope=openid%20email%20profile&response_type=code`;
+        const authUrl = `https://accounts.google.com/oauth2/v2/auth?client_id=${authConfig.providers.google.clientId}&redirect_uri=${encodeURIComponent(`${baseUrl}/api/auth/callback/google`)}&scope=openid%20email%20profile&response_type=code`;
+        res.json({ redirectUrl: authUrl });
+      } else if (provider === 'github' && authConfig.providers.github.enabled) {
+        const authUrl = `https://github.com/login/oauth/authorize?client_id=${authConfig.providers.github.clientId}&redirect_uri=${encodeURIComponent(`${baseUrl}/api/auth/callback/github`)}&scope=user:email`;
+        res.json({ redirectUrl: authUrl });
+      } else if (provider === 'linkedin' && authConfig.providers.linkedin.enabled) {
+        const authUrl = `https://www.linkedin.com/oauth/v2/authorization?response_type=code&client_id=${authConfig.providers.linkedin.clientId}&redirect_uri=${encodeURIComponent(`${baseUrl}/api/auth/callback/linkedin`)}&scope=r_liteprofile%20r_emailaddress`;
         res.json({ redirectUrl: authUrl });
       } else {
         res.status(400).json({ message: "Provider not supported or not configured" });
@@ -454,6 +462,293 @@ export async function setupAuth(app: Express) {
     } catch (error) {
       console.error('Email verification error:', error);
       res.status(500).json({ message: 'Email verification failed' });
+    }
+  });
+
+  // OAuth callback handlers
+  app.get('/api/auth/callback/google', async (req, res) => {
+    try {
+      const { code } = req.query;
+      
+      if (!code) {
+        return res.status(400).json({ message: 'Authorization code is required' });
+      }
+
+      // Exchange code for tokens
+      const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'http://localhost:5000';
+      const tokenResponse = await fetch('https://oauth2.googleapis.com/token', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          client_id: authConfig.providers.google.clientId!,
+          client_secret: authConfig.providers.google.clientSecret!,
+          code: code as string,
+          grant_type: 'authorization_code',
+          redirect_uri: `${baseUrl}/api/auth/callback/google`,
+        }),
+      });
+
+      const tokens = await tokenResponse.json();
+      
+      if (!tokens.access_token) {
+        return res.status(400).json({ message: 'Failed to get access token' });
+      }
+
+      // Get user info from Google
+      const userResponse = await fetch('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+        },
+      });
+
+      const googleUser = await userResponse.json();
+
+      // Check if user exists
+      let [user] = await db.select().from(users).where(eq(users.email, googleUser.email));
+      
+      if (!user) {
+        // Create new user
+        const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        user = await storage.upsertUser({
+          id: userId,
+          email: googleUser.email,
+          firstName: googleUser.given_name || 'User',
+          lastName: googleUser.family_name || '',
+          password: null,
+          userType: 'job_seeker',
+          emailVerified: true,
+          profileImageUrl: googleUser.picture,
+          companyName: null,
+          companyWebsite: null
+        });
+      }
+
+      // Create session
+      (req as any).session.user = {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userType: user.userType
+      };
+
+      // Save session and redirect
+      (req as any).session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Login failed - session error' });
+        }
+        
+        res.redirect('/dashboard');
+      });
+    } catch (error) {
+      console.error('Google OAuth error:', error);
+      res.status(500).json({ message: 'Google login failed' });
+    }
+  });
+
+  app.get('/api/auth/callback/github', async (req, res) => {
+    try {
+      const { code } = req.query;
+      
+      if (!code) {
+        return res.status(400).json({ message: 'Authorization code is required' });
+      }
+
+      // Exchange code for tokens
+      const tokenResponse = await fetch('https://github.com/login/oauth/access_token', {
+        method: 'POST',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          client_id: authConfig.providers.github.clientId!,
+          client_secret: authConfig.providers.github.clientSecret!,
+          code: code as string,
+        }),
+      });
+
+      const tokens = await tokenResponse.json();
+      
+      if (!tokens.access_token) {
+        return res.status(400).json({ message: 'Failed to get access token' });
+      }
+
+      // Get user info from GitHub
+      const userResponse = await fetch('https://api.github.com/user', {
+        headers: {
+          'Authorization': `token ${tokens.access_token}`,
+          'User-Agent': 'AutoJobr',
+        },
+      });
+
+      const githubUser = await userResponse.json();
+
+      // Get user emails
+      const emailResponse = await fetch('https://api.github.com/user/emails', {
+        headers: {
+          'Authorization': `token ${tokens.access_token}`,
+          'User-Agent': 'AutoJobr',
+        },
+      });
+
+      const emails = await emailResponse.json();
+      const primaryEmail = emails.find((email: any) => email.primary)?.email || githubUser.email;
+
+      if (!primaryEmail) {
+        return res.status(400).json({ message: 'No email found in GitHub account' });
+      }
+
+      // Check if user exists
+      let [user] = await db.select().from(users).where(eq(users.email, primaryEmail));
+      
+      if (!user) {
+        // Create new user
+        const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const name = githubUser.name || githubUser.login;
+        const nameParts = name.split(' ');
+        
+        user = await storage.upsertUser({
+          id: userId,
+          email: primaryEmail,
+          firstName: nameParts[0] || 'User',
+          lastName: nameParts.slice(1).join(' ') || '',
+          password: null,
+          userType: 'job_seeker',
+          emailVerified: true,
+          profileImageUrl: githubUser.avatar_url,
+          companyName: null,
+          companyWebsite: null
+        });
+      }
+
+      // Create session
+      (req as any).session.user = {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userType: user.userType
+      };
+
+      // Save session and redirect
+      (req as any).session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Login failed - session error' });
+        }
+        
+        res.redirect('/dashboard');
+      });
+    } catch (error) {
+      console.error('GitHub OAuth error:', error);
+      res.status(500).json({ message: 'GitHub login failed' });
+    }
+  });
+
+  app.get('/api/auth/callback/linkedin', async (req, res) => {
+    try {
+      const { code } = req.query;
+      
+      if (!code) {
+        return res.status(400).json({ message: 'Authorization code is required' });
+      }
+
+      // Exchange code for tokens
+      const baseUrl = process.env.REPLIT_DOMAINS ? `https://${process.env.REPLIT_DOMAINS}` : 'http://localhost:5000';
+      const tokenResponse = await fetch('https://www.linkedin.com/oauth/v2/accessToken', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: new URLSearchParams({
+          grant_type: 'authorization_code',
+          code: code as string,
+          redirect_uri: `${baseUrl}/api/auth/callback/linkedin`,
+          client_id: authConfig.providers.linkedin.clientId!,
+          client_secret: authConfig.providers.linkedin.clientSecret!,
+        }),
+      });
+
+      const tokens = await tokenResponse.json();
+      
+      if (!tokens.access_token) {
+        return res.status(400).json({ message: 'Failed to get access token' });
+      }
+
+      // Get user info from LinkedIn
+      const userResponse = await fetch('https://api.linkedin.com/v2/people/~:(id,firstName,lastName,profilePicture(displayImage~:playableStreams))', {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+        },
+      });
+
+      const linkedinUser = await userResponse.json();
+
+      // Get user email
+      const emailResponse = await fetch('https://api.linkedin.com/v2/emailAddress?q=members&projection=(elements*(handle~))', {
+        headers: {
+          'Authorization': `Bearer ${tokens.access_token}`,
+        },
+      });
+
+      const emailData = await emailResponse.json();
+      const email = emailData.elements?.[0]?.['handle~']?.emailAddress;
+
+      if (!email) {
+        return res.status(400).json({ message: 'No email found in LinkedIn account' });
+      }
+
+      // Check if user exists
+      let [user] = await db.select().from(users).where(eq(users.email, email));
+      
+      if (!user) {
+        // Create new user
+        const userId = `user-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+        const firstName = linkedinUser.firstName?.localized?.en_US || 'User';
+        const lastName = linkedinUser.lastName?.localized?.en_US || '';
+        
+        user = await storage.upsertUser({
+          id: userId,
+          email: email,
+          firstName: firstName,
+          lastName: lastName,
+          password: null,
+          userType: 'job_seeker',
+          emailVerified: true,
+          profileImageUrl: linkedinUser.profilePicture?.displayImage?.['~']?.elements?.[0]?.identifiers?.[0]?.identifier,
+          companyName: null,
+          companyWebsite: null
+        });
+      }
+
+      // Create session
+      (req as any).session.user = {
+        id: user.id,
+        email: user.email,
+        name: `${user.firstName || ''} ${user.lastName || ''}`.trim(),
+        firstName: user.firstName,
+        lastName: user.lastName,
+        userType: user.userType
+      };
+
+      // Save session and redirect
+      (req as any).session.save((err: any) => {
+        if (err) {
+          console.error('Session save error:', err);
+          return res.status(500).json({ message: 'Login failed - session error' });
+        }
+        
+        res.redirect('/dashboard');
+      });
+    } catch (error) {
+      console.error('LinkedIn OAuth error:', error);
+      res.status(500).json({ message: 'LinkedIn login failed' });
     }
   });
 
