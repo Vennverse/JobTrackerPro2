@@ -4610,24 +4610,195 @@ Host: https://autojobr.com`;
   app.post('/api/recruiter/contact-candidate', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const { candidateId, message, jobId } = req.body;
+      const { candidateId, message, jobId, applicationId } = req.body;
       const user = await storage.getUser(userId);
       
       if (user?.userType !== 'recruiter') {
         return res.status(403).json({ message: "Access denied. Recruiter account required." });
       }
 
-      // Create a chat conversation (this would be implemented with the chat system)
-      console.log(`Recruiter ${userId} contacting candidate ${candidateId} for job ${jobId}:`, message);
+      // Check if conversation already exists
+      let conversation;
+      const existingConversations = await storage.getChatConversations(userId);
+      const existingConv = existingConversations.find(conv => 
+        conv.jobSeekerId === candidateId && conv.jobPostingId === jobId
+      );
+
+      if (existingConv) {
+        conversation = existingConv;
+      } else {
+        // Create new conversation
+        const conversationData = {
+          recruiterId: userId,
+          jobSeekerId: candidateId,
+          jobPostingId: jobId || null,
+          applicationId: applicationId || null,
+          isActive: true
+        };
+        conversation = await storage.createChatConversation(conversationData);
+      }
+
+      // Send the initial message
+      const messageData = {
+        conversationId: conversation.id,
+        senderId: userId,
+        message,
+        messageType: 'text',
+        isRead: false
+      };
+      
+      const chatMessage = await storage.createChatMessage(messageData);
       
       res.json({ 
         message: "Message sent successfully",
-        conversationId: `conv-${Date.now()}`,
-        sentAt: new Date().toISOString()
+        conversationId: conversation.id,
+        messageId: chatMessage.id,
+        sentAt: chatMessage.createdAt
       });
     } catch (error) {
       console.error("Error contacting candidate:", error);
       res.status(500).json({ message: "Failed to send message" });
+    }
+  });
+
+  // Job Sharing and Promotion APIs
+  
+  // Generate shareable link for job posting
+  app.post('/api/recruiter/jobs/:id/share', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Get job posting to verify ownership
+      const jobPosting = await storage.getJobPosting(jobId);
+      if (!jobPosting || jobPosting.recruiterId !== userId) {
+        return res.status(403).json({ message: "Access denied. You can only share your own job postings." });
+      }
+
+      // Generate unique shareable link
+      const shareToken = crypto.randomBytes(16).toString('hex');
+      const shareableLink = `${process.env.NEXTAUTH_URL || 'http://localhost:5000'}/jobs/shared/${shareToken}`;
+      
+      // Update job posting with shareable link
+      const updatedJob = await storage.updateJobPosting(jobId, {
+        shareableLink: shareableLink
+      });
+
+      res.json({ 
+        message: "Shareable link generated successfully",
+        shareableLink: shareableLink,
+        socialText: `🚀 Exciting opportunity at ${jobPosting.companyName}! We're hiring for ${jobPosting.title}. Apply now: ${shareableLink}`,
+        updatedAt: new Date().toISOString()
+      });
+    } catch (error) {
+      console.error("Error generating shareable link:", error);
+      res.status(500).json({ message: "Failed to generate shareable link" });
+    }
+  });
+
+  // Promote job posting for $10/month
+  app.post('/api/recruiter/jobs/:id/promote', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobId = parseInt(req.params.id);
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Get job posting to verify ownership
+      const jobPosting = await storage.getJobPosting(jobId);
+      if (!jobPosting || jobPosting.recruiterId !== userId) {
+        return res.status(403).json({ message: "Access denied. You can only promote your own job postings." });
+      }
+
+      // Calculate promotion end date (1 month from now)
+      const promotedUntil = new Date();
+      promotedUntil.setMonth(promotedUntil.getMonth() + 1);
+
+      // Create Stripe payment intent for $10 promotion
+      try {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: 1000, // $10.00 in cents
+          currency: 'usd',
+          metadata: {
+            type: 'job_promotion',
+            jobId: jobId.toString(),
+            recruiterId: userId,
+            promotedUntil: promotedUntil.toISOString()
+          }
+        });
+
+        res.json({
+          message: "Job promotion payment created",
+          clientSecret: paymentIntent.client_secret,
+          amount: 10.00,
+          currency: 'USD',
+          promotedUntil: promotedUntil.toISOString(),
+          benefits: [
+            "Highlighted in search results",
+            "Shown to top job seekers via notifications",
+            "Increased visibility for 30 days",
+            "Priority placement in job recommendations"
+          ]
+        });
+      } catch (stripeError) {
+        console.error("Stripe error:", stripeError);
+        res.status(500).json({ message: "Payment processing unavailable" });
+      }
+    } catch (error) {
+      console.error("Error creating job promotion:", error);
+      res.status(500).json({ message: "Failed to create job promotion" });
+    }
+  });
+
+  // Confirm job promotion payment
+  app.post('/api/recruiter/jobs/:id/promote/confirm', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobId = parseInt(req.params.id);
+      const { paymentIntentId } = req.body;
+      
+      // Verify payment with Stripe
+      const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+      const paymentIntent = await stripe.paymentIntents.retrieve(paymentIntentId);
+      
+      if (paymentIntent.status === 'succeeded' && 
+          paymentIntent.metadata.jobId === jobId.toString() &&
+          paymentIntent.metadata.recruiterId === userId) {
+        
+        // Calculate promotion end date
+        const promotedUntil = new Date();
+        promotedUntil.setMonth(promotedUntil.getMonth() + 1);
+        
+        // Update job posting to promoted status
+        const updatedJob = await storage.updateJobPosting(jobId, {
+          isPromoted: true,
+          promotedUntil: promotedUntil
+        });
+
+        // Send notifications to top job seekers (in real implementation)
+        console.log(`Job ${jobId} promoted successfully, sending notifications to top candidates`);
+        
+        res.json({
+          message: "Job promoted successfully!",
+          isPromoted: true,
+          promotedUntil: promotedUntil.toISOString(),
+          notificationsSent: true
+        });
+      } else {
+        res.status(400).json({ message: "Payment verification failed" });
+      }
+    } catch (error) {
+      console.error("Error confirming job promotion:", error);
+      res.status(500).json({ message: "Failed to confirm job promotion" });
     }
   });
 

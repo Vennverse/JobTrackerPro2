@@ -47,6 +47,11 @@ import {
   MapPin,
   GraduationCap,
   Award,
+  MessageCircle,
+  Share2,
+  Zap,
+  Copy,
+  ExternalLink,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -67,6 +72,14 @@ export default function RecruiterDashboard() {
   const [resumePreview, setResumePreview] = useState("");
   const [jobCompatibility, setJobCompatibility] = useState<any>(null);
   const [loadingCompatibility, setLoadingCompatibility] = useState(false);
+  const [showMessageDialog, setShowMessageDialog] = useState(false);
+  const [messageText, setMessageText] = useState("");
+  const [selectedApplicantForMessage, setSelectedApplicantForMessage] = useState<any>(null);
+  const [showShareDialog, setShowShareDialog] = useState(false);
+  const [selectedJobForShare, setSelectedJobForShare] = useState<any>(null);
+  const [shareLink, setShareLink] = useState("");
+  const [showPromoteDialog, setShowPromoteDialog] = useState(false);
+  const [selectedJobForPromote, setSelectedJobForPromote] = useState<any>(null);
 
   // Fetch recruiter's job postings
   const { data: jobPostings = [], isLoading: jobsLoading } = useQuery({
@@ -141,6 +154,86 @@ export default function RecruiterDashboard() {
       toast({
         title: "Update Failed",
         description: error.message || "Failed to update application status.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for sending messages
+  const sendMessageMutation = useMutation({
+    mutationFn: async ({
+      candidateId,
+      message,
+      jobId,
+      applicationId,
+    }: {
+      candidateId: string;
+      message: string;
+      jobId?: number;
+      applicationId?: number;
+    }) => {
+      return await apiRequest("POST", "/api/recruiter/contact-candidate", {
+        candidateId,
+        message,
+        jobId,
+        applicationId,
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Message Sent",
+        description: "Your message has been sent successfully.",
+      });
+      setShowMessageDialog(false);
+      setMessageText("");
+      setSelectedApplicantForMessage(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Message Failed",
+        description: error.message || "Failed to send message.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for generating shareable links
+  const shareJobMutation = useMutation({
+    mutationFn: async (jobId: number) => {
+      return await apiRequest("POST", `/api/recruiter/jobs/${jobId}/share`);
+    },
+    onSuccess: (data: any) => {
+      setShareLink(data.shareableLink);
+      toast({
+        title: "Share Link Generated",
+        description: "Your job posting is now ready to share!",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Share Failed",
+        description: error.message || "Failed to generate share link.",
+        variant: "destructive",
+      });
+    },
+  });
+
+  // Mutation for promoting jobs
+  const promoteJobMutation = useMutation({
+    mutationFn: async (jobId: number) => {
+      return await apiRequest("POST", `/api/recruiter/jobs/${jobId}/promote`);
+    },
+    onSuccess: (data: any) => {
+      toast({
+        title: "Job Promotion Ready",
+        description: "Complete payment to promote your job posting.",
+      });
+      // Handle Stripe payment flow here
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Promotion Failed",
+        description: error.message || "Failed to create job promotion.",
         variant: "destructive",
       });
     },
@@ -354,7 +447,7 @@ export default function RecruiterDashboard() {
                               </span>
                             </div>
                           </div>
-                          <div className="flex gap-2">
+                          <div className="flex gap-2 flex-wrap">
                             <Button
                               variant="outline"
                               size="sm"
@@ -372,6 +465,29 @@ export default function RecruiterDashboard() {
                               }
                             >
                               Edit
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedJobForShare(job);
+                                setShowShareDialog(true);
+                              }}
+                            >
+                              <Share2 className="w-4 h-4 mr-1" />
+                              Share
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setSelectedJobForPromote(job);
+                                setShowPromoteDialog(true);
+                              }}
+                              className="bg-green-50 border-green-200 text-green-700 hover:bg-green-100"
+                            >
+                              <Zap className="w-4 h-4 mr-1" />
+                              Promote ($10)
                             </Button>
                           </div>
                         </div>
@@ -1123,6 +1239,19 @@ export default function RecruiterDashboard() {
                                   Review
                                 </Button>
                               </DialogTrigger>
+                              
+                              {/* Message Button */}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => {
+                                  setSelectedApplicantForMessage(application);
+                                  setShowMessageDialog(true);
+                                }}
+                              >
+                                <MessageCircle className="w-4 h-4 mr-1" />
+                                Message
+                              </Button>
                               <DialogContent>
                                 <DialogHeader>
                                   <DialogTitle>Review Application</DialogTitle>
@@ -1307,6 +1436,179 @@ export default function RecruiterDashboard() {
           <div className="space-y-4">
             <div className="p-4 bg-gray-50 rounded-lg whitespace-pre-wrap text-sm">
               {resumePreview || "No resume content available"}
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Message Dialog */}
+      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Send Message to Candidate</DialogTitle>
+            <DialogDescription>
+              Reach out to {selectedApplicantForMessage?.applicantId} regarding their application
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div>
+              <Label htmlFor="message">Message</Label>
+              <Textarea
+                id="message"
+                placeholder="Write your message here..."
+                value={messageText}
+                onChange={(e) => setMessageText(e.target.value)}
+                rows={4}
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowMessageDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedApplicantForMessage && messageText.trim()) {
+                    sendMessageMutation.mutate({
+                      candidateId: selectedApplicantForMessage.applicantId,
+                      message: messageText,
+                      jobId: selectedApplicantForMessage.jobPostingId,
+                      applicationId: selectedApplicantForMessage.id,
+                    });
+                  }
+                }}
+                disabled={!messageText.trim() || sendMessageMutation.isPending}
+              >
+                {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
+              </Button>
+            </div>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Share Job Dialog */}
+      <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Share Job Posting</DialogTitle>
+            <DialogDescription>
+              Generate a shareable link for "{selectedJobForShare?.title}"
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            {shareLink ? (
+              <div className="space-y-3">
+                <div>
+                  <Label>Shareable Link</Label>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={shareLink}
+                      readOnly
+                      className="flex-1 px-3 py-2 border rounded-md bg-gray-50"
+                    />
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => {
+                        navigator.clipboard.writeText(shareLink);
+                        toast({ title: "Link copied to clipboard!" });
+                      }}
+                    >
+                      <Copy className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+                <div>
+                  <Label>Social Media Text</Label>
+                  <Textarea
+                    value={`🚀 Exciting opportunity at ${selectedJobForShare?.companyName}! We're hiring for ${selectedJobForShare?.title}. Apply now: ${shareLink}`}
+                    readOnly
+                    rows={3}
+                    className="bg-gray-50"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button
+                    variant="outline"
+                    onClick={() => {
+                      setShowShareDialog(false);
+                      setShareLink("");
+                    }}
+                  >
+                    Close
+                  </Button>
+                  <Button
+                    onClick={() => window.open(shareLink, "_blank")}
+                  >
+                    <ExternalLink className="w-4 h-4 mr-2" />
+                    View Job Page
+                  </Button>
+                </div>
+              </div>
+            ) : (
+              <div className="text-center py-4">
+                <Button
+                  onClick={() => {
+                    if (selectedJobForShare) {
+                      shareJobMutation.mutate(selectedJobForShare.id);
+                    }
+                  }}
+                  disabled={shareJobMutation.isPending}
+                >
+                  <Share2 className="w-4 h-4 mr-2" />
+                  {shareJobMutation.isPending ? "Generating..." : "Generate Share Link"}
+                </Button>
+              </div>
+            )}
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      {/* Promote Job Dialog */}
+      <Dialog open={showPromoteDialog} onOpenChange={setShowPromoteDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Promote Job Posting</DialogTitle>
+            <DialogDescription>
+              Boost "{selectedJobForPromote?.title}" with premium promotion for $10/month
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <h4 className="font-semibold text-blue-900 mb-2">Premium Promotion Benefits</h4>
+              <ul className="text-sm text-blue-800 space-y-1">
+                <li>• Highlighted in search results</li>
+                <li>• Shown to top job seekers via notifications</li>
+                <li>• Increased visibility for 30 days</li>
+                <li>• Priority placement in job recommendations</li>
+              </ul>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-green-600 mb-2">$10.00 USD</div>
+              <p className="text-sm text-gray-600">One-time payment for 30 days of promotion</p>
+            </div>
+            <div className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => setShowPromoteDialog(false)}
+              >
+                Cancel
+              </Button>
+              <Button
+                onClick={() => {
+                  if (selectedJobForPromote) {
+                    promoteJobMutation.mutate(selectedJobForPromote.id);
+                  }
+                }}
+                disabled={promoteJobMutation.isPending}
+                className="bg-green-600 hover:bg-green-700"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                {promoteJobMutation.isPending ? "Processing..." : "Promote Job"}
+              </Button>
             </div>
           </div>
         </DialogContent>

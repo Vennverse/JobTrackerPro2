@@ -335,6 +335,12 @@ export const jobPostings = pgTable("job_postings", {
   benefits: text("benefits"),
   requirements: text("requirements"),
   responsibilities: text("responsibilities"),
+  
+  // Promotion and sharing features
+  isPromoted: boolean("is_promoted").default(false),
+  promotedUntil: timestamp("promoted_until"),
+  shareableLink: varchar("shareable_link"),
+  
   isActive: boolean("is_active").default(true),
   applicationsCount: integer("applications_count").default(0),
   viewsCount: integer("views_count").default(0),
