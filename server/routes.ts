@@ -28,8 +28,10 @@ import { groqService } from "./groqService";
 import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
 import { sendEmail, generateVerificationEmail } from "./emailService";
 import { fileStorage } from "./fileStorage";
-import { paymentService } from "./paymentService";
 import { db } from "./db";
+import * as schema from "@shared/schema";
+import { eq, desc } from "drizzle-orm";
+import { paymentService } from "./paymentService";
 import crypto from "crypto";
 import { 
   insertUserProfileSchema,
@@ -41,7 +43,6 @@ import {
   insertAiJobAnalysisSchema,
   companyEmailVerifications
 } from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
 import { z } from "zod";
 
 // Middleware to check usage limits
@@ -845,19 +846,65 @@ Additional Information:
         return res.status(403).json({ message: "Access denied. You can only download resumes from your job postings." });
       }
 
-      // Try to get applicant's active resume
-      const applicantId = application.applicantId;
       let resume;
-      
-      if (applicantId === 'demo-user-id') {
-        const demoResumes = (global as any).demoUserResumes || [];
-        resume = demoResumes.find((r: any) => r.isActive) || demoResumes[0];
-      } else {
-        const userResumes = (global as any).userResumes?.[applicantId] || [];
-        resume = userResumes.find((r: any) => r.isActive) || userResumes[0];
+      const applicantId = application.applicantId;
+
+      // First try to get resume from database using resume_id from application
+      if (application.resumeId) {
+        try {
+          const [dbResume] = await db.select().from(schema.resumes).where(
+            eq(schema.resumes.id, application.resumeId)
+          );
+          if (dbResume && dbResume.fileData) {
+            resume = {
+              fileData: dbResume.fileData,
+              fileName: dbResume.fileName,
+              fileType: dbResume.mimeType || 'application/pdf'
+            };
+          }
+        } catch (dbError) {
+          console.error("Error fetching resume from database:", dbError);
+        }
+      }
+
+      // If no resume from database, try to get from resume_data in application
+      if (!resume && application.resumeData && typeof application.resumeData === 'object') {
+        const resumeData = application.resumeData as any;
+        if (resumeData.fileData) {
+          resume = {
+            fileData: resumeData.fileData,
+            fileName: resumeData.fileName || 'resume.pdf',
+            fileType: resumeData.mimeType || 'application/pdf'
+          };
+        }
+      }
+
+      // Fallback to in-memory storage for demo users
+      if (!resume) {
+        if (applicantId === 'demo-user-id') {
+          const demoResumes = (global as any).demoUserResumes || [];
+          const demoResume = demoResumes.find((r: any) => r.isActive) || demoResumes[0];
+          if (demoResume) {
+            resume = {
+              fileData: demoResume.fileData,
+              fileName: demoResume.fileName,
+              fileType: demoResume.fileType || 'application/pdf'
+            };
+          }
+        } else {
+          const userResumes = (global as any).userResumes?.[applicantId] || [];
+          const userResume = userResumes.find((r: any) => r.isActive) || userResumes[0];
+          if (userResume) {
+            resume = {
+              fileData: userResume.fileData,
+              fileName: userResume.fileName,
+              fileType: userResume.fileType || 'application/pdf'
+            };
+          }
+        }
       }
       
-      if (!resume) {
+      if (!resume || !resume.fileData) {
         return res.status(404).json({ message: "Resume not found or not available for download" });
       }
       
@@ -872,6 +919,83 @@ Additional Information:
     } catch (error) {
       console.error("Error downloading resume:", error);
       res.status(500).json({ message: "Failed to download resume" });
+    }
+  });
+
+  // Resume preview route for recruiters (from job applications)
+  app.get('/api/recruiter/resume/preview/:applicationId', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const applicationId = parseInt(req.params.applicationId);
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter' && user?.currentRole !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      // Get application  
+      const application = await storage.getJobPostingApplication(applicationId);
+      if (!application) {
+        return res.status(404).json({ message: "Application not found" });
+      }
+
+      // Get job posting to verify recruiter owns it
+      const jobPosting = await storage.getJobPosting(application.jobPostingId);
+      if (!jobPosting || jobPosting.recruiterId !== userId) {
+        return res.status(403).json({ message: "Access denied. You can only view resumes from your job postings." });
+      }
+
+      let resumeText = null;
+      const applicantId = application.applicantId;
+
+      // First try to get resume text from database using resume_id from application
+      if (application.resumeId) {
+        try {
+          const [dbResume] = await db.select().from(schema.resumes).where(
+            eq(schema.resumes.id, application.resumeId)
+          );
+          if (dbResume && dbResume.resumeText) {
+            resumeText = dbResume.resumeText;
+          }
+        } catch (dbError) {
+          console.error("Error fetching resume from database:", dbError);
+        }
+      }
+
+      // If no resume text from database, try to get from resume_data in application
+      if (!resumeText && application.resumeData && typeof application.resumeData === 'object') {
+        const resumeData = application.resumeData as any;
+        if (resumeData.resumeText) {
+          resumeText = resumeData.resumeText;
+        }
+      }
+
+      // Fallback to in-memory storage for demo users
+      if (!resumeText) {
+        if (applicantId === 'demo-user-id') {
+          const demoResumes = (global as any).demoUserResumes || [];
+          const demoResume = demoResumes.find((r: any) => r.isActive) || demoResumes[0];
+          if (demoResume && demoResume.resumeText) {
+            resumeText = demoResume.resumeText;
+          }
+        } else {
+          const userResumes = (global as any).userResumes?.[applicantId] || [];
+          const userResume = userResumes.find((r: any) => r.isActive) || userResumes[0];
+          if (userResume && userResume.resumeText) {
+            resumeText = userResume.resumeText;
+          }
+        }
+      }
+      
+      if (!resumeText) {
+        return res.status(404).json({ message: "Resume text not available for preview" });
+      }
+      
+      console.log(`[DEBUG] Recruiter ${userId} previewing resume for application: ${applicationId}`);
+      return res.json({ resumeText });
+    } catch (error) {
+      console.error("Error previewing resume:", error);
+      res.status(500).json({ message: "Failed to preview resume" });
     }
   });
 
