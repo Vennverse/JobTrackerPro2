@@ -3458,8 +3458,8 @@ Additional Information:
             
             return {
               ...conversation,
-              recruiterName: recruiter?.username || recruiter?.email || 'Recruiter',
-              jobSeekerName: jobSeeker?.username || jobSeeker?.email || 'Job Seeker',
+              recruiterName: `${recruiter?.firstName || ''} ${recruiter?.lastName || ''}`.trim() || recruiter?.email || 'Recruiter',
+              jobSeekerName: `${jobSeeker?.firstName || ''} ${jobSeeker?.lastName || ''}`.trim() || jobSeeker?.email || 'Job Seeker',
               jobTitle,
               unreadCount
             };
@@ -3537,7 +3537,7 @@ Additional Information:
     }
   });
 
-  app.put('/api/chat/conversations/:id/read', isAuthenticated, async (req: any, res) => {
+  app.post('/api/chat/conversations/:id/read', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const conversationId = parseInt(req.params.id);

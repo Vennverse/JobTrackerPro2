@@ -3,14 +3,14 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, CardHeader } from '@/components/ui/card';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Badge } from '@/components/ui/badge';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Separator } from '@/components/ui/separator';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
-import { Send, MessageCircle, Users, Clock, CheckCheck, ArrowLeft, Menu } from 'lucide-react';
-import { formatDistanceToNow } from 'date-fns';
+import { Send, MessageCircle, Users, Clock, CheckCheck, ArrowLeft, Menu, Search, MoreVertical, Phone, Video } from 'lucide-react';
+import { formatDistanceToNow, format } from 'date-fns';
+import { motion, AnimatePresence } from 'framer-motion';
 
 interface ChatMessage {
   id: number;
@@ -41,6 +41,9 @@ interface User {
   id: string;
   email: string;
   userType?: string;
+  firstName?: string;
+  lastName?: string;
+  profileImageUrl?: string;
 }
 
 export default function ChatPage() {
@@ -48,6 +51,7 @@ export default function ChatPage() {
   const [newMessage, setNewMessage] = useState('');
   const [isMobileView, setIsMobileView] = useState(false);
   const [showConversationList, setShowConversationList] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
 
@@ -144,10 +148,6 @@ export default function ChatPage() {
     }
   };
 
-  const formatMessageTime = (timestamp: string) => {
-    return formatDistanceToNow(new Date(timestamp), { addSuffix: true });
-  };
-
   const getUserDisplayName = (conversation: ChatConversation) => {
     if (!user) return 'Unknown User';
     
@@ -157,6 +157,31 @@ export default function ChatPage() {
       return conversation.recruiterName || 'Recruiter';
     }
   };
+
+  const getUserInitials = (name: string) => {
+    return name.split(' ').map(n => n.charAt(0).toUpperCase()).join('').slice(0, 2);
+  };
+
+  const formatMessageTime = (timestamp: string) => {
+    const messageDate = new Date(timestamp);
+    const now = new Date();
+    const diffHours = (now.getTime() - messageDate.getTime()) / (1000 * 60 * 60);
+    
+    if (diffHours < 24) {
+      return format(messageDate, 'HH:mm');
+    } else if (diffHours < 168) { // 7 days
+      return format(messageDate, 'EEE HH:mm');
+    } else {
+      return format(messageDate, 'MMM d, HH:mm');
+    }
+  };
+
+  const filteredConversations = conversations.filter(conv => {
+    const displayName = getUserDisplayName(conv);
+    const jobTitle = conv.jobTitle || '';
+    return displayName.toLowerCase().includes(searchQuery.toLowerCase()) ||
+           jobTitle.toLowerCase().includes(searchQuery.toLowerCase());
+  });
 
   const getConversationTitle = (conversation: ChatConversation) => {
     const displayName = getUserDisplayName(conversation);

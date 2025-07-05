@@ -688,7 +688,7 @@ export class DatabaseStorage implements IStorage {
     return await handleDbOperation(async () => {
       const [message] = await db.insert(chatMessages).values(messageData).returning();
       
-      // Update conversation last message time
+      // Update conversation's last message timestamp
       await db
         .update(chatConversations)
         .set({ lastMessageAt: new Date() })
@@ -699,7 +699,7 @@ export class DatabaseStorage implements IStorage {
   }
 
   async markMessagesAsRead(conversationId: number, userId: string): Promise<void> {
-    await handleDbOperation(async () => {
+    return await handleDbOperation(async () => {
       await db
         .update(chatMessages)
         .set({ isRead: true })
@@ -728,14 +728,52 @@ export class DatabaseStorage implements IStorage {
   }
 
   async deleteEmailVerificationToken(token: string): Promise<void> {
-    await handleDbOperation(async () => {
+    return await handleDbOperation(async () => {
       await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.token, token));
     });
   }
 
   async deleteEmailVerificationTokensByUserId(userId: string): Promise<void> {
-    await handleDbOperation(async () => {
+    return await handleDbOperation(async () => {
       await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.userId, userId));
+    });
+  }
+
+  async updateUserEmailVerification(userId: string, verified: boolean): Promise<void> {
+    return await handleDbOperation(async () => {
+      await db.update(users).set({ emailVerified: verified }).where(eq(users.id, userId));
+    });
+  }
+
+  async createPasswordResetToken(tokenData: any): Promise<any> {
+    return await handleDbOperation(async () => {
+      const [token] = await db.insert(emailVerificationTokens).values(tokenData).returning();
+      return token;
+    });
+  }
+
+  async getPasswordResetToken(token: string): Promise<any> {
+    return await handleDbOperation(async () => {
+      const [tokenRecord] = await db.select().from(emailVerificationTokens).where(eq(emailVerificationTokens.token, token));
+      return tokenRecord;
+    });
+  }
+
+  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
+    return await handleDbOperation(async () => {
+      await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
+    });
+  }
+
+  async markPasswordResetTokenAsUsed(token: string): Promise<void> {
+    return await handleDbOperation(async () => {
+      await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.token, token));
+    });
+  }
+
+  async deleteExpiredPasswordResetTokens(): Promise<void> {
+    return await handleDbOperation(async () => {
+      await db.delete(emailVerificationTokens).where(lt(emailVerificationTokens.expiresAt, new Date()));
     });
   }
 
