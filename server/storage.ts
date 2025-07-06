@@ -521,9 +521,11 @@ export class DatabaseStorage implements IStorage {
     }
     
     // For real users, query the database
-    return await handleDbOperation(async () => {
+    try {
+      console.log(`[DEBUG] Fetching resumes for user: ${userId}`);
       const userResumes = await db.select().from(resumes).where(eq(resumes.userId, userId));
-      return userResumes.map(resume => ({
+      console.log(`[DEBUG] Found ${userResumes.length} resumes for user ${userId}`);
+      const formattedResumes = userResumes.map(resume => ({
         id: resume.id,
         filename: resume.filename,
         text: resume.text,
@@ -534,7 +536,12 @@ export class DatabaseStorage implements IStorage {
         fileType: resume.fileType,
         analysis: resume.analysis ? JSON.parse(resume.analysis) : null
       }));
-    });
+      console.log(`[DEBUG] Returning ${formattedResumes.length} formatted resumes for user ${userId}`);
+      return formattedResumes;
+    } catch (error) {
+      console.error(`[ERROR] Failed to fetch resumes for user ${userId}:`, error);
+      return [];
+    }
   }
 
   // Recruiter operations - Job postings
