@@ -787,9 +787,7 @@ export default function RecruiterDashboard() {
                                     </Card>
 
                                     {/* Resume */}
-                                    {(applicantDetails.profile
-                                      ?.resumeFileName ||
-                                      applicantDetails.profile?.resumeText) && (
+                                    {(applicantDetails.resumes && applicantDetails.resumes.length > 0) && (
                                       <Card>
                                         <CardHeader>
                                           <CardTitle className="flex items-center gap-2">
@@ -799,65 +797,42 @@ export default function RecruiterDashboard() {
                                         </CardHeader>
                                         <CardContent>
                                           <div className="space-y-3">
-                                            <div className="flex items-center justify-between p-3 border rounded-lg">
-                                              <div className="flex-1">
-                                                <p className="font-medium">
-                                                  {applicantDetails.profile
-                                                    ?.resumeFileName ||
-                                                    "Resume.pdf"}
-                                                </p>
-                                                <p className="text-sm text-gray-600">
-                                                  {applicantDetails.profile
-                                                    ?.atsScore &&
-                                                    `ATS Score: ${applicantDetails.profile.atsScore}/100`}
-                                                  {applicantDetails.profile
-                                                    ?.lastResumeAnalysis &&
-                                                    ` • Uploaded ${new Date(applicantDetails.profile.lastResumeAnalysis).toLocaleDateString()}`}
-                                                </p>
-                                              </div>
-                                              <div className="flex gap-2">
-                                                <Button
-                                                  variant="outline"
-                                                  size="sm"
-                                                  onClick={async () => {
-                                                    try {
-                                                      const response =
-                                                        await fetch(
-                                                          `/api/recruiter/resume/download/${application.id}`,
-                                                          {
-                                                            credentials:
-                                                              "include",
-                                                          },
-                                                        );
-                                                      if (response.ok) {
-                                                        const blob =
-                                                          await response.blob();
-                                                        const url =
-                                                          window.URL.createObjectURL(
-                                                            blob,
+                                            {applicantDetails.resumes.map((resume: any, index: number) => (
+                                              <div key={resume.id || index} className="flex items-center justify-between p-3 border rounded-lg">
+                                                <div className="flex-1">
+                                                  <p className="font-medium">
+                                                    {resume.filename || `Resume_${index + 1}.pdf`}
+                                                  </p>
+                                                  <p className="text-sm text-gray-600">
+                                                    {resume.atsScore && `ATS Score: ${resume.atsScore}/100`}
+                                                    {resume.uploadedAt && ` • Uploaded ${new Date(resume.uploadedAt).toLocaleDateString()}`}
+                                                  </p>
+                                                </div>
+                                                <div className="flex gap-2">
+                                                  <Button
+                                                    variant="outline"
+                                                    size="sm"
+                                                    onClick={async () => {
+                                                      try {
+                                                        const response =
+                                                          await fetch(
+                                                            `/api/resumes/download/${resume.id}`,
+                                                            {
+                                                              credentials: "include",
+                                                            },
                                                           );
-                                                        const a =
-                                                          document.createElement(
-                                                            "a",
-                                                          );
-                                                        a.href = url;
-                                                        a.download =
-                                                          applicantDetails
-                                                            .profile
-                                                            ?.resumeFileName ||
-                                                          "resume.pdf";
-                                                        document.body.appendChild(
-                                                          a,
-                                                        );
-                                                        a.click();
-                                                        window.URL.revokeObjectURL(
-                                                          url,
-                                                        );
-                                                        document.body.removeChild(
-                                                          a,
-                                                        );
-                                                      } else {
-                                                        toast({
+                                                        if (response.ok) {
+                                                          const blob = await response.blob();
+                                                          const url = window.URL.createObjectURL(blob);
+                                                          const a = document.createElement("a");
+                                                          a.href = url;
+                                                          a.download = resume.filename || "resume.pdf";
+                                                          document.body.appendChild(a);
+                                                          a.click();
+                                                          window.URL.revokeObjectURL(url);
+                                                          document.body.removeChild(a);
+                                                        } else {
+                                                          toast({
                                                           title:
                                                             "Download Failed",
                                                           description:
@@ -885,8 +860,7 @@ export default function RecruiterDashboard() {
                                                   size="sm"
                                                   onClick={() => {
                                                     setResumePreview(
-                                                      applicantDetails.profile
-                                                        ?.resumeText ||
+                                                      resume.text ||
                                                         "Resume content not available",
                                                     );
                                                     setShowResumePreview(true);
@@ -897,6 +871,7 @@ export default function RecruiterDashboard() {
                                                 </Button>
                                               </div>
                                             </div>
+                                            ))}
                                           </div>
                                         </CardContent>
                                       </Card>
