@@ -62,11 +62,13 @@ export default function MessagingPage() {
   });
 
   // Get messages for selected conversation
-  const { data: conversationMessages = [] } = useQuery<ChatMessage[]>({
-    queryKey: ['/api/chat/conversations', selectedConversation, 'messages'],
+  const { data: conversationMessages = [], isLoading: messagesLoading, error: messagesError } = useQuery<ChatMessage[]>({
+    queryKey: [`/api/chat/conversations/${selectedConversation}/messages`],
     enabled: !!selectedConversation,
-    refetchInterval: 5000,
+    refetchInterval: 2000,
   });
+
+
 
   // Send message mutation
   const sendMessageMutation = useMutation({
@@ -74,7 +76,7 @@ export default function MessagingPage() {
       return apiRequest('POST', `/api/chat/conversations/${selectedConversation}/messages`, messageData);
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations', selectedConversation, 'messages'] });
+      queryClient.invalidateQueries({ queryKey: [`/api/chat/conversations/${selectedConversation}/messages`] });
       queryClient.invalidateQueries({ queryKey: ['/api/chat/conversations'] });
       setNewMessage('');
     },
@@ -96,6 +98,13 @@ export default function MessagingPage() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [conversationMessages]);
+
+  // Auto-select first conversation if none selected
+  useEffect(() => {
+    if (conversations.length > 0 && !selectedConversation) {
+      setSelectedConversation(conversations[0].id);
+    }
+  }, [conversations, selectedConversation]);
 
   // Mark messages as read when conversation is selected
   useEffect(() => {
