@@ -787,7 +787,10 @@ export default function RecruiterDashboard() {
                                     </Card>
 
                                     {/* Resume */}
-                                    {(applicantDetails.resumes && applicantDetails.resumes.length > 0) && (
+                                    {(() => {
+                                      console.log('Resume data:', applicantDetails.resumes);
+                                      return true;
+                                    })() && (
                                       <Card>
                                         <CardHeader>
                                           <CardTitle className="flex items-center gap-2">
@@ -797,81 +800,93 @@ export default function RecruiterDashboard() {
                                         </CardHeader>
                                         <CardContent>
                                           <div className="space-y-3">
-                                            {applicantDetails.resumes.map((resume: any, index: number) => (
-                                              <div key={resume.id || index} className="flex items-center justify-between p-3 border rounded-lg">
-                                                <div className="flex-1">
-                                                  <p className="font-medium">
-                                                    {resume.filename || `Resume_${index + 1}.pdf`}
-                                                  </p>
-                                                  <p className="text-sm text-gray-600">
-                                                    {resume.atsScore && `ATS Score: ${resume.atsScore}/100`}
-                                                    {resume.uploadedAt && ` • Uploaded ${new Date(resume.uploadedAt).toLocaleDateString()}`}
-                                                  </p>
-                                                </div>
-                                                <div className="flex gap-2">
-                                                  <Button
-                                                    variant="outline"
-                                                    size="sm"
-                                                    onClick={async () => {
-                                                      try {
-                                                        const response =
-                                                          await fetch(
-                                                            `/api/resumes/download/${resume.id}`,
-                                                            {
-                                                              credentials: "include",
-                                                            },
-                                                          );
-                                                        if (response.ok) {
-                                                          const blob = await response.blob();
-                                                          const url = window.URL.createObjectURL(blob);
-                                                          const a = document.createElement("a");
-                                                          a.href = url;
-                                                          a.download = resume.filename || "resume.pdf";
-                                                          document.body.appendChild(a);
-                                                          a.click();
-                                                          window.URL.revokeObjectURL(url);
-                                                          document.body.removeChild(a);
-                                                        } else {
-                                                          toast({
+                                            {applicantDetails.resumes && applicantDetails.resumes.length > 0 ? (
+                                              applicantDetails.resumes.map((resume: any, index: number) => (
+                                                <div key={resume.id || index} className="flex items-center justify-between p-3 border rounded-lg">
+                                                  <div className="flex-1">
+                                                    <p className="font-medium">
+                                                      {resume.filename || `Resume_${index + 1}.pdf`}
+                                                    </p>
+                                                    <p className="text-sm text-gray-600">
+                                                      {resume.atsScore && `ATS Score: ${resume.atsScore}/100`}
+                                                      {resume.uploadedAt && ` • Uploaded ${new Date(resume.uploadedAt).toLocaleDateString()}`}
+                                                    </p>
+                                                  </div>
+                                                  <div className="flex gap-2">
+                                                    <Button
+                                                      variant="outline"
+                                                      size="sm"
+                                                      onClick={async () => {
+                                                        try {
+                                                          const response =
+                                                            await fetch(
+                                                              `/api/resumes/download/${resume.id}`,
+                                                              {
+                                                                credentials: "include",
+                                                              },
+                                                            );
+                                                          if (response.ok) {
+                                                            const blob = await response.blob();
+                                                            const url = window.URL.createObjectURL(blob);
+                                                            const a = document.createElement("a");
+                                                            a.href = url;
+                                                            a.download = resume.filename || "resume.pdf";
+                                                            document.body.appendChild(a);
+                                                            a.click();
+                                                            window.URL.revokeObjectURL(url);
+                                                            document.body.removeChild(a);
+                                                          } else {
+                                                            toast({
+                                                            title:
+                                                              "Download Failed",
+                                                            description:
+                                                              "Resume not available for download",
+                                                            variant:
+                                                              "destructive",
+                                                          });
+                                                        }
+                                                      } catch (error) {
+                                                        toast({
                                                           title:
                                                             "Download Failed",
                                                           description:
-                                                            "Resume not available for download",
-                                                          variant:
-                                                            "destructive",
+                                                            "Failed to download resume",
+                                                          variant: "destructive",
                                                         });
                                                       }
-                                                    } catch (error) {
-                                                      toast({
-                                                        title:
-                                                          "Download Failed",
-                                                        description:
-                                                          "Failed to download resume",
-                                                        variant: "destructive",
-                                                      });
-                                                    }
-                                                  }}
-                                                >
-                                                  <Download className="w-4 h-4 mr-1" />
-                                                  Download
-                                                </Button>
-                                                <Button
-                                                  variant="ghost"
-                                                  size="sm"
-                                                  onClick={() => {
-                                                    setResumePreview(
-                                                      resume.text ||
-                                                        "Resume content not available",
-                                                    );
-                                                    setShowResumePreview(true);
-                                                  }}
-                                                >
-                                                  <Eye className="w-4 h-4 mr-1" />
-                                                  Preview
-                                                </Button>
+                                                    }}
+                                                  >
+                                                    <Download className="w-4 h-4 mr-1" />
+                                                    Download
+                                                  </Button>
+                                                  <Button
+                                                    variant="ghost"
+                                                    size="sm"
+                                                    onClick={() => {
+                                                      setResumePreview(
+                                                        resume.text ||
+                                                          "Resume content not available",
+                                                      );
+                                                      setShowResumePreview(true);
+                                                    }}
+                                                  >
+                                                    <Eye className="w-4 h-4 mr-1" />
+                                                    Preview
+                                                  </Button>
+                                                </div>
                                               </div>
-                                            </div>
-                                            ))}
+                                              ))
+                                            ) : (
+                                              <div className="flex items-center justify-center p-8 border rounded-lg bg-gray-50">
+                                                <div className="text-center">
+                                                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-2" />
+                                                  <p className="text-gray-600 font-medium">No Resume Available</p>
+                                                  <p className="text-sm text-gray-500 mt-1">
+                                                    This candidate hasn't uploaded a resume yet.
+                                                  </p>
+                                                </div>
+                                              </div>
+                                            )}
                                           </div>
                                         </CardContent>
                                       </Card>
