@@ -527,14 +527,14 @@ export class DatabaseStorage implements IStorage {
       console.log(`[DEBUG] Found ${userResumes.length} resumes for user ${userId}`);
       const formattedResumes = userResumes.map(resume => ({
         id: resume.id,
-        filename: resume.filename,
-        text: resume.text,
+        filename: resume.fileName,
+        text: resume.resumeText,
         atsScore: resume.atsScore,
-        uploadedAt: resume.uploadedAt,
+        uploadedAt: resume.createdAt,
         userId: resume.userId,
         fileSize: resume.fileSize,
-        fileType: resume.fileType,
-        analysis: resume.analysis ? JSON.parse(resume.analysis) : null
+        fileType: resume.mimeType,
+        analysis: resume.analysisData || null
       }));
       console.log(`[DEBUG] Returning ${formattedResumes.length} formatted resumes for user ${userId}`);
       return formattedResumes;
