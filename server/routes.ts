@@ -1055,21 +1055,18 @@ Additional Information:
       
       const resumeData = fullResume[0];
       
-      // Convert base64 file data back to buffer (handle potential compression)
+      // Convert base64 file data back to buffer
       let fileBuffer;
       try {
         const base64Data = resumeData.fileData;
-        fileBuffer = Buffer.from(base64Data, 'base64');
-        
-        // Try to decompress if compressed
-        try {
-          const zlib = require('zlib');
-          fileBuffer = zlib.gunzipSync(fileBuffer);
-        } catch (decompressError) {
-          // If decompression fails, use original buffer (not compressed)
-          fileBuffer = Buffer.from(base64Data, 'base64');
+        if (!base64Data) {
+          return res.status(404).json({ message: "Resume file data not found" });
         }
+        
+        fileBuffer = Buffer.from(base64Data, 'base64');
+        console.log(`[DEBUG] Converted base64 to buffer, size: ${fileBuffer.length} bytes`);
       } catch (bufferError) {
+        console.error("Error processing resume file:", bufferError);
         return res.status(500).json({ message: "Error processing resume file" });
       }
       
@@ -1780,17 +1777,24 @@ Additional Information:
         return res.status(403).json({ message: "You don't have permission to access this resume" });
       }
       
-      // Get the applicant's profile with resume data
-      const applicantProfile = await storage.getUserProfile(applicantId);
+      // Get the applicant's active resume from resumes table
+      const applicantResumes = await storage.getUserResumes(applicantId);
+      const activeResume = applicantResumes.find((r: any) => r.isActive) || applicantResumes[0];
       
-      if (!applicantProfile?.resumeData) {
+      if (!activeResume) {
         return res.status(404).json({ message: "Resume not found for this applicant" });
       }
       
+      // Get full resume data from database
+      const fullResume = await db.select().from(schema.resumes).where(eq(schema.resumes.id, activeResume.id));
+      if (!fullResume[0]?.fileData) {
+        return res.status(404).json({ message: "Resume file data not found" });
+      }
+      
       // Convert base64 back to buffer
-      const resumeBuffer = Buffer.from(applicantProfile.resumeData, 'base64');
-      const fileName = applicantProfile.resumeFileName || `resume_${applicantId}.pdf`;
-      const mimeType = applicantProfile.resumeMimeType || 'application/pdf';
+      const resumeBuffer = Buffer.from(fullResume[0].fileData, 'base64');
+      const fileName = fullResume[0].fileName || `resume_${applicantId}.pdf`;
+      const mimeType = fullResume[0].mimeType || 'application/pdf';
       
       // Set headers for file download
       res.setHeader('Content-Type', mimeType);

@@ -551,23 +551,16 @@ export class DatabaseStorage implements IStorage {
 
   async storeResume(userId: string, resumeData: any): Promise<any> {
     return await handleDbOperation(async () => {
-      // Compress the file data if it exists
-      let compressedFileData = resumeData.fileData;
-      if (resumeData.fileData) {
-        try {
-          const buffer = Buffer.from(resumeData.fileData, 'base64');
-          const compressed = await this.compressData(buffer);
-          compressedFileData = compressed.toString('base64');
-        } catch (compressionError) {
-          console.log('[DEBUG] Compression failed, using original data:', compressionError);
-        }
-      }
-
+      // Store the original file data without compression
+      let fileData = resumeData.fileData;
+      
+      console.log(`[DEBUG] Storing resume for user: ${userId}, file: ${resumeData.fileName}`);
+      
       const [newResume] = await db.insert(resumes).values({
         userId,
         name: resumeData.name,
         fileName: resumeData.fileName,
-        fileData: compressedFileData,
+        fileData: fileData, // Store original file data
         resumeText: resumeData.resumeText,
         atsScore: resumeData.atsScore,
         analysisData: resumeData.analysis,
