@@ -1,5 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { apiRequest } from '@/lib/queryClient';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -49,6 +50,11 @@ export default function MessagingPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const messagesEndRef = useRef<HTMLDivElement>(null);
   const queryClient = useQueryClient();
+  const [location] = useLocation();
+  
+  // Parse URL parameters for user preload
+  const urlParams = new URLSearchParams(location.split('?')[1] || '');
+  const preloadUserId = urlParams.get('user');
 
   // Get current user
   const { data: user } = useQuery<User>({
@@ -99,12 +105,23 @@ export default function MessagingPage() {
     }
   }, [conversationMessages]);
 
-  // Auto-select first conversation if none selected
+  // Auto-select conversation based on URL parameter or first conversation
   useEffect(() => {
     if (conversations.length > 0 && !selectedConversation) {
+      // If there's a preload user ID, try to find the conversation with that user
+      if (preloadUserId) {
+        const targetConversation = conversations.find(conv => 
+          conv.jobSeekerId === preloadUserId || conv.recruiterId === preloadUserId
+        );
+        if (targetConversation) {
+          setSelectedConversation(targetConversation.id);
+          return;
+        }
+      }
+      // Otherwise select the first conversation
       setSelectedConversation(conversations[0].id);
     }
-  }, [conversations, selectedConversation]);
+  }, [conversations, selectedConversation, preloadUserId]);
 
   // Mark messages as read when conversation is selected
   useEffect(() => {

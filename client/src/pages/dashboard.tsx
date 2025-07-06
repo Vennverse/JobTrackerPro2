@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
@@ -47,7 +48,8 @@ import {
   Filter,
   Search,
   Bell,
-  Settings
+  Settings,
+  MessageSquare
 } from "lucide-react";
 
 const containerVariants = {
@@ -89,6 +91,7 @@ export default function Dashboard() {
   const { toast } = useToast();
   const { user, isAuthenticated, isLoading } = useAuth();
   const queryClient = useQueryClient();
+  const [location, setLocation] = useLocation();
   const [showJobAnalysisDialog, setShowJobAnalysisDialog] = useState(false);
   const [showCoverLetterDialog, setShowCoverLetterDialog] = useState(false);
   const [jobDescription, setJobDescription] = useState("");
@@ -534,6 +537,14 @@ export default function Dashboard() {
                   >
                     <Upload className="h-4 w-4 mr-2" />
                     Upload Resume
+                  </Button>
+                  <Button
+                    variant="secondary"
+                    className="w-full justify-start bg-white/20 hover:bg-white/30 text-white border-0"
+                    onClick={() => setLocation('/chat')}
+                  >
+                    <MessageSquare className="h-4 w-4 mr-2" />
+                    Messages
                   </Button>
                 </CardContent>
               </Card>

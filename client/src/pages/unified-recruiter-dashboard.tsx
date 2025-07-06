@@ -72,9 +72,6 @@ export default function RecruiterDashboard() {
   const [resumePreview, setResumePreview] = useState("");
   const [jobCompatibility, setJobCompatibility] = useState<any>(null);
   const [loadingCompatibility, setLoadingCompatibility] = useState(false);
-  const [showMessageDialog, setShowMessageDialog] = useState(false);
-  const [messageText, setMessageText] = useState("");
-  const [selectedApplicantForMessage, setSelectedApplicantForMessage] = useState<any>(null);
   const [showShareDialog, setShowShareDialog] = useState(false);
   const [selectedJobForShare, setSelectedJobForShare] = useState<any>(null);
   const [shareLink, setShareLink] = useState("");
@@ -159,43 +156,7 @@ export default function RecruiterDashboard() {
     },
   });
 
-  // Mutation for sending messages
-  const sendMessageMutation = useMutation({
-    mutationFn: async ({
-      candidateId,
-      message,
-      jobId,
-      applicationId,
-    }: {
-      candidateId: string;
-      message: string;
-      jobId?: number;
-      applicationId?: number;
-    }) => {
-      return await apiRequest("POST", "/api/recruiter/contact-candidate", {
-        candidateId,
-        message,
-        jobId,
-        applicationId,
-      });
-    },
-    onSuccess: () => {
-      toast({
-        title: "Message Sent",
-        description: "Your message has been sent successfully.",
-      });
-      setShowMessageDialog(false);
-      setMessageText("");
-      setSelectedApplicantForMessage(null);
-    },
-    onError: (error: any) => {
-      toast({
-        title: "Message Failed",
-        description: error.message || "Failed to send message.",
-        variant: "destructive",
-      });
-    },
-  });
+
 
   // Mutation for generating shareable links
   const shareJobMutation = useMutation({
@@ -319,7 +280,7 @@ export default function RecruiterDashboard() {
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setLocation('/chat')}>
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
                 <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -1293,8 +1254,7 @@ export default function RecruiterDashboard() {
                                 variant="outline"
                                 size="sm"
                                 onClick={() => {
-                                  setSelectedApplicantForMessage(application);
-                                  setShowMessageDialog(true);
+                                  setLocation(`/chat?user=${application.candidateId}`);
                                 }}
                               >
                                 <MessageCircle className="w-4 h-4 mr-1" />
@@ -1477,52 +1437,7 @@ export default function RecruiterDashboard() {
         </DialogContent>
       </Dialog>
 
-      {/* Message Dialog */}
-      <Dialog open={showMessageDialog} onOpenChange={setShowMessageDialog}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Send Message to Candidate</DialogTitle>
-            <DialogDescription>
-              Reach out to {selectedApplicantForMessage?.applicantId} regarding their application
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div>
-              <Label htmlFor="message">Message</Label>
-              <Textarea
-                id="message"
-                placeholder="Write your message here..."
-                value={messageText}
-                onChange={(e) => setMessageText(e.target.value)}
-                rows={4}
-              />
-            </div>
-            <div className="flex justify-end gap-2">
-              <Button
-                variant="outline"
-                onClick={() => setShowMessageDialog(false)}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={() => {
-                  if (selectedApplicantForMessage && messageText.trim()) {
-                    sendMessageMutation.mutate({
-                      candidateId: selectedApplicantForMessage.applicantId,
-                      message: messageText,
-                      jobId: selectedApplicantForMessage.jobPostingId,
-                      applicationId: selectedApplicantForMessage.id,
-                    });
-                  }
-                }}
-                disabled={!messageText.trim() || sendMessageMutation.isPending}
-              >
-                {sendMessageMutation.isPending ? "Sending..." : "Send Message"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
+
 
       {/* Share Job Dialog */}
       <Dialog open={showShareDialog} onOpenChange={setShowShareDialog}>
