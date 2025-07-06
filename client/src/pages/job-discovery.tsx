@@ -31,18 +31,18 @@ export default function JobDiscoveryPage() {
   });
 
   // Fetch job playlists
-  const { data: playlists, isLoading: playlistsLoading } = useQuery({
+  const { data: playlists = [], isLoading: playlistsLoading } = useQuery({
     queryKey: ["/api/job-playlists"],
   });
 
   // Fetch jobs in selected playlist
-  const { data: playlistJobs, isLoading: jobsLoading } = useQuery({
+  const { data: playlistJobs = [], isLoading: jobsLoading } = useQuery({
     queryKey: ["/api/job-playlists", selectedPlaylist, "jobs"],
     enabled: !!selectedPlaylist,
   });
 
   // Fetch scraped jobs with filters
-  const { data: scrapedJobs, isLoading: scrapedJobsLoading } = useQuery({
+  const { data: scrapedJobs = [], isLoading: scrapedJobsLoading } = useQuery({
     queryKey: ["/api/scraped-jobs", filters],
   });
 
