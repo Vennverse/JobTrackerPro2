@@ -520,8 +520,21 @@ export class DatabaseStorage implements IStorage {
       return (global as any).demoUserResumes;
     }
     
-    // For real users, implement actual database query
-    return [];
+    // For real users, query the database
+    return await handleDbOperation(async () => {
+      const userResumes = await db.select().from(resumes).where(eq(resumes.userId, userId));
+      return userResumes.map(resume => ({
+        id: resume.id,
+        filename: resume.filename,
+        text: resume.text,
+        atsScore: resume.atsScore,
+        uploadedAt: resume.uploadedAt,
+        userId: resume.userId,
+        fileSize: resume.fileSize,
+        fileType: resume.fileType,
+        analysis: resume.analysis ? JSON.parse(resume.analysis) : null
+      }));
+    });
   }
 
   // Recruiter operations - Job postings
