@@ -55,6 +55,13 @@ export default function MessagingPage() {
   // Parse URL parameters for user preload
   const urlParams = new URLSearchParams(location.split('?')[1] || '');
   const preloadUserId = urlParams.get('user');
+  
+  // Track user activity for online status
+  const trackActivityMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('POST', '/api/user/activity', {});
+    },
+  });
 
   // Get current user
   const { data: user } = useQuery<User>({
@@ -73,6 +80,8 @@ export default function MessagingPage() {
     enabled: !!selectedConversation,
     refetchInterval: 2000,
   });
+
+
 
 
 
@@ -104,6 +113,19 @@ export default function MessagingPage() {
       messagesEndRef.current.scrollIntoView({ behavior: 'smooth' });
     }
   }, [conversationMessages]);
+
+  // Track user activity
+  useEffect(() => {
+    // Track activity when component mounts
+    trackActivityMutation.mutate();
+    
+    // Track activity every 2 minutes
+    const activityInterval = setInterval(() => {
+      trackActivityMutation.mutate();
+    }, 2 * 60 * 1000);
+
+    return () => clearInterval(activityInterval);
+  }, []);
 
   // Auto-select conversation based on URL parameter or first conversation
   useEffect(() => {
@@ -163,7 +185,18 @@ export default function MessagingPage() {
     return name.split(' ').map(n => n[0]).join('').toUpperCase();
   };
 
+  // Get selected conversation data and partner ID for online status
   const selectedConversationData = conversations.find(c => c.id === selectedConversation);
+  const conversationPartnerId = selectedConversationData 
+    ? (selectedConversationData.recruiterId === user?.id ? selectedConversationData.jobSeekerId : selectedConversationData.recruiterId)
+    : null;
+  
+  // Get online status for conversation partner
+  const { data: partnerStatus } = useQuery<{ isOnline: boolean; lastActivity: string | null }>({
+    queryKey: [`/api/user/status/${conversationPartnerId}`],
+    enabled: !!conversationPartnerId,
+    refetchInterval: 30000, // Check every 30 seconds
+  });
 
   // Filter conversations based on search
   const filteredConversations = conversations.filter(conversation => {
@@ -277,8 +310,8 @@ export default function MessagingPage() {
                       <span className="text-gray-600">
                         {getConversationRole(selectedConversationData)}
                       </span>
-                      <span className="w-2 h-2 bg-gray-400 rounded-full"></span>
-                      <span className="text-gray-500">Offline</span>
+                      <span className={`w-2 h-2 rounded-full ${partnerStatus?.isOnline ? 'bg-green-400' : 'bg-gray-400'}`}></span>
+                      <span className="text-gray-500">{partnerStatus?.isOnline ? 'Online' : 'Offline'}</span>
                     </div>
                   </div>
                 </div>

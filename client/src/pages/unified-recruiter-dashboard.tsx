@@ -470,6 +470,30 @@ export default function RecruiterDashboard() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
+                {/* Resume Download Card */}
+                <div className="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 mb-6">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <div className="bg-blue-100 p-2 rounded-lg">
+                        <FileText className="w-5 h-5 text-blue-600" />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold text-blue-900">Quick Resume Access</h3>
+                        <p className="text-sm text-blue-700">Download candidate resumes from applications</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline" className="bg-white text-blue-700 border-blue-300">
+                        <Download className="w-3 h-3 mr-1" />
+                        Available below
+                      </Badge>
+                    </div>
+                  </div>
+                  <div className="mt-3 text-xs text-blue-600 bg-blue-50 p-2 rounded border border-blue-200">
+                    💡 Tip: Click "Review" on any application below to access candidate resume and contact information
+                  </div>
+                </div>
+
                 {applicationsLoading ? (
                   <div className="space-y-4">
                     {[...Array(5)].map((_, i) => (

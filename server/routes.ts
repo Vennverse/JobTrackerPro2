@@ -9,6 +9,10 @@ import multer from "multer";
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
 
+// Track user activity for online/offline status
+const userActivity = new Map<string, number>();
+const ONLINE_THRESHOLD = 5 * 60 * 1000; // 5 minutes - user is considered online if active within 5 minutes
+
 const getCached = (key: string) => {
   const item = cache.get(key);
   if (item && Date.now() - item.timestamp < CACHE_TTL) {
@@ -130,6 +134,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching user:", error);
       res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // User activity tracking for online/offline status
+  app.post('/api/user/activity', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      userActivity.set(userId, Date.now());
+      res.json({ success: true });
+    } catch (error) {
+      console.error("Error tracking user activity:", error);
+      res.status(500).json({ message: "Failed to track activity" });
+    }
+  });
+
+  // Get user online status
+  app.get('/api/user/status/:userId', isAuthenticated, async (req: any, res) => {
+    try {
+      const { userId } = req.params;
+      const lastActivity = userActivity.get(userId);
+      const isOnline = lastActivity && (Date.now() - lastActivity) < ONLINE_THRESHOLD;
+      res.json({ 
+        isOnline,
+        lastActivity: lastActivity ? new Date(lastActivity).toISOString() : null 
+      });
+    } catch (error) {
+      console.error("Error checking user status:", error);
+      res.status(500).json({ message: "Failed to check status" });
     }
   });
 
