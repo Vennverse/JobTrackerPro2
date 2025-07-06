@@ -5091,5 +5091,147 @@ Host: https://autojobr.com`;
       .map(([skill]) => skill);
   }
 
+  // ===============================
+  // NEW FEATURES: Job Scraping & Targeting
+  // ===============================
+
+  // Import the job scraping service
+  const { jobScrapingService } = await import('./jobScrapingService');
+
+  // Initialize scraped jobs and playlists (run once)
+  app.post('/api/admin/init-scraped-jobs', async (req: any, res) => {
+    try {
+      await jobScrapingService.scrapeJobs();
+      res.json({ message: "Job scraping initialized successfully" });
+    } catch (error) {
+      console.error("Error initializing scraped jobs:", error);
+      res.status(500).json({ message: "Failed to initialize scraped jobs" });
+    }
+  });
+
+  // Get job playlists (Spotify-like browsing)
+  app.get('/api/job-playlists', async (req: any, res) => {
+    try {
+      const playlists = await db.select({
+        id: schema.jobPlaylists.id,
+        name: schema.jobPlaylists.name,
+        description: schema.jobPlaylists.description,
+        coverImage: schema.jobPlaylists.coverImage,
+        category: schema.jobPlaylists.category,
+        jobsCount: schema.jobPlaylists.jobsCount,
+        followersCount: schema.jobPlaylists.followersCount,
+        isFeatured: schema.jobPlaylists.isFeatured,
+        createdAt: schema.jobPlaylists.createdAt
+      })
+      .from(schema.jobPlaylists)
+      .where(eq(schema.jobPlaylists.isPublic, true))
+      .orderBy(schema.jobPlaylists.isFeatured, schema.jobPlaylists.followersCount);
+
+      res.json(playlists);
+    } catch (error) {
+      console.error("Error fetching job playlists:", error);
+      res.status(500).json({ message: "Failed to fetch job playlists" });
+    }
+  });
+
+  // Get jobs in a specific playlist
+  app.get('/api/job-playlists/:id/jobs', async (req: any, res) => {
+    try {
+      const playlistId = parseInt(req.params.id);
+      const limit = parseInt(req.query.limit as string) || 20;
+      
+      const jobs = await jobScrapingService.getPlaylistJobs(playlistId, limit);
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching playlist jobs:", error);
+      res.status(500).json({ message: "Failed to fetch playlist jobs" });
+    }
+  });
+
+  // Get scraped jobs with filters
+  app.get('/api/scraped-jobs', async (req: any, res) => {
+    try {
+      const { category, subcategory, workMode, location, skills, limit = 50 } = req.query;
+      
+      let query = db.select().from(schema.scrapedJobs).where(eq(schema.scrapedJobs.isActive, true));
+      
+      // Apply filters
+      if (category) {
+        query = query.where(eq(schema.scrapedJobs.category, category as string));
+      }
+      if (subcategory) {
+        query = query.where(eq(schema.scrapedJobs.subcategory, subcategory as string));
+      }
+      if (workMode) {
+        query = query.where(eq(schema.scrapedJobs.workMode, workMode as string));
+      }
+      
+      const jobs = await query.limit(parseInt(limit as string)).orderBy(schema.scrapedJobs.createdAt);
+      
+      res.json(jobs);
+    } catch (error) {
+      console.error("Error fetching scraped jobs:", error);
+      res.status(500).json({ message: "Failed to fetch scraped jobs" });
+    }
+  });
+
+  // Save/bookmark a job
+  app.post('/api/jobs/:id/save', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobId = parseInt(req.params.id);
+      const { type } = req.body; // 'scraped' or 'posting'
+      
+      const saveData: any = {
+        userId,
+        savedAt: new Date()
+      };
+      
+      if (type === 'scraped') {
+        saveData.scrapedJobId = jobId;
+      } else {
+        saveData.jobPostingId = jobId;
+      }
+      
+      await db.insert(schema.userSavedJobs).values(saveData).onConflictDoNothing();
+      
+      res.json({ message: "Job saved successfully" });
+    } catch (error) {
+      console.error("Error saving job:", error);
+      res.status(500).json({ message: "Failed to save job" });
+    }
+  });
+
+  // Create targeted job posting (Premium B2B feature)
+  app.post('/api/recruiter/jobs/:id/targeting', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const jobPostingId = parseInt(req.params.id);
+      const targetingData = req.body;
+      
+      // Verify the job belongs to this recruiter
+      const job = await db.select().from(schema.jobPostings)
+        .where(eq(schema.jobPostings.id, jobPostingId))
+        .where(eq(schema.jobPostings.recruiterId, userId));
+      
+      if (!job.length) {
+        return res.status(404).json({ message: "Job posting not found" });
+      }
+      
+      // Create targeting configuration
+      await db.insert(schema.jobTargeting).values({
+        jobPostingId,
+        ...targetingData,
+        isPremiumTargeted: true,
+        targetingStartDate: new Date()
+      });
+      
+      res.json({ message: "Job targeting configured successfully" });
+    } catch (error) {
+      console.error("Error configuring job targeting:", error);
+      res.status(500).json({ message: "Failed to configure job targeting" });
+    }
+  });
+
   return httpServer;
 }

@@ -348,6 +348,143 @@ export const jobPostings = pgTable("job_postings", {
   updatedAt: timestamp("updated_at").defaultNow(),
 });
 
+// Enhanced job postings with targeting features
+export const jobTargeting = pgTable("job_targeting", {
+  id: serial("id").primaryKey(),
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id).notNull(),
+  
+  // Targeting criteria
+  targetEducationLevel: text("target_education_level").array(), // bachelor, master, phd, etc.
+  targetSchools: text("target_schools").array(), // specific universities/colleges
+  targetMajors: text("target_majors").array(), // Computer Science, Engineering, etc.
+  targetSkills: text("target_skills").array(), // Required or preferred skills
+  targetExperienceMin: integer("target_experience_min"),
+  targetExperienceMax: integer("target_experience_max"),
+  targetLocation: text("target_location").array(), // Specific cities/regions
+  targetClubs: text("target_clubs").array(), // Professional organizations, clubs
+  targetCertifications: text("target_certifications").array(),
+  targetCompanies: text("target_companies").array(), // Previous companies
+  
+  // Premium features
+  isPremiumTargeted: boolean("is_premium_targeted").default(false),
+  targetingBudget: integer("targeting_budget"), // Cost in credits/dollars
+  targetingStartDate: timestamp("targeting_start_date"),
+  targetingEndDate: timestamp("targeting_end_date"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+});
+
+// Scraped jobs from external sources (Spotify-like playlists)
+export const scrapedJobs = pgTable("scraped_jobs", {
+  id: serial("id").primaryKey(),
+  
+  // Job details
+  title: varchar("title").notNull(),
+  company: varchar("company").notNull(),
+  description: text("description"),
+  location: varchar("location"),
+  workMode: varchar("work_mode"), // remote, hybrid, onsite
+  jobType: varchar("job_type"), // full-time, part-time, contract
+  experienceLevel: varchar("experience_level"),
+  salaryRange: varchar("salary_range"),
+  skills: text("skills").array(),
+  
+  // Source information
+  sourceUrl: varchar("source_url").notNull(),
+  sourcePlatform: varchar("source_platform").notNull(), // linkedin, indeed, glassdoor, etc.
+  externalId: varchar("external_id"), // Original job ID from source
+  
+  // Playlist categorization
+  category: varchar("category"), // tech, marketing, sales, design, etc.
+  subcategory: varchar("subcategory"), // frontend, backend, full-stack, etc.
+  tags: text("tags").array(), // startup, remote-first, benefits, etc.
+  
+  // Engagement metrics
+  viewsCount: integer("views_count").default(0),
+  appliedCount: integer("applied_count").default(0),
+  savedCount: integer("saved_count").default(0),
+  
+  // Status and freshness
+  isActive: boolean("is_active").default(true),
+  lastScraped: timestamp("last_scraped").defaultNow(),
+  expiresAt: timestamp("expires_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("scraped_jobs_category_idx").on(table.category),
+  index("scraped_jobs_source_idx").on(table.sourcePlatform),
+  index("scraped_jobs_location_idx").on(table.location),
+]);
+
+// Job playlists (Spotify-like collections)
+export const jobPlaylists = pgTable("job_playlists", {
+  id: serial("id").primaryKey(),
+  
+  // Playlist metadata
+  name: varchar("name").notNull(), // "Remote Frontend Jobs", "AI/ML Opportunities"
+  description: text("description"),
+  coverImage: varchar("cover_image"), // Playlist thumbnail
+  
+  // Curation
+  curatorId: varchar("curator_id").references(() => users.id), // System or user curated
+  isSystemGenerated: boolean("is_system_generated").default(true),
+  category: varchar("category").notNull(), // tech, design, marketing, etc.
+  
+  // Filtering criteria for auto-curation
+  autoFilters: jsonb("auto_filters"), // Skills, location, experience criteria
+  
+  // Engagement
+  followersCount: integer("followers_count").default(0),
+  jobsCount: integer("jobs_count").default(0),
+  
+  // Visibility
+  isPublic: boolean("is_public").default(true),
+  isFeatured: boolean("is_featured").default(false),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("job_playlists_category_idx").on(table.category),
+  index("job_playlists_featured_idx").on(table.isFeatured),
+]);
+
+// Jobs in playlists (many-to-many relationship)
+export const playlistJobs = pgTable("playlist_jobs", {
+  id: serial("id").primaryKey(),
+  playlistId: integer("playlist_id").references(() => jobPlaylists.id).notNull(),
+  scrapedJobId: integer("scraped_job_id").references(() => scrapedJobs.id),
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id), // Include company posts
+  
+  // Position in playlist
+  order: integer("order").default(0),
+  addedAt: timestamp("added_at").defaultNow(),
+}, (table) => [
+  index("playlist_jobs_playlist_idx").on(table.playlistId),
+  index("playlist_jobs_scraped_idx").on(table.scrapedJobId),
+]);
+
+// User playlist follows (like Spotify follows)
+export const userPlaylistFollows = pgTable("user_playlist_follows", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  playlistId: integer("playlist_id").references(() => jobPlaylists.id).notNull(),
+  followedAt: timestamp("followed_at").defaultNow(),
+}, (table) => [
+  index("user_playlist_follows_user_idx").on(table.userId),
+]);
+
+// User saved/bookmarked jobs
+export const userSavedJobs = pgTable("user_saved_jobs", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  scrapedJobId: integer("scraped_job_id").references(() => scrapedJobs.id),
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id),
+  savedAt: timestamp("saved_at").defaultNow(),
+}, (table) => [
+  index("user_saved_jobs_user_idx").on(table.userId),
+]);
+
 // Applications to job postings from job seekers
 export const jobPostingApplications = pgTable("job_posting_applications", {
   id: serial("id").primaryKey(),

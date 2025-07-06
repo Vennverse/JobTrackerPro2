@@ -26,6 +26,7 @@ import ResetPasswordPage from "@/pages/reset-password";
 import ChatPage from "@/pages/chat";
 import MessagingPage from "@/pages/messaging";
 import ResumesPage from "@/pages/resumes";
+import JobDiscoveryPage from "@/pages/job-discovery";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -81,6 +82,7 @@ function Router() {
                   <Route path="/resumes" component={ResumesPage} />
                   <Route path="/applications" component={Applications} />
                   <Route path="/jobs" component={Jobs} />
+                  <Route path="/discover" component={JobDiscoveryPage} />
                   <Route path="/jobs/:id" component={ViewJob} />
                   <Route path="/subscription" component={Subscription} />
                   <Route path="/chat" component={MessagingPage} />
