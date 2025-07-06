@@ -527,14 +527,19 @@ export class DatabaseStorage implements IStorage {
       console.log(`[DEBUG] Found ${userResumes.length} resumes for user ${userId}`);
       const formattedResumes = userResumes.map(resume => ({
         id: resume.id,
-        filename: resume.fileName,
+        name: resume.name,
+        fileName: resume.fileName,
+        filename: resume.fileName, // Keep both for compatibility
         text: resume.resumeText,
         atsScore: resume.atsScore,
         uploadedAt: resume.createdAt,
         userId: resume.userId,
         fileSize: resume.fileSize,
         fileType: resume.mimeType,
-        analysis: resume.analysisData || null
+        mimeType: resume.mimeType,
+        isActive: resume.isActive,
+        analysis: resume.analysisData || null,
+        recommendations: resume.recommendations || []
       }));
       console.log(`[DEBUG] Returning ${formattedResumes.length} formatted resumes for user ${userId}`);
       return formattedResumes;
@@ -579,23 +584,17 @@ export class DatabaseStorage implements IStorage {
   }
 
   private async compressData(buffer: Buffer): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const zlib = require('zlib');
-      zlib.gzip(buffer, (err: any, compressed: Buffer) => {
-        if (err) reject(err);
-        else resolve(compressed);
-      });
-    });
+    const { gzip } = await import('zlib');
+    const { promisify } = await import('util');
+    const gzipAsync = promisify(gzip);
+    return await gzipAsync(buffer);
   }
 
   private async decompressData(buffer: Buffer): Promise<Buffer> {
-    return new Promise((resolve, reject) => {
-      const zlib = require('zlib');
-      zlib.gunzip(buffer, (err: any, decompressed: Buffer) => {
-        if (err) reject(err);
-        else resolve(decompressed);
-      });
-    });
+    const { gunzip } = await import('zlib');
+    const { promisify } = await import('util');
+    const gunzipAsync = promisify(gunzip);
+    return await gunzipAsync(buffer);
   }
 
   // Recruiter operations - Job postings

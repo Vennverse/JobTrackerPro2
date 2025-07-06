@@ -806,16 +806,10 @@ Additional Information:
       const userId = req.user.id;
       console.log(`[DEBUG] Fetching resumes for user: ${userId}`);
       
-      // Get actual user resumes only - no sample data
-      let resumes = [];
+      // Use the database storage service to get resumes
+      const resumes = await storage.getUserResumes(userId);
       
-      if (userId === 'demo-user-id') {
-        resumes = (global as any).demoUserResumes || [];
-      } else {
-        resumes = (global as any).userResumes?.[userId] || [];
-      }
-      
-      console.log(`[DEBUG] Returning ${resumes.length} real resumes for user ${userId}`);
+      console.log(`[DEBUG] Returning ${resumes.length} resumes for user ${userId}`);
       res.json(resumes);
     } catch (error) {
       console.error("Error fetching resumes:", error);
