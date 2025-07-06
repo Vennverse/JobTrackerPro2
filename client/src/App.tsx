@@ -27,6 +27,7 @@ import ChatPage from "@/pages/chat";
 import MessagingPage from "@/pages/messaging";
 import ResumesPage from "@/pages/resumes";
 import JobDiscoveryPage from "@/pages/job-discovery-simple";
+import PremiumTargetingPage from "@/pages/premium-targeting";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -60,6 +61,7 @@ function Router() {
               <Route path="/advanced-dashboard" component={UnifiedRecruiterDashboard} />
               <Route path="/recruiter/post-job" component={PostJob} />
               <Route path="/recruiter/edit-job/:id" component={EditJob} />
+              <Route path="/premium-targeting" component={PremiumTargetingPage} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={Subscription} />
