@@ -96,10 +96,10 @@ export default function RecruiterDashboard() {
 
   // Fetch applicant details when selected
   const { data: applicantDetails, isLoading: applicantLoading } = useQuery({
-    queryKey: [`/api/recruiter/applicant/${selectedApplicantId}`, Date.now()],
+    queryKey: [`/api/recruiter/applicant/${selectedApplicantId}`],
     enabled: !!selectedApplicantId,
-    staleTime: 0,
-    gcTime: 0,
+    staleTime: 5 * 60 * 1000, // 5 minutes
+    refetchOnWindowFocus: false,
   });
 
   // Get job compatibility analysis
@@ -789,12 +789,7 @@ export default function RecruiterDashboard() {
                                     </Card>
 
                                     {/* Resume */}
-                                    {(() => {
-                                      console.log('Full applicant details:', applicantDetails);
-                                      console.log('Resume data:', applicantDetails?.resumes);
-                                      console.log('Resume array length:', applicantDetails?.resumes?.length);
-                                      return true;
-                                    })() && (
+                                    {true && (
                                       <Card>
                                         <CardHeader>
                                           <CardTitle className="flex items-center gap-2">
