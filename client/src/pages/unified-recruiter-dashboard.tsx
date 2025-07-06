@@ -788,7 +788,9 @@ export default function RecruiterDashboard() {
 
                                     {/* Resume */}
                                     {(() => {
-                                      console.log('Resume data:', applicantDetails.resumes);
+                                      console.log('Full applicant details:', applicantDetails);
+                                      console.log('Resume data:', applicantDetails?.resumes);
+                                      console.log('Resume array length:', applicantDetails?.resumes?.length);
                                       return true;
                                     })() && (
                                       <Card>
