@@ -17,14 +17,13 @@ const hasExternalDb = process.env.DATABASE_URL &&
 
 let db: ReturnType<typeof drizzle> | ReturnType<typeof drizzlePg>;
 
-// Force use of Neon database connection
-console.log('Using Neon database for production');
-neonConfig.webSocketConstructor = ws;
+// Use the DATABASE_URL from environment variables (Replit's built-in database)
+console.log('Using built-in Replit database');
+if (!process.env.DATABASE_URL) {
+  throw new Error('DATABASE_URL environment variable is not set');
+}
 
-// Use the explicit connection string for Neon
-const connectionString = 'postgresql://neondb_owner:npg_LXMUh9KdQB0q@ep-fragrant-feather-a88g5mva-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require';
-
-const pool = new Pool({ connectionString });
+const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 db = drizzle({ client: pool, schema });
 
 export { db };

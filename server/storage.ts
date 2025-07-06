@@ -544,6 +544,60 @@ export class DatabaseStorage implements IStorage {
     }
   }
 
+  async storeResume(userId: string, resumeData: any): Promise<any> {
+    return await handleDbOperation(async () => {
+      // Compress the file data if it exists
+      let compressedFileData = resumeData.fileData;
+      if (resumeData.fileData) {
+        try {
+          const buffer = Buffer.from(resumeData.fileData, 'base64');
+          const compressed = await this.compressData(buffer);
+          compressedFileData = compressed.toString('base64');
+        } catch (compressionError) {
+          console.log('[DEBUG] Compression failed, using original data:', compressionError);
+        }
+      }
+
+      const [newResume] = await db.insert(resumes).values({
+        userId,
+        name: resumeData.name,
+        fileName: resumeData.fileName,
+        fileData: compressedFileData,
+        resumeText: resumeData.resumeText,
+        atsScore: resumeData.atsScore,
+        analysisData: resumeData.analysis,
+        recommendations: resumeData.recommendations,
+        fileSize: resumeData.fileSize,
+        mimeType: resumeData.mimeType,
+        isActive: resumeData.isActive || false,
+        lastAnalyzed: new Date(),
+      }).returning();
+      
+      console.log(`[DEBUG] Resume stored in database for user: ${userId}, resume ID: ${newResume.id}`);
+      return newResume;
+    });
+  }
+
+  private async compressData(buffer: Buffer): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const zlib = require('zlib');
+      zlib.gzip(buffer, (err: any, compressed: Buffer) => {
+        if (err) reject(err);
+        else resolve(compressed);
+      });
+    });
+  }
+
+  private async decompressData(buffer: Buffer): Promise<Buffer> {
+    return new Promise((resolve, reject) => {
+      const zlib = require('zlib');
+      zlib.gunzip(buffer, (err: any, decompressed: Buffer) => {
+        if (err) reject(err);
+        else resolve(decompressed);
+      });
+    });
+  }
+
   // Recruiter operations - Job postings
   async getJobPostings(recruiterId?: string): Promise<JobPosting[]> {
     return await handleDbOperation(async () => {
@@ -623,6 +677,7 @@ export class DatabaseStorage implements IStorage {
           appliedAt: jobPostingApplications.appliedAt,
           reviewedAt: jobPostingApplications.reviewedAt,
           updatedAt: jobPostingApplications.updatedAt,
+          resumeData: sql`NULL`.as('resumeData'),
         })
         .from(jobPostingApplications)
         .innerJoin(jobPostings, eq(jobPostingApplications.jobPostingId, jobPostings.id))
@@ -759,43 +814,7 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
-  async updateUserEmailVerification(userId: string, verified: boolean): Promise<void> {
-    return await handleDbOperation(async () => {
-      await db.update(users).set({ emailVerified: verified }).where(eq(users.id, userId));
-    });
-  }
 
-  async createPasswordResetToken(tokenData: any): Promise<any> {
-    return await handleDbOperation(async () => {
-      const [token] = await db.insert(emailVerificationTokens).values(tokenData).returning();
-      return token;
-    });
-  }
-
-  async getPasswordResetToken(token: string): Promise<any> {
-    return await handleDbOperation(async () => {
-      const [tokenRecord] = await db.select().from(emailVerificationTokens).where(eq(emailVerificationTokens.token, token));
-      return tokenRecord;
-    });
-  }
-
-  async updateUserPassword(userId: string, hashedPassword: string): Promise<void> {
-    return await handleDbOperation(async () => {
-      await db.update(users).set({ password: hashedPassword }).where(eq(users.id, userId));
-    });
-  }
-
-  async markPasswordResetTokenAsUsed(token: string): Promise<void> {
-    return await handleDbOperation(async () => {
-      await db.delete(emailVerificationTokens).where(eq(emailVerificationTokens.token, token));
-    });
-  }
-
-  async deleteExpiredPasswordResetTokens(): Promise<void> {
-    return await handleDbOperation(async () => {
-      await db.delete(emailVerificationTokens).where(lt(emailVerificationTokens.expiresAt, new Date()));
-    });
-  }
 
   async updateUserEmailVerification(userId: string, verified: boolean): Promise<User> {
     return await handleDbOperation(async () => {

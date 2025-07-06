@@ -4,6 +4,9 @@ import { WebSocketServer, WebSocket } from 'ws';
 import path from "path";
 import fs from "fs";
 import multer from "multer";
+import { db } from "./db";
+import { eq } from "drizzle-orm";
+import * as schema from "@shared/schema";
 
 // Simple in-memory cache for frequently accessed data
 const cache = new Map();
@@ -625,49 +628,41 @@ Additional Information:
         };
       }
       
-      // For demo user, use global storage to track resumes
-      if (userId === 'demo-user-id') {
-        // Initialize global storage for demo user resumes
-        if (!(global as any).demoUserResumes) {
-          (global as any).demoUserResumes = [];
-        }
-        
-        const existingResumes = (global as any).demoUserResumes;
-        
-        // Check resume limits - Free users: 2 resumes, Premium: unlimited
-        const user = await storage.getUser(userId);
-        if (user?.planType !== 'premium' && existingResumes.length >= 2) {
-          return res.status(400).json({ 
-            message: "Free plan allows maximum 2 resumes. Upgrade to Premium for unlimited resumes.",
-            upgradeRequired: true
-          });
-        }
-        
-        // Create new resume entry
-        const newResume = {
-          id: Date.now(),
-          name: req.body.name || file.originalname.replace(/\.[^/.]+$/, "") || "New Resume",
-          fileName: file.originalname,
-          isActive: existingResumes.length === 0, // First resume is active by default
-          atsScore: analysis.atsScore,
-          analysis: analysis,
-          resumeText: resumeText,
-          uploadedAt: new Date(),
-          fileSize: file.size,
-          fileType: file.mimetype,
-          // Store file data as base64 for demo (in production, would use cloud storage)
-          fileData: file.buffer.toString('base64')
-        };
-        
-        existingResumes.push(newResume);
-        return res.json({ 
-          success: true,
-          analysis: analysis,
-          fileName: file.originalname,
-          message: "Resume uploaded and analyzed successfully",
-          resume: newResume 
+      // Get existing resumes count from database
+      const existingResumes = await storage.getUserResumes(userId);
+      
+      // Check resume limits - Free users: 2 resumes, Premium: unlimited
+      const user = await storage.getUser(userId);
+      if (user?.planType !== 'premium' && existingResumes.length >= 2) {
+        return res.status(400).json({ 
+          message: "Free plan allows maximum 2 resumes. Upgrade to Premium for unlimited resumes.",
+          upgradeRequired: true
         });
       }
+      
+      // Create new resume entry for database storage
+      const resumeData = {
+        name: req.body.name || file.originalname.replace(/\.[^/.]+$/, "") || "New Resume",
+        fileName: file.originalname,
+        isActive: existingResumes.length === 0, // First resume is active by default
+        atsScore: analysis.atsScore,
+        analysis: analysis,
+        resumeText: resumeText,
+        fileSize: file.size,
+        mimeType: file.mimetype,
+        fileData: file.buffer.toString('base64')
+      };
+      
+      // Store in database with compression
+      const newResume = await storage.storeResume(userId, resumeData);
+      
+      return res.json({ 
+        success: true,
+        analysis: analysis,
+        fileName: file.originalname,
+        message: "Resume uploaded and analyzed successfully",
+        resume: newResume 
+      });
       
       // Implementation for all users (same as demo users)
       if (!(global as any).userResumes) {
@@ -677,16 +672,7 @@ Additional Information:
         (global as any).userResumes[userId] = [];
       }
       
-      const existingResumes = (global as any).userResumes[userId];
-      const user = await storage.getUser(userId);
-      
-      // Free users: 2 resumes, Premium: unlimited
-      if (user?.planType !== 'premium' && existingResumes.length >= 2) {
-        return res.status(400).json({ 
-          message: "Free plan allows maximum 2 resumes. Upgrade to Premium for unlimited resumes.",
-          upgradeRequired: true
-        });
-      }
+      // Skip duplicate declarations since they are already handled above
       
       // Process resume with Groq AI analysis using the resume text we extracted
       console.log('Starting Groq analysis...');
@@ -722,11 +708,14 @@ Additional Information:
         };
       }
       
-      const newResume = {
+      // Get existing resumes count from database
+      const existingResumesList = await storage.getUserResumes(userId);
+      
+      const resumeToStore = {
         id: Date.now(),
         name: name || file.originalname.replace(/\.[^/.]+$/, ""),
         fileName: file.originalname,
-        isActive: existingResumes.length === 0, // First resume is active by default
+        isActive: existingResumesList.length === 0, // First resume is active by default
         atsScore: analysisReal.atsScore,
         analysis: analysisReal,
         resumeText: resumeText,
@@ -737,13 +726,25 @@ Additional Information:
         fileData: file.buffer.toString('base64')
       };
       
-      existingResumes.push(newResume);
+      // Store in database with compression
+      const storedResume = await storage.storeResume(userId, {
+        name: resumeToStore.name,
+        fileName: resumeToStore.fileName,
+        isActive: resumeToStore.isActive,
+        atsScore: resumeToStore.atsScore,
+        analysis: resumeToStore.analysis,
+        resumeText: resumeToStore.resumeText,
+        fileSize: resumeToStore.fileSize,
+        mimeType: resumeToStore.fileType,
+        fileData: resumeToStore.fileData
+      });
+      
       return res.json({ 
         success: true,
         analysis: analysisReal,
         fileName: file.originalname,
         message: "Resume uploaded and analyzed successfully",
-        resume: newResume 
+        resume: storedResume 
       });
     } catch (error) {
       console.error("Error uploading resume:", error);
@@ -1041,29 +1042,48 @@ Additional Information:
       
       let resume;
       
-      // Find resume in appropriate storage
-      if (userId === 'demo-user-id') {
-        resume = (global as any).demoUserResumes?.find((r: any) => r.id === resumeId);
-      } else {
-        const userResumes = (global as any).userResumes?.[userId] || [];
-        resume = userResumes.find((r: any) => r.id === resumeId);
-      }
+      // Find resume in database
+      const userResumes = await storage.getUserResumes(userId);
+      resume = userResumes.find((r: any) => r.id === resumeId);
       
       if (!resume) {
         console.log(`[DEBUG] Resume not found for user ${userId}, resumeId ${resumeId}`);
         return res.status(404).json({ message: "Resume not found" });
       }
       
-      console.log(`[DEBUG] Found resume: ${resume.fileName}, fileType: ${resume.fileType}`);
+      console.log(`[DEBUG] Found resume: ${resume.filename}, fileType: ${resume.fileType}`);
       
-      // Convert base64 file data back to buffer
-      const fileBuffer = Buffer.from(resume.fileData, 'base64');
+      // Get full resume data from database including fileData
+      const fullResume = await db.select().from(schema.resumes).where(eq(schema.resumes.id, resumeId));
+      if (!fullResume || !fullResume[0] || !fullResume[0].fileData) {
+        return res.status(404).json({ message: "Resume file data not found" });
+      }
       
-      res.setHeader('Content-Type', resume.fileType || 'application/octet-stream');
-      res.setHeader('Content-Disposition', `attachment; filename="${resume.fileName}"`);
+      const resumeData = fullResume[0];
+      
+      // Convert base64 file data back to buffer (handle potential compression)
+      let fileBuffer;
+      try {
+        const base64Data = resumeData.fileData;
+        fileBuffer = Buffer.from(base64Data, 'base64');
+        
+        // Try to decompress if compressed
+        try {
+          const zlib = require('zlib');
+          fileBuffer = zlib.gunzipSync(fileBuffer);
+        } catch (decompressError) {
+          // If decompression fails, use original buffer (not compressed)
+          fileBuffer = Buffer.from(base64Data, 'base64');
+        }
+      } catch (bufferError) {
+        return res.status(500).json({ message: "Error processing resume file" });
+      }
+      
+      res.setHeader('Content-Type', resumeData.mimeType || 'application/octet-stream');
+      res.setHeader('Content-Disposition', `attachment; filename="${resumeData.fileName}"`);
       res.setHeader('Content-Length', fileBuffer.length.toString());
       
-      console.log(`[DEBUG] Sending file: ${resume.fileName}, size: ${fileBuffer.length} bytes`);
+      console.log(`[DEBUG] Sending file: ${resumeData.fileName}, size: ${fileBuffer.length} bytes`);
       return res.send(fileBuffer);
     } catch (error) {
       console.error("Error downloading resume:", error);
