@@ -5098,11 +5098,12 @@ Host: https://autojobr.com`;
   // Import the job scraping service
   const { jobScrapingService } = await import('./jobScrapingService');
 
-  // Initialize scraped jobs and playlists (run once)
+  // Initialize scraped jobs with real data (run once)
   app.post('/api/admin/init-scraped-jobs', async (req: any, res) => {
     try {
-      await jobScrapingService.scrapeJobs();
-      res.json({ message: "Job scraping initialized successfully" });
+      const { realJobScraper } = await import('./realJobScraper');
+      await realJobScraper.scrapeAllSources();
+      res.json({ message: "Real job scraping completed successfully" });
     } catch (error) {
       console.error("Error initializing scraped jobs:", error);
       res.status(500).json({ message: "Failed to initialize scraped jobs" });

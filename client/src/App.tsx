@@ -26,7 +26,7 @@ import ResetPasswordPage from "@/pages/reset-password";
 import ChatPage from "@/pages/chat";
 import MessagingPage from "@/pages/messaging";
 import ResumesPage from "@/pages/resumes";
-import JobDiscoveryPage from "@/pages/job-discovery";
+import JobDiscoveryPage from "@/pages/job-discovery-simple";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
