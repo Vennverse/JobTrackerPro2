@@ -96,8 +96,10 @@ export default function RecruiterDashboard() {
 
   // Fetch applicant details when selected
   const { data: applicantDetails, isLoading: applicantLoading } = useQuery({
-    queryKey: [`/api/recruiter/applicant/${selectedApplicantId}`],
+    queryKey: [`/api/recruiter/applicant/${selectedApplicantId}`, Date.now()],
     enabled: !!selectedApplicantId,
+    staleTime: 0,
+    gcTime: 0,
   });
 
   // Get job compatibility analysis
