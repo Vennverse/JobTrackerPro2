@@ -239,19 +239,64 @@ export default function RecruiterDashboard() {
                 Manage your job postings and connect with talented candidates
               </p>
             </div>
-            <Button
-              onClick={() => setLocation("/recruiter/post-job")}
-              className="bg-blue-600 hover:bg-blue-700"
-            >
-              <Plus className="w-4 h-4 mr-2" />
-              Post New Job
-            </Button>
+            <div className="flex gap-3">
+              <Button
+                onClick={() => setLocation("/premium-targeting")}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Premium Targeting
+              </Button>
+              <Button
+                onClick={() => setLocation("/recruiter/post-job")}
+                className="bg-blue-600 hover:bg-blue-700"
+              >
+                <Plus className="w-4 h-4 mr-2" />
+                Post New Job
+              </Button>
+            </div>
           </div>
         </div>
       </div>
 
       {/* Dashboard Content */}
       <div className="container mx-auto px-4 py-8">
+        {/* Premium Targeting Feature Card */}
+        <Card className="mb-8 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-purple-600 to-pink-600 rounded-xl flex items-center justify-center">
+                  <Zap className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Premium Candidate Targeting</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Target ideal candidates with precision - Education, Skills, Experience, Clubs & More
+                  </p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                      <Star className="w-3 h-3 mr-1" />
+                      Revenue Generator
+                    </Badge>
+                    <Badge className="bg-pink-100 text-pink-800 dark:bg-pink-900 dark:text-pink-200">
+                      $99-$300+ per posting
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <Button
+                onClick={() => setLocation("/premium-targeting")}
+                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
+                size="lg"
+              >
+                <Zap className="w-4 h-4 mr-2" />
+                Launch Targeting
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
           <Card>

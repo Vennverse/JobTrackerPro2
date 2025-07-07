@@ -5,7 +5,7 @@ import path from "path";
 import fs from "fs";
 import multer from "multer";
 import { db } from "./db";
-import { eq } from "drizzle-orm";
+import { eq, desc, and, or, like, isNotNull, count, asc, isNull, sql } from "drizzle-orm";
 import * as schema from "@shared/schema";
 
 // Simple in-memory cache for frequently accessed data
