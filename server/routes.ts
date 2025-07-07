@@ -5234,6 +5234,32 @@ Host: https://autojobr.com`;
     }
   });
 
+  // Create database tables if they don't exist
+  app.post('/api/admin/create-tables', isAuthenticated, async (req: any, res) => {
+    try {
+      // Create job_targeting table
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS job_targeting (
+          id SERIAL PRIMARY KEY,
+          job_posting_id INTEGER NOT NULL,
+          targeting_criteria JSONB,
+          estimated_reach INTEGER,
+          pricing_tier VARCHAR(50),
+          premium_cost INTEGER,
+          is_premium_targeted BOOLEAN DEFAULT false,
+          targeting_start_date TIMESTAMP,
+          targeting_end_date TIMESTAMP,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
+      
+      res.json({ message: 'Tables created successfully' });
+    } catch (error) {
+      console.error('Error creating tables:', error);
+      res.status(500).json({ message: 'Failed to create tables' });
+    }
+  });
+
   // Create targeted job posting (Premium B2B feature)
   app.post('/api/jobs/targeted', isAuthenticated, async (req: any, res) => {
     try {
@@ -5250,6 +5276,22 @@ Host: https://autojobr.com`;
       if (user.userType !== 'recruiter' && user.userType !== 'company') {
         return res.status(403).json({ message: 'Only recruiters and companies can create targeted job postings' });
       }
+
+      // First ensure the table exists
+      await db.execute(sql`
+        CREATE TABLE IF NOT EXISTS job_targeting (
+          id SERIAL PRIMARY KEY,
+          job_posting_id INTEGER NOT NULL,
+          targeting_criteria JSONB,
+          estimated_reach INTEGER,
+          pricing_tier VARCHAR(50),
+          premium_cost INTEGER,
+          is_premium_targeted BOOLEAN DEFAULT false,
+          targeting_start_date TIMESTAMP,
+          targeting_end_date TIMESTAMP,
+          created_at TIMESTAMP DEFAULT NOW()
+        )
+      `);
 
       // Create the job posting with targeting data
       const [newJob] = await db.insert(schema.jobPostings).values({
@@ -5268,15 +5310,25 @@ Host: https://autojobr.com`;
 
       // Store targeting criteria in separate table
       if (newJob) {
-        await db.insert(schema.jobTargeting).values({
-          jobPostingId: newJob.id,
-          targetingCriteria: JSON.stringify(targetingCriteria),
-          estimatedReach: estimatedReach,
-          pricingTier: pricingTier,
-          premiumCost: cost,
-          isPremiumTargeted: true,
-          targetingStartDate: new Date()
-        });
+        await db.execute(sql`
+          INSERT INTO job_targeting (
+            job_posting_id,
+            targeting_criteria,
+            estimated_reach,
+            pricing_tier,
+            premium_cost,
+            is_premium_targeted,
+            targeting_start_date
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7)
+        `, [
+          newJob.id,
+          JSON.stringify(targetingCriteria),
+          estimatedReach,
+          pricingTier,
+          cost,
+          true,
+          new Date()
+        ]);
       }
 
       // Log the premium purchase for analytics

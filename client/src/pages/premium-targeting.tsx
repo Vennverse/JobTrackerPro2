@@ -133,16 +133,23 @@ export default function PremiumTargetingPage() {
   });
 
   const handleSubmit = () => {
-    const jobData = {
+    if (!jobTitle || !jobDescription) {
+      toast({ title: "Please fill in job title and description", variant: "destructive" });
+      return;
+    }
+
+    // Navigate to subscription page with targeting data stored
+    localStorage.setItem('pendingTargetingJob', JSON.stringify({
       title: jobTitle,
       description: jobDescription,
       targetingCriteria,
       estimatedReach,
       pricingTier,
       cost: calculatePricing()
-    };
+    }));
 
-    createTargetedJobMutation.mutate(jobData);
+    // Redirect to subscription page to complete payment
+    window.location.href = '/subscription?upgrade=premium&feature=targeting';
   };
 
   const addToArray = (category: keyof TargetingCriteria, field: string, value: string) => {

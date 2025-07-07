@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
 import { apiRequest, queryClient } from "@/lib/queryClient";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -31,6 +31,15 @@ interface SubscriptionData {
 
 export default function Subscription() {
   const { toast } = useToast();
+  const [pendingTargetingJob, setPendingTargetingJob] = useState<any>(null);
+
+  // Check for pending targeting job from Premium Targeting page
+  useEffect(() => {
+    const pending = localStorage.getItem('pendingTargetingJob');
+    if (pending) {
+      setPendingTargetingJob(JSON.parse(pending));
+    }
+  }, []);
 
   const { data: subscriptionData, isLoading } = useQuery<SubscriptionData>({
     queryKey: ['/api/subscription/status'],
@@ -40,12 +49,33 @@ export default function Subscription() {
     mutationFn: async (paymentData: any) => {
       return apiRequest('POST', '/api/subscription/upgrade', paymentData);
     },
-    onSuccess: () => {
+    onSuccess: async (response) => {
       queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
-      toast({
-        title: "Upgraded Successfully!",
-        description: "Welcome to AutoJobr Premium! Enjoy unlimited access to all features.",
-      });
+      
+      // If there's a pending targeting job, create it now
+      if (pendingTargetingJob) {
+        try {
+          await apiRequest('POST', '/api/jobs/targeted', pendingTargetingJob);
+          localStorage.removeItem('pendingTargetingJob');
+          toast({
+            title: "Premium Targeting Job Created!",
+            description: `Your targeted job posting "${pendingTargetingJob.title}" is now live with premium targeting.`,
+          });
+          // Redirect to dashboard
+          window.location.href = '/';
+        } catch (error) {
+          toast({
+            title: "Job Creation Failed", 
+            description: "Premium subscription activated but job creation failed. Please try posting again.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Upgraded Successfully!",
+          description: "Welcome to AutoJobr Premium! Enjoy unlimited access to all features.",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -231,6 +261,29 @@ export default function Subscription() {
             Manage your AutoJobr subscription and track your daily usage
           </p>
         </div>
+
+        {/* Premium Targeting Notification */}
+        {pendingTargetingJob && (
+          <Card className="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Target className="h-6 w-6 text-purple-600" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200">
+                    Premium Targeting Job Pending
+                  </h4>
+                  <p className="text-sm text-purple-600 dark:text-purple-300">
+                    Job "{pendingTargetingJob.title}" ready to post with premium targeting for ${pendingTargetingJob.cost}. 
+                    Upgrade to Premium to activate targeted candidate matching.
+                  </p>
+                </div>
+                <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                  ${pendingTargetingJob.cost}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Current Plan */}
