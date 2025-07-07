@@ -32,17 +32,31 @@ export function Navbar() {
     }
   };
 
-  const navItems = [
-    { href: "/", label: "Dashboard", icon: BarChart3 },
-    { href: "/applications", label: "Applications", icon: FileText },
-    { href: "/profile", label: "Profile", icon: User },
-    { href: "/jobs", label: "Jobs", icon: Briefcase },
-    { href: "/discover", label: "Discover Jobs", icon: Search },
-    { href: "/premium-targeting", label: "Premium Targeting", icon: Target },
-    { href: "/chat", label: "Messages", icon: MessageCircle },
-    { href: "/post-job", label: "Post Job", icon: Plus },
-    { href: "/subscription", label: "Subscription", icon: Crown },
-  ];
+  // Define navigation items based on user type
+  const getNavItems = () => {
+    if (user?.userType === 'recruiter' || user?.userType === 'company') {
+      return [
+        { href: "/", label: "Dashboard", icon: BarChart3 },
+        { href: "/post-job", label: "Post Job", icon: Plus },
+        { href: "/premium-targeting", label: "Premium Targeting", icon: Target },
+        { href: "/profile", label: "Profile", icon: User },
+        { href: "/chat", label: "Messages", icon: MessageCircle },
+        { href: "/subscription", label: "Subscription", icon: Crown },
+      ];
+    } else {
+      return [
+        { href: "/", label: "Dashboard", icon: BarChart3 },
+        { href: "/applications", label: "Applications", icon: FileText },
+        { href: "/profile", label: "Profile", icon: User },
+        { href: "/jobs", label: "Jobs", icon: Briefcase },
+        { href: "/discover", label: "Discover Jobs", icon: Search },
+        { href: "/chat", label: "Messages", icon: MessageCircle },
+        { href: "/subscription", label: "Subscription", icon: Crown },
+      ];
+    }
+  };
+
+  const navItems = getNavItems();
 
   return (
     <nav className="bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
