@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useAuth } from "@/hooks/useAuth";
 import { useToast } from "@/hooks/use-toast";
@@ -10,6 +10,8 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { motion, AnimatePresence } from "framer-motion";
 import { 
   Search, 
   MapPin, 
@@ -19,7 +21,25 @@ import {
   Eye,
   Send,
   Briefcase,
-  Filter
+  Filter,
+  Star,
+  Heart,
+  ExternalLink,
+  Bookmark,
+  TrendingUp,
+  Users,
+  Zap,
+  Brain,
+  Sparkles,
+  Target,
+  Globe,
+  Calendar,
+  Activity,
+  Award,
+  ChevronRight,
+  Layers,
+  BarChart3,
+  CheckCircle
 } from "lucide-react";
 
 interface JobPosting {
@@ -48,46 +68,95 @@ export default function Jobs() {
   const [_, setLocation] = useLocation();
   const queryClient = useQueryClient();
   
-  // Search and filter states
+  // Enhanced state management
+  const [activeTab, setActiveTab] = useState("discover");
   const [searchQuery, setSearchQuery] = useState("");
-  const [locationFilter, setLocationFilter] = useState("");
-  const [jobTypeFilter, setJobTypeFilter] = useState("");
-  const [workModeFilter, setWorkModeFilter] = useState("");
+  const [savedJobs, setSavedJobs] = useState<Set<number>>(new Set());
+  const [filterPreferences, setFilterPreferences] = useState({
+    location: "",
+    workMode: "",
+    experienceLevel: "",
+    salaryRange: "",
+    jobType: "",
+    company: "",
+    skills: [] as string[],
+    category: ""
+  });
+  
+  // Enhanced search and filter states
+  const [showAdvancedFilters, setShowAdvancedFilters] = useState(false);
+  const [sortBy, setSortBy] = useState("relevance");
 
-  // Fetch job postings from recruiters only
-  const { data: jobs, isLoading: jobsLoading } = useQuery({
-    queryKey: ["/api/jobs/postings", searchQuery, locationFilter, jobTypeFilter, workModeFilter],
+  // Fetch regular job postings
+  const { data: jobs = [], isLoading: jobsLoading } = useQuery({
+    queryKey: ["/api/jobs/postings", searchQuery, filterPreferences],
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchQuery) params.append('search', searchQuery);
-      if (locationFilter) params.append('location', locationFilter);
-      if (jobTypeFilter) params.append('jobType', jobTypeFilter);
-      if (workModeFilter) params.append('workMode', workModeFilter);
+      Object.entries(filterPreferences).forEach(([key, value]) => {
+        if (value && typeof value === 'string') params.append(key, value);
+      });
       
       const response = await fetch(`/api/jobs/postings?${params}`, {
         credentials: 'include'
       });
       
-      if (!response.ok) {
-        throw new Error('Failed to fetch jobs');
-      }
-      
+      if (!response.ok) throw new Error('Failed to fetch jobs');
       return response.json();
     },
     enabled: isAuthenticated
   });
 
-  // Check applied jobs
-  const { data: applications } = useQuery({
-    queryKey: ["/api/applications"],
+  // Fetch scraped jobs from external sources
+  const { data: scrapedJobs = [], isLoading: scrapedJobsLoading } = useQuery({
+    queryKey: ["/api/scraped-jobs", filterPreferences],
     queryFn: async () => {
-      const response = await fetch("/api/applications", {
-        credentials: 'include'
+      const params = new URLSearchParams();
+      Object.entries(filterPreferences).forEach(([key, value]) => {
+        if (value && typeof value === 'string') params.append(key, value);
       });
-      if (!response.ok) return [];
+      
+      const response = await fetch(`/api/scraped-jobs?${params}`);
+      if (!response.ok) throw new Error('Failed to fetch scraped jobs');
       return response.json();
     },
+    staleTime: 30000,
+  });
+
+  // Fetch AI-powered job recommendations
+  const { data: recommendedJobs = [], isLoading: recommendedLoading } = useQuery({
+    queryKey: ["/api/jobs/recommendations"],
+    queryFn: async () => {
+      const response = await fetch(`/api/jobs/recommendations`, {
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to fetch recommendations');
+      return response.json();
+    },
+    enabled: isAuthenticated,
+    staleTime: 60000,
+  });
+
+  // Check applied jobs
+  const { data: applications = [] } = useQuery({
+    queryKey: ["/api/applications"],
     enabled: isAuthenticated
+  });
+
+  // Save job mutation
+  const saveJobMutation = useMutation({
+    mutationFn: async (jobId: number) => {
+      const response = await fetch(`/api/jobs/${jobId}/save`, {
+        method: "POST",
+        credentials: 'include'
+      });
+      if (!response.ok) throw new Error('Failed to save job');
+      return response.json();
+    },
+    onSuccess: (_, jobId) => {
+      setSavedJobs(prev => new Set([...prev, jobId]));
+      toast({ title: "Job Saved", description: "Job added to your saved list!" });
+    }
   });
 
   // Apply to job mutation
@@ -109,11 +178,10 @@ export default function Jobs() {
     },
     onSuccess: () => {
       toast({
-        title: "Application Submitted",
+        title: "Application Submitted", 
         description: "Your application has been sent to the recruiter!"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
-      queryClient.invalidateQueries({ queryKey: ["/api/jobs/postings"] });
     },
     onError: (error) => {
       toast({
@@ -124,15 +192,207 @@ export default function Jobs() {
     }
   });
 
+  // Helper functions
+  const appliedJobIds = applications ? applications.map((app: any) => app.jobPostingId) : [];
+  
   const handleApply = (jobId: number) => {
+    if (!isAuthenticated) {
+      toast({
+        title: "Authentication Required",
+        description: "Please log in to apply for jobs."
+      });
+      return;
+    }
     applyMutation.mutate(jobId);
+  };
+
+  const handleSaveJob = (jobId: number) => {
+    saveJobMutation.mutate(jobId);
   };
 
   const handleViewJob = (jobId: number) => {
     setLocation(`/jobs/${jobId}`);
   };
 
-  const appliedJobIds = applications ? applications.map((app: any) => app.jobPostingId) : [];
+  const resetFilters = () => {
+    setSearchQuery("");
+    setFilterPreferences({
+      location: "",
+      workMode: "",
+      experienceLevel: "",
+      salaryRange: "",
+      jobType: "",
+      company: "",
+      skills: [],
+      category: ""
+    });
+  };
+
+  // AI-grade Job Card Component
+  const JobCard = ({ job, source = "platform" }: { job: any; source?: string }) => (
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -20 }}
+      whileHover={{ y: -2 }}
+      className="group"
+    >
+      <Card className="border-0 shadow-lg hover:shadow-xl transition-all duration-300 bg-gradient-to-br from-white via-gray-50/50 to-blue-50/30 dark:from-gray-900 dark:via-gray-800/50 dark:to-blue-900/20 backdrop-blur-sm">
+        <CardContent className="p-6">
+          <div className="space-y-4">
+            {/* Header */}
+            <div className="flex items-start justify-between">
+              <div className="space-y-2 flex-1">
+                <div className="flex items-center gap-2">
+                  <h3 className="font-semibold text-lg group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
+                    {job.title}
+                  </h3>
+                  {source === "scraped" && (
+                    <Badge variant="outline" className="text-xs bg-gradient-to-r from-purple-100 to-pink-100 dark:from-purple-900/20 dark:to-pink-900/20">
+                      <Globe className="w-3 h-3 mr-1" />
+                      External
+                    </Badge>
+                  )}
+                  {recommendedJobs.some((rec: any) => rec.id === job.id) && (
+                    <Badge className="text-xs bg-gradient-to-r from-yellow-100 to-orange-100 text-yellow-800 dark:from-yellow-900/20 dark:to-orange-900/20">
+                      <Sparkles className="w-3 h-3 mr-1" />
+                      AI Match
+                    </Badge>
+                  )}
+                </div>
+                <div className="flex items-center gap-2 text-muted-foreground">
+                  <Building2 className="w-4 h-4" />
+                  <span className="font-medium">{job.companyName || job.company}</span>
+                  {job.location && (
+                    <>
+                      <span>•</span>
+                      <MapPin className="w-4 h-4" />
+                      <span>{job.location}</span>
+                    </>
+                  )}
+                </div>
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleSaveJob(job.id)}
+                  className="opacity-0 group-hover:opacity-100 transition-opacity"
+                  disabled={savedJobs.has(job.id)}
+                >
+                  <Heart className={`w-4 h-4 ${savedJobs.has(job.id) ? 'fill-red-500 text-red-500' : ''}`} />
+                </Button>
+                <Button variant="ghost" size="sm" onClick={() => handleViewJob(job.id)}>
+                  <Eye className="w-4 h-4" />
+                </Button>
+              </div>
+            </div>
+
+            {/* Job Details */}
+            <div className="flex flex-wrap gap-2">
+              {job.workMode && (
+                <Badge variant="secondary" className="text-xs">
+                  <Briefcase className="w-3 h-3 mr-1" />
+                  {job.workMode}
+                </Badge>
+              )}
+              {job.jobType && (
+                <Badge variant="secondary" className="text-xs">
+                  <Clock className="w-3 h-3 mr-1" />
+                  {job.jobType}
+                </Badge>
+              )}
+              {job.salaryRange && (
+                <Badge variant="secondary" className="text-xs">
+                  <DollarSign className="w-3 h-3 mr-1" />
+                  {job.salaryRange}
+                </Badge>
+              )}
+              {job.experienceLevel && (
+                <Badge variant="outline" className="text-xs">
+                  <Star className="w-3 h-3 mr-1" />
+                  {job.experienceLevel}
+                </Badge>
+              )}
+            </div>
+
+            {/* Skills */}
+            {job.skills && job.skills.length > 0 && (
+              <div className="flex flex-wrap gap-1">
+                {job.skills.slice(0, 5).map((skill: string, index: number) => (
+                  <Badge key={index} variant="outline" className="text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20">
+                    {skill}
+                  </Badge>
+                ))}
+                {job.skills.length > 5 && (
+                  <Badge variant="outline" className="text-xs text-muted-foreground">
+                    +{job.skills.length - 5} more
+                  </Badge>
+                )}
+              </div>
+            )}
+
+            {/* Description Preview */}
+            {job.description && (
+              <p className="text-sm text-muted-foreground line-clamp-2">
+                {job.description}
+              </p>
+            )}
+
+            {/* Actions */}
+            <div className="flex items-center justify-between pt-2">
+              <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <Calendar className="w-3 h-3" />
+                <span>{new Date(job.createdAt).toLocaleDateString()}</span>
+                {job.applicationsCount && (
+                  <>
+                    <span>•</span>
+                    <Users className="w-3 h-3" />
+                    <span>{job.applicationsCount} applicants</span>
+                  </>
+                )}
+              </div>
+              <div className="flex gap-2">
+                {source === "scraped" && job.sourceUrl ? (
+                  <Button variant="outline" size="sm" asChild>
+                    <a href={job.sourceUrl} target="_blank" rel="noopener noreferrer">
+                      <ExternalLink className="w-4 h-4 mr-1" />
+                      Apply
+                    </a>
+                  </Button>
+                ) : (
+                  <Button
+                    size="sm"
+                    onClick={() => handleApply(job.id)}
+                    disabled={appliedJobIds.includes(job.id) || applyMutation.isPending}
+                    className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {appliedJobIds.includes(job.id) ? (
+                      <>
+                        <CheckCircle className="w-4 h-4 mr-1" />
+                        Applied
+                      </>
+                    ) : applyMutation.isPending ? (
+                      <>
+                        <Clock className="w-4 h-4 mr-1 animate-spin" />
+                        Applying...
+                      </>
+                    ) : (
+                      <>
+                        <Send className="w-4 h-4 mr-1" />
+                        Apply Now
+                      </>
+                    )}
+                  </Button>
+                )}
+              </div>
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    </motion.div>
+  );
 
   if (!isAuthenticated) {
     return (
@@ -149,244 +409,306 @@ export default function Jobs() {
   }
 
   return (
-    <div className="min-h-screen bg-background">
+    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-blue-50/30 to-purple-50/20 dark:from-gray-900 dark:via-blue-900/10 dark:to-purple-900/10">
       <Navbar />
       
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex flex-col lg:flex-row gap-8">
-          {/* Search and Filters Sidebar */}
-          <div className="lg:w-1/4">
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Filter className="w-5 h-5" />
-                  Search & Filters
-                </CardTitle>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                {/* Search Input */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Search Jobs</label>
-                  <div className="relative">
-                    <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                    <Input
-                      placeholder="Job title, skills, company..."
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      className="pl-10"
-                    />
-                  </div>
-                </div>
-
-                {/* Location Filter */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Location</label>
-                  <Input
-                    placeholder="City, state, or remote"
-                    value={locationFilter}
-                    onChange={(e) => setLocationFilter(e.target.value)}
-                  />
-                </div>
-
-                {/* Job Type Filter */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Job Type</label>
-                  <Select value={jobTypeFilter} onValueChange={setJobTypeFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Any job type" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Any job type</SelectItem>
-                      <SelectItem value="full-time">Full-time</SelectItem>
-                      <SelectItem value="part-time">Part-time</SelectItem>
-                      <SelectItem value="contract">Contract</SelectItem>
-                      <SelectItem value="internship">Internship</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Work Mode Filter */}
-                <div>
-                  <label className="text-sm font-medium mb-2 block">Work Mode</label>
-                  <Select value={workModeFilter} onValueChange={setWorkModeFilter}>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Any work mode" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Any work mode</SelectItem>
-                      <SelectItem value="remote">Remote</SelectItem>
-                      <SelectItem value="on-site">On-site</SelectItem>
-                      <SelectItem value="hybrid">Hybrid</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-
-                {/* Clear Filters */}
-                <Button 
-                  variant="outline" 
-                  className="w-full"
-                  onClick={() => {
-                    setSearchQuery("");
-                    setLocationFilter("");
-                    setJobTypeFilter("");
-                    setWorkModeFilter("");
-                  }}
-                >
-                  Clear All Filters
-                </Button>
-              </CardContent>
-            </Card>
-          </div>
-
-          {/* Job Listings */}
-          <div className="lg:w-3/4">
-            <div className="flex items-center justify-between mb-6">
-              <div>
-                <h1 className="text-3xl font-bold">Job Opportunities</h1>
-                <p className="text-muted-foreground mt-1">
-                  {jobsLoading ? "Loading..." : `${jobs?.length || 0} jobs from verified recruiters`}
-                </p>
+      {/* Hero Section */}
+      <div className="bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 text-white">
+        <div className="container mx-auto px-4 py-12">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="text-center space-y-4"
+          >
+            <h1 className="text-4xl md:text-6xl font-bold bg-gradient-to-r from-white via-blue-100 to-purple-100 bg-clip-text text-transparent">
+              AI-Powered Job Discovery
+            </h1>
+            <p className="text-xl text-blue-100 max-w-2xl mx-auto">
+              Find your perfect role with intelligent matching across thousands of opportunities
+            </p>
+            <div className="flex items-center justify-center gap-6 text-sm">
+              <div className="flex items-center gap-2">
+                <Brain className="w-5 h-5" />
+                <span>AI Recommendations</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Globe className="w-5 h-5" />
+                <span>Global Opportunities</span>
+              </div>
+              <div className="flex items-center gap-2">
+                <Zap className="w-5 h-5" />
+                <span>Real-time Updates</span>
               </div>
             </div>
-
-            {/* Job Cards */}
-            <div className="space-y-4">
-              {jobsLoading ? (
-                // Loading skeletons
-                Array.from({ length: 5 }).map((_, i) => (
-                  <Card key={i}>
-                    <CardContent className="p-6">
-                      <div className="space-y-3">
-                        <Skeleton className="h-6 w-3/4" />
-                        <Skeleton className="h-4 w-1/2" />
-                        <Skeleton className="h-20 w-full" />
-                        <div className="flex gap-2">
-                          <Skeleton className="h-6 w-16" />
-                          <Skeleton className="h-6 w-20" />
-                          <Skeleton className="h-6 w-24" />
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : jobs && jobs.length > 0 ? (
-                jobs.map((job: JobPosting) => (
-                  <Card key={job.id} className="hover:shadow-md transition-shadow">
-                    <CardContent className="p-6">
-                      <div className="flex justify-between items-start mb-4">
-                        <div className="flex-1">
-                          <h3 className="text-xl font-semibold text-primary mb-1">
-                            {job.title}
-                          </h3>
-                          <div className="flex items-center gap-4 text-muted-foreground mb-2">
-                            <div className="flex items-center gap-1">
-                              <Building2 className="w-4 h-4" />
-                              <span>{job.companyName}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <MapPin className="w-4 h-4" />
-                              <span>{job.location}</span>
-                            </div>
-                            <div className="flex items-center gap-1">
-                              <Clock className="w-4 h-4" />
-                              <span>{new Date(job.createdAt).toLocaleDateString()}</span>
-                            </div>
-                          </div>
-                        </div>
-                        <div className="flex flex-col items-end gap-2">
-                          {job.minSalary && job.maxSalary && (
-                            <div className="flex items-center gap-1 text-green-600 font-medium">
-                              <DollarSign className="w-4 h-4" />
-                              <span>
-                                {job.currency || '$'}{job.minSalary.toLocaleString()}-
-                                {job.currency || '$'}{job.maxSalary.toLocaleString()}
-                              </span>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-
-                      <p className="text-muted-foreground mb-4 line-clamp-3">
-                        {job.description}
-                      </p>
-
-                      <div className="flex flex-wrap gap-2 mb-4">
-                        {job.jobType && (
-                          <Badge variant="secondary">{job.jobType}</Badge>
-                        )}
-                        {job.workMode && (
-                          <Badge variant="outline">{job.workMode}</Badge>
-                        )}
-                        {job.experienceLevel && (
-                          <Badge variant="outline">{job.experienceLevel}</Badge>
-                        )}
-                        {job.requiredSkills && job.requiredSkills.slice(0, 3).map((skill, index) => (
-                          <Badge key={index} variant="secondary">{skill}</Badge>
-                        ))}
-                      </div>
-
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center gap-2 text-sm text-muted-foreground">
-                          <Briefcase className="w-4 h-4" />
-                          <span>{job.applicationsCount || 0} applications</span>
-                        </div>
-                        
-                        <div className="flex gap-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => handleViewJob(job.id)}
-                            className="flex items-center gap-1"
-                          >
-                            <Eye className="w-4 h-4" />
-                            View Job
-                          </Button>
-                          
-                          {appliedJobIds.includes(job.id) ? (
-                            <Button variant="secondary" size="sm" disabled>
-                              Applied
-                            </Button>
-                          ) : (
-                            <Button 
-                              size="sm"
-                              onClick={() => handleApply(job.id)}
-                              disabled={applyMutation.isPending}
-                              className="flex items-center gap-1"
-                            >
-                              <Send className="w-4 h-4" />
-                              {applyMutation.isPending ? "Applying..." : "Apply"}
-                            </Button>
-                          )}
-                        </div>
-                      </div>
-                    </CardContent>
-                  </Card>
-                ))
-              ) : (
-                <Card>
-                  <CardContent className="p-12 text-center">
-                    <Briefcase className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                    <h3 className="text-xl font-semibold mb-2">No Jobs Found</h3>
-                    <p className="text-muted-foreground mb-4">
-                      Try adjusting your search criteria or check back later for new opportunities.
-                    </p>
-                    <Button 
-                      variant="outline"
-                      onClick={() => {
-                        setSearchQuery("");
-                        setLocationFilter("");
-                        setJobTypeFilter("");
-                        setWorkModeFilter("");
-                      }}
-                    >
-                      Clear Filters
-                    </Button>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          </div>
+          </motion.div>
         </div>
+      </div>
+
+      <div className="container mx-auto px-4 py-8">
+        {/* Search Bar */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.1 }}
+          className="max-w-4xl mx-auto mb-8"
+        >
+          <Card className="border-0 shadow-xl bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+            <CardContent className="p-6">
+              <div className="flex gap-4 items-center">
+                <div className="flex-1 relative">
+                  <Search className="absolute left-3 top-3 h-5 w-5 text-muted-foreground" />
+                  <Input
+                    placeholder="Search for jobs, companies, or skills..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 h-12 text-lg border-0 bg-gray-50 dark:bg-gray-800"
+                  />
+                </div>
+                <Button
+                  onClick={() => setShowAdvancedFilters(!showAdvancedFilters)}
+                  variant="outline"
+                  className="h-12 px-6"
+                >
+                  <Filter className="w-5 h-5 mr-2" />
+                  Filters
+                </Button>
+                <Button className="h-12 px-6 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
+                  <Search className="w-5 h-5 mr-2" />
+                  Search
+                </Button>
+              </div>
+
+              {/* Advanced Filters */}
+              <AnimatePresence>
+                {showAdvancedFilters && (
+                  <motion.div
+                    initial={{ opacity: 0, height: 0 }}
+                    animate={{ opacity: 1, height: "auto" }}
+                    exit={{ opacity: 0, height: 0 }}
+                    className="mt-6 pt-6 border-t space-y-4"
+                  >
+                    <div className="grid md:grid-cols-4 gap-4">
+                      <Select value={filterPreferences.location} onValueChange={(value) => setFilterPreferences(prev => ({ ...prev, location: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Location" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Any Location</SelectItem>
+                          <SelectItem value="remote">Remote</SelectItem>
+                          <SelectItem value="san-francisco">San Francisco</SelectItem>
+                          <SelectItem value="new-york">New York</SelectItem>
+                          <SelectItem value="london">London</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={filterPreferences.workMode} onValueChange={(value) => setFilterPreferences(prev => ({ ...prev, workMode: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Work Mode" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Any Mode</SelectItem>
+                          <SelectItem value="remote">Remote</SelectItem>
+                          <SelectItem value="hybrid">Hybrid</SelectItem>
+                          <SelectItem value="on-site">On-site</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={filterPreferences.experienceLevel} onValueChange={(value) => setFilterPreferences(prev => ({ ...prev, experienceLevel: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Experience" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">Any Level</SelectItem>
+                          <SelectItem value="entry">Entry Level</SelectItem>
+                          <SelectItem value="mid">Mid Level</SelectItem>
+                          <SelectItem value="senior">Senior Level</SelectItem>
+                          <SelectItem value="lead">Lead/Principal</SelectItem>
+                        </SelectContent>
+                      </Select>
+
+                      <Select value={filterPreferences.category} onValueChange={(value) => setFilterPreferences(prev => ({ ...prev, category: value }))}>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Category" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="">All Categories</SelectItem>
+                          <SelectItem value="tech">Technology</SelectItem>
+                          <SelectItem value="design">Design</SelectItem>
+                          <SelectItem value="marketing">Marketing</SelectItem>
+                          <SelectItem value="sales">Sales</SelectItem>
+                          <SelectItem value="finance">Finance</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    <Button variant="outline" onClick={resetFilters} className="w-full">
+                      Clear All Filters
+                    </Button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </CardContent>
+          </Card>
+        </motion.div>
+
+        {/* Job Tabs */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2 }}
+        >
+          <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-6">
+            <TabsList className="grid w-full max-w-md mx-auto grid-cols-3 bg-white/80 dark:bg-gray-900/80 backdrop-blur-sm">
+              <TabsTrigger value="discover" className="flex items-center gap-2">
+                <Sparkles className="w-4 h-4" />
+                AI Recommendations
+              </TabsTrigger>
+              <TabsTrigger value="platform" className="flex items-center gap-2">
+                <Building2 className="w-4 h-4" />
+                Platform Jobs
+              </TabsTrigger>
+              <TabsTrigger value="external" className="flex items-center gap-2">
+                <Globe className="w-4 h-4" />
+                External Jobs
+              </TabsTrigger>
+            </TabsList>
+
+            {/* AI Recommendations Tab */}
+            <TabsContent value="discover">
+              <div className="space-y-6">
+                <div className="text-center">
+                  <h2 className="text-2xl font-bold mb-2">Personalized for You</h2>
+                  <p className="text-muted-foreground">Jobs matched to your skills and preferences</p>
+                </div>
+                
+                <div className="grid gap-4">
+                  {recommendedLoading ? (
+                    Array.from({ length: 3 }).map((_, i) => (
+                      <Card key={i} className="animate-pulse">
+                        <CardContent className="p-6">
+                          <div className="space-y-3">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-20 w-full" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : recommendedJobs && recommendedJobs.length > 0 ? (
+                    recommendedJobs.map((job: any) => (
+                      <JobCard key={`rec-${job.id}`} job={job} source="platform" />
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="p-12 text-center">
+                        <Brain className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold mb-2">Building Your Recommendations</h3>
+                        <p className="text-muted-foreground">Complete your profile to get personalized job matches</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* Platform Jobs Tab */}
+            <TabsContent value="platform">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">Platform Jobs</h2>
+                    <p className="text-muted-foreground">
+                      {jobsLoading ? "Loading..." : `${jobs?.length || 0} jobs from verified recruiters`}
+                    </p>
+                  </div>
+                  <Select value={sortBy} onValueChange={setSortBy}>
+                    <SelectTrigger className="w-40">
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="relevance">Most Relevant</SelectItem>
+                      <SelectItem value="recent">Most Recent</SelectItem>
+                      <SelectItem value="salary">Highest Salary</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                <div className="grid gap-4">
+                  {jobsLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <Card key={i} className="animate-pulse">
+                        <CardContent className="p-6">
+                          <div className="space-y-3">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-20 w-full" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : jobs && jobs.length > 0 ? (
+                    jobs.map((job: any) => (
+                      <JobCard key={`platform-${job.id}`} job={job} source="platform" />
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="p-12 text-center">
+                        <Building2 className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold mb-2">No Platform Jobs Found</h3>
+                        <p className="text-muted-foreground">Try adjusting your filters or check back later</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+
+            {/* External Jobs Tab */}
+            <TabsContent value="external">
+              <div className="space-y-6">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <h2 className="text-2xl font-bold">External Opportunities</h2>
+                    <p className="text-muted-foreground">
+                      {scrapedJobsLoading ? "Loading..." : `${scrapedJobs?.length || 0} jobs from LinkedIn, Indeed, and more`}
+                    </p>
+                  </div>
+                  <Badge className="bg-gradient-to-r from-green-100 to-blue-100 text-green-800 dark:from-green-900/20 dark:to-blue-900/20">
+                    <Activity className="w-3 h-3 mr-1" />
+                    Live Updates
+                  </Badge>
+                </div>
+
+                <div className="grid gap-4">
+                  {scrapedJobsLoading ? (
+                    Array.from({ length: 5 }).map((_, i) => (
+                      <Card key={i} className="animate-pulse">
+                        <CardContent className="p-6">
+                          <div className="space-y-3">
+                            <Skeleton className="h-6 w-3/4" />
+                            <Skeleton className="h-4 w-1/2" />
+                            <Skeleton className="h-20 w-full" />
+                          </div>
+                        </CardContent>
+                      </Card>
+                    ))
+                  ) : scrapedJobs && scrapedJobs.length > 0 ? (
+                    scrapedJobs.map((job: any) => (
+                      <JobCard key={`scraped-${job.id}`} job={job} source="scraped" />
+                    ))
+                  ) : (
+                    <Card>
+                      <CardContent className="p-12 text-center">
+                        <Globe className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+                        <h3 className="text-xl font-semibold mb-2">No External Jobs Found</h3>
+                        <p className="text-muted-foreground">Our scrapers are working to find new opportunities</p>
+                      </CardContent>
+                    </Card>
+                  )}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+        </motion.div>
       </div>
     </div>
   );
