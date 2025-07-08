@@ -32,7 +32,7 @@ const authConfig = {
       clientSecret: process.env.LINKEDIN_CLIENT_SECRET,
     },
     email: {
-      enabled: process.env.ENABLE_EMAIL_LOGIN === 'true',
+      enabled: true, // Enable email login by default
     }
   }
 };
