@@ -54,6 +54,15 @@ const createTestSchema = z.object({
   difficultyLevel: z.string().min(1, "Difficulty level is required"),
   timeLimit: z.number().min(1, "Time limit must be at least 1 minute"),
   passingScore: z.number().min(0).max(100, "Passing score must be between 0-100"),
+  questions: z.array(z.object({
+    id: z.string(),
+    type: z.enum(['multiple_choice', 'coding', 'essay', 'true_false']),
+    question: z.string(),
+    options: z.array(z.string()).optional(),
+    correctAnswer: z.union([z.string(), z.number()]).optional(),
+    points: z.number(),
+    explanation: z.string().optional(),
+  })).default([]),
 });
 
 const assignTestSchema = z.object({
@@ -112,6 +121,17 @@ export default function TestManagement() {
       difficultyLevel: "",
       timeLimit: 30,
       passingScore: 70,
+      questions: [
+        {
+          id: "q1",
+          type: "multiple_choice" as const,
+          question: "Sample question",
+          options: ["Option A", "Option B", "Option C", "Option D"],
+          correctAnswer: 0,
+          points: 10,
+          explanation: "This is a sample question"
+        }
+      ],
     },
   });
 
