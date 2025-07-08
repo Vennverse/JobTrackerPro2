@@ -35,6 +35,7 @@ import { groqService } from "./groqService";
 import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
 import { sendEmail, generateVerificationEmail } from "./emailService";
 import { fileStorage } from "./fileStorage";
+import { testService } from "./testService";
 import { db } from "./db";
 import * as schema from "@shared/schema";
 import { eq, desc } from "drizzle-orm";
@@ -5430,6 +5431,461 @@ Host: https://autojobr.com`;
     } catch (error) {
       console.error('Error fetching candidate stats:', error);
       res.status(500).json({ message: 'Failed to fetch candidate statistics' });
+    }
+  });
+
+  // ================================
+  // TEST SYSTEM API ROUTES
+  // ================================
+
+  // Initialize platform test templates (run once)
+  app.post('/api/admin/init-test-templates', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      // Only allow admin users or for demo purposes, any user can initialize
+      await testService.createPlatformTestTemplates();
+      
+      res.json({ message: 'Platform test templates initialized successfully' });
+    } catch (error) {
+      console.error('Error initializing test templates:', error);
+      res.status(500).json({ message: 'Failed to initialize test templates' });
+    }
+  });
+
+  // Get test templates (recruiters and admins)
+  app.get('/api/test-templates', isAuthenticated, async (req: any, res) => {
+    try {
+      const { jobProfile, isGlobal } = req.query;
+      
+      const templates = await storage.getTestTemplates(
+        jobProfile ? String(jobProfile) : undefined,
+        isGlobal ? isGlobal === 'true' : undefined
+      );
+      
+      res.json(templates);
+    } catch (error) {
+      console.error('Error fetching test templates:', error);
+      res.status(500).json({ message: 'Failed to fetch test templates' });
+    }
+  });
+
+  // Get specific test template
+  app.get('/api/test-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const template = await storage.getTestTemplate(templateId);
+      
+      if (!template) {
+        return res.status(404).json({ message: 'Test template not found' });
+      }
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error fetching test template:', error);
+      res.status(500).json({ message: 'Failed to fetch test template' });
+    }
+  });
+
+  // Create custom test template (recruiters only)
+  app.post('/api/test-templates', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+
+      const templateData = {
+        ...req.body,
+        createdBy: req.user.id,
+        isGlobal: false, // Custom templates are not global
+      };
+
+      const template = await storage.createTestTemplate(templateData);
+      
+      res.json(template);
+    } catch (error) {
+      console.error('Error creating test template:', error);
+      res.status(500).json({ message: 'Failed to create test template' });
+    }
+  });
+
+  // Update test template
+  app.put('/api/test-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const user = await storage.getUser(req.user.id);
+      
+      const template = await storage.getTestTemplate(templateId);
+      if (!template) {
+        return res.status(404).json({ message: 'Test template not found' });
+      }
+
+      // Only creator can edit custom templates
+      if (template.createdBy && template.createdBy !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied. You can only edit your own templates.' });
+      }
+
+      const updatedTemplate = await storage.updateTestTemplate(templateId, req.body);
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Error updating test template:', error);
+      res.status(500).json({ message: 'Failed to update test template' });
+    }
+  });
+
+  // Delete test template
+  app.delete('/api/test-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const template = await storage.getTestTemplate(templateId);
+      
+      if (!template) {
+        return res.status(404).json({ message: 'Test template not found' });
+      }
+
+      // Only creator can delete custom templates, admins can delete global templates
+      if (template.createdBy && template.createdBy !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied. You can only delete your own templates.' });
+      }
+
+      await storage.deleteTestTemplate(templateId);
+      
+      res.json({ message: 'Test template deleted successfully' });
+    } catch (error) {
+      console.error('Error deleting test template:', error);
+      res.status(500).json({ message: 'Failed to delete test template' });
+    }
+  });
+
+  // Assign test to job seeker
+  app.post('/api/test-assignments', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+
+      const { testTemplateId, jobSeekerId, jobPostingId, dueDate } = req.body;
+
+      // Validate that the job seeker exists
+      const jobSeeker = await storage.getUser(jobSeekerId);
+      if (!jobSeeker) {
+        return res.status(404).json({ message: 'Job seeker not found' });
+      }
+
+      // Get test template to include in email
+      const template = await storage.getTestTemplate(testTemplateId);
+      if (!template) {
+        return res.status(404).json({ message: 'Test template not found' });
+      }
+
+      const assignment = await storage.createTestAssignment({
+        testTemplateId,
+        recruiterId: req.user.id,
+        jobSeekerId,
+        jobPostingId: jobPostingId || null,
+        dueDate: new Date(dueDate),
+        status: 'assigned',
+      });
+
+      // Send email notification
+      const testUrl = `${process.env.CLIENT_URL || 'http://localhost:5000'}/test/${assignment.id}`;
+      
+      await testService.sendTestAssignmentEmail(
+        jobSeeker.email!,
+        jobSeeker.firstName || 'Candidate',
+        template.title,
+        new Date(dueDate),
+        testUrl,
+        user.firstName || 'Recruiter'
+      );
+
+      // Mark email as sent
+      await storage.updateTestAssignment(assignment.id, { emailSent: true });
+      
+      res.json(assignment);
+    } catch (error) {
+      console.error('Error assigning test:', error);
+      res.status(500).json({ message: 'Failed to assign test' });
+    }
+  });
+
+  // Get test assignments (recruiter view)
+  app.get('/api/recruiter/test-assignments', isAuthenticated, async (req: any, res) => {
+    try {
+      const user = await storage.getUser(req.user.id);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+
+      const assignments = await storage.getTestAssignments(req.user.id);
+      
+      // Enrich with test template and job seeker info
+      const enrichedAssignments = await Promise.all(assignments.map(async (assignment) => {
+        const [template, jobSeeker] = await Promise.all([
+          storage.getTestTemplate(assignment.testTemplateId),
+          storage.getUser(assignment.jobSeekerId)
+        ]);
+
+        return {
+          ...assignment,
+          testTemplate: template,
+          jobSeeker: {
+            id: jobSeeker?.id,
+            firstName: jobSeeker?.firstName,
+            lastName: jobSeeker?.lastName,
+            email: jobSeeker?.email,
+          }
+        };
+      }));
+      
+      res.json(enrichedAssignments);
+    } catch (error) {
+      console.error('Error fetching recruiter test assignments:', error);
+      res.status(500).json({ message: 'Failed to fetch test assignments' });
+    }
+  });
+
+  // Get test assignments (job seeker view)
+  app.get('/api/jobseeker/test-assignments', isAuthenticated, async (req: any, res) => {
+    try {
+      const assignments = await storage.getTestAssignments(undefined, req.user.id);
+      
+      // Enrich with test template and recruiter info
+      const enrichedAssignments = await Promise.all(assignments.map(async (assignment) => {
+        const [template, recruiter] = await Promise.all([
+          storage.getTestTemplate(assignment.testTemplateId),
+          storage.getUser(assignment.recruiterId)
+        ]);
+
+        return {
+          ...assignment,
+          testTemplate: template,
+          recruiter: {
+            id: recruiter?.id,
+            firstName: recruiter?.firstName,
+            lastName: recruiter?.lastName,
+            companyName: recruiter?.companyName,
+          }
+        };
+      }));
+      
+      res.json(enrichedAssignments);
+    } catch (error) {
+      console.error('Error fetching job seeker test assignments:', error);
+      res.status(500).json({ message: 'Failed to fetch test assignments' });
+    }
+  });
+
+  // Get specific test assignment for taking the test
+  app.get('/api/test-assignments/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const assignmentId = parseInt(req.params.id);
+      const assignment = await storage.getTestAssignment(assignmentId);
+      
+      if (!assignment) {
+        return res.status(404).json({ message: 'Test assignment not found' });
+      }
+
+      // Check if user has access (either the job seeker or the recruiter)
+      if (assignment.jobSeekerId !== req.user.id && assignment.recruiterId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Get test template
+      const template = await storage.getTestTemplate(assignment.testTemplateId);
+      
+      res.json({
+        ...assignment,
+        testTemplate: template
+      });
+    } catch (error) {
+      console.error('Error fetching test assignment:', error);
+      res.status(500).json({ message: 'Failed to fetch test assignment' });
+    }
+  });
+
+  // Start test (job seeker only)
+  app.post('/api/test-assignments/:id/start', isAuthenticated, async (req: any, res) => {
+    try {
+      const assignmentId = parseInt(req.params.id);
+      const assignment = await storage.getTestAssignment(assignmentId);
+      
+      if (!assignment) {
+        return res.status(404).json({ message: 'Test assignment not found' });
+      }
+
+      // Only the assigned job seeker can start the test
+      if (assignment.jobSeekerId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Check if test is already completed
+      if (assignment.status === 'completed') {
+        return res.status(400).json({ message: 'Test has already been completed' });
+      }
+
+      // Check if test has expired
+      if (new Date() > new Date(assignment.dueDate)) {
+        await storage.updateTestAssignment(assignmentId, { status: 'expired' });
+        return res.status(400).json({ message: 'Test has expired' });
+      }
+
+      // Start the test
+      const updatedAssignment = await storage.updateTestAssignment(assignmentId, {
+        status: 'started',
+        startedAt: new Date(),
+      });
+      
+      res.json(updatedAssignment);
+    } catch (error) {
+      console.error('Error starting test:', error);
+      res.status(500).json({ message: 'Failed to start test' });
+    }
+  });
+
+  // Submit test (job seeker only)
+  app.post('/api/test-assignments/:id/submit', isAuthenticated, async (req: any, res) => {
+    try {
+      const assignmentId = parseInt(req.params.id);
+      const { answers, timeSpent } = req.body;
+      
+      const assignment = await storage.getTestAssignment(assignmentId);
+      
+      if (!assignment) {
+        return res.status(404).json({ message: 'Test assignment not found' });
+      }
+
+      // Only the assigned job seeker can submit the test
+      if (assignment.jobSeekerId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Check if test is already completed
+      if (assignment.status === 'completed') {
+        return res.status(400).json({ message: 'Test has already been completed' });
+      }
+
+      // Get test template to calculate score
+      const template = await storage.getTestTemplate(assignment.testTemplateId);
+      if (!template) {
+        return res.status(404).json({ message: 'Test template not found' });
+      }
+
+      // Calculate score
+      const score = testService.calculateScore(template.questions as any[], answers);
+
+      // Update assignment with results
+      const updatedAssignment = await storage.updateTestAssignment(assignmentId, {
+        status: 'completed',
+        completedAt: new Date(),
+        score,
+        answers,
+        timeSpent,
+      });
+      
+      res.json({
+        ...updatedAssignment,
+        passed: score >= template.passingScore
+      });
+    } catch (error) {
+      console.error('Error submitting test:', error);
+      res.status(500).json({ message: 'Failed to submit test' });
+    }
+  });
+
+  // Request test retake payment
+  app.post('/api/test-assignments/:id/retake/payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const assignmentId = parseInt(req.params.id);
+      const { paymentProvider, paymentIntentId } = req.body;
+      
+      const assignment = await storage.getTestAssignment(assignmentId);
+      
+      if (!assignment) {
+        return res.status(404).json({ message: 'Test assignment not found' });
+      }
+
+      // Only the assigned job seeker can request retake
+      if (assignment.jobSeekerId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Check if test was completed
+      if (assignment.status !== 'completed') {
+        return res.status(400).json({ message: 'Test must be completed before requesting retake' });
+      }
+
+      // Check if already has retake allowed
+      if (assignment.retakeAllowed) {
+        return res.status(400).json({ message: 'Retake already allowed' });
+      }
+
+      // Process payment
+      const paymentSuccess = await testService.processRetakePayment(
+        assignmentId,
+        req.user.id,
+        paymentProvider,
+        paymentIntentId
+      );
+
+      if (!paymentSuccess) {
+        return res.status(400).json({ message: 'Payment verification failed' });
+      }
+
+      res.json({ message: 'Payment successful. Retake is now available.' });
+    } catch (error) {
+      console.error('Error processing retake payment:', error);
+      res.status(500).json({ message: 'Failed to process retake payment' });
+    }
+  });
+
+  // Reset test for retake
+  app.post('/api/test-assignments/:id/retake', isAuthenticated, async (req: any, res) => {
+    try {
+      const assignmentId = parseInt(req.params.id);
+      const assignment = await storage.getTestAssignment(assignmentId);
+      
+      if (!assignment) {
+        return res.status(404).json({ message: 'Test assignment not found' });
+      }
+
+      // Only the assigned job seeker can retake
+      if (assignment.jobSeekerId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Check if retake is allowed
+      if (!assignment.retakeAllowed) {
+        return res.status(400).json({ message: 'Retake not allowed. Payment required.' });
+      }
+
+      // Check retake count
+      if (assignment.retakeCount >= assignment.maxRetakes) {
+        return res.status(400).json({ message: 'Maximum retakes exceeded' });
+      }
+
+      // Reset test for retake
+      const updatedAssignment = await storage.updateTestAssignment(assignmentId, {
+        status: 'assigned',
+        startedAt: null,
+        completedAt: null,
+        score: null,
+        answers: null,
+        timeSpent: null,
+        retakeCount: (assignment.retakeCount || 0) + 1,
+        retakeAllowed: false, // Reset for next potential retake
+      });
+      
+      res.json(updatedAssignment);
+    } catch (error) {
+      console.error('Error processing test retake:', error);
+      res.status(500).json({ message: 'Failed to process test retake' });
     }
   });
 

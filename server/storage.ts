@@ -14,6 +14,9 @@ import {
   chatMessages,
   emailVerificationTokens,
   passwordResetTokens,
+  testTemplates,
+  testAssignments,
+  testRetakePayments,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -44,6 +47,12 @@ import {
   type InsertEmailVerificationToken,
   type PasswordResetToken,
   type InsertPasswordResetToken,
+  type TestTemplate,
+  type InsertTestTemplate,
+  type TestAssignment,
+  type InsertTestAssignment,
+  type TestRetakePayment,
+  type InsertTestRetakePayment,
 } from "@shared/schema";
 import { db } from "./db";
 
@@ -165,6 +174,26 @@ export interface IStorage {
   deleteEmailVerificationToken(token: string): Promise<void>;
   deleteEmailVerificationTokensByUserId(userId: string): Promise<void>;
   updateUserEmailVerification(userId: string, verified: boolean): Promise<User>;
+  
+  // Test system operations
+  getTestTemplates(jobProfile?: string, isGlobal?: boolean): Promise<TestTemplate[]>;
+  getTestTemplate(id: number): Promise<TestTemplate | undefined>;
+  createTestTemplate(template: InsertTestTemplate): Promise<TestTemplate>;
+  updateTestTemplate(id: number, template: Partial<InsertTestTemplate>): Promise<TestTemplate>;
+  deleteTestTemplate(id: number): Promise<void>;
+  
+  // Test assignments
+  getTestAssignments(recruiterId?: string, jobSeekerId?: string): Promise<TestAssignment[]>;
+  getTestAssignment(id: number): Promise<TestAssignment | undefined>;
+  createTestAssignment(assignment: InsertTestAssignment): Promise<TestAssignment>;
+  updateTestAssignment(id: number, assignment: Partial<InsertTestAssignment>): Promise<TestAssignment>;
+  deleteTestAssignment(id: number): Promise<void>;
+  
+  // Test retake payments
+  getTestRetakePayments(userId: string): Promise<TestRetakePayment[]>;
+  getTestRetakePayment(id: number): Promise<TestRetakePayment | undefined>;
+  createTestRetakePayment(payment: InsertTestRetakePayment): Promise<TestRetakePayment>;
+  updateTestRetakePayment(id: number, payment: Partial<InsertTestRetakePayment>): Promise<TestRetakePayment>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -865,6 +894,136 @@ export class DatabaseStorage implements IStorage {
         .where(eq(users.id, userId))
         .returning();
       return user;
+    });
+  }
+
+  // Test system operations
+  async getTestTemplates(jobProfile?: string, isGlobal?: boolean): Promise<TestTemplate[]> {
+    return await handleDbOperation(async () => {
+      let query = db.select().from(testTemplates).where(eq(testTemplates.isActive, true));
+      
+      if (jobProfile) {
+        query = query.where(eq(testTemplates.jobProfile, jobProfile));
+      }
+      
+      if (isGlobal !== undefined) {
+        query = query.where(eq(testTemplates.isGlobal, isGlobal));
+      }
+      
+      return await query.orderBy(desc(testTemplates.createdAt));
+    }, []);
+  }
+
+  async getTestTemplate(id: number): Promise<TestTemplate | undefined> {
+    return await handleDbOperation(async () => {
+      const [template] = await db.select().from(testTemplates).where(eq(testTemplates.id, id));
+      return template;
+    }, undefined);
+  }
+
+  async createTestTemplate(template: InsertTestTemplate): Promise<TestTemplate> {
+    return await handleDbOperation(async () => {
+      const [newTemplate] = await db.insert(testTemplates).values(template).returning();
+      return newTemplate;
+    });
+  }
+
+  async updateTestTemplate(id: number, template: Partial<InsertTestTemplate>): Promise<TestTemplate> {
+    return await handleDbOperation(async () => {
+      const [updatedTemplate] = await db
+        .update(testTemplates)
+        .set({ ...template, updatedAt: new Date() })
+        .where(eq(testTemplates.id, id))
+        .returning();
+      return updatedTemplate;
+    });
+  }
+
+  async deleteTestTemplate(id: number): Promise<void> {
+    await handleDbOperation(async () => {
+      await db.delete(testTemplates).where(eq(testTemplates.id, id));
+    });
+  }
+
+  // Test assignments
+  async getTestAssignments(recruiterId?: string, jobSeekerId?: string): Promise<TestAssignment[]> {
+    return await handleDbOperation(async () => {
+      let query = db.select().from(testAssignments);
+      
+      if (recruiterId) {
+        query = query.where(eq(testAssignments.recruiterId, recruiterId));
+      }
+      
+      if (jobSeekerId) {
+        query = query.where(eq(testAssignments.jobSeekerId, jobSeekerId));
+      }
+      
+      return await query.orderBy(desc(testAssignments.assignedAt));
+    }, []);
+  }
+
+  async getTestAssignment(id: number): Promise<TestAssignment | undefined> {
+    return await handleDbOperation(async () => {
+      const [assignment] = await db.select().from(testAssignments).where(eq(testAssignments.id, id));
+      return assignment;
+    }, undefined);
+  }
+
+  async createTestAssignment(assignment: InsertTestAssignment): Promise<TestAssignment> {
+    return await handleDbOperation(async () => {
+      const [newAssignment] = await db.insert(testAssignments).values(assignment).returning();
+      return newAssignment;
+    });
+  }
+
+  async updateTestAssignment(id: number, assignment: Partial<InsertTestAssignment>): Promise<TestAssignment> {
+    return await handleDbOperation(async () => {
+      const [updatedAssignment] = await db
+        .update(testAssignments)
+        .set({ ...assignment, updatedAt: new Date() })
+        .where(eq(testAssignments.id, id))
+        .returning();
+      return updatedAssignment;
+    });
+  }
+
+  async deleteTestAssignment(id: number): Promise<void> {
+    await handleDbOperation(async () => {
+      await db.delete(testAssignments).where(eq(testAssignments.id, id));
+    });
+  }
+
+  // Test retake payments
+  async getTestRetakePayments(userId: string): Promise<TestRetakePayment[]> {
+    return await handleDbOperation(async () => {
+      return await db.select().from(testRetakePayments)
+        .where(eq(testRetakePayments.userId, userId))
+        .orderBy(desc(testRetakePayments.createdAt));
+    }, []);
+  }
+
+  async getTestRetakePayment(id: number): Promise<TestRetakePayment | undefined> {
+    return await handleDbOperation(async () => {
+      const [payment] = await db.select().from(testRetakePayments).where(eq(testRetakePayments.id, id));
+      return payment;
+    }, undefined);
+  }
+
+  async createTestRetakePayment(payment: InsertTestRetakePayment): Promise<TestRetakePayment> {
+    return await handleDbOperation(async () => {
+      const [newPayment] = await db.insert(testRetakePayments).values(payment).returning();
+      return newPayment;
+    });
+  }
+
+  async updateTestRetakePayment(id: number, payment: Partial<InsertTestRetakePayment>): Promise<TestRetakePayment> {
+    return await handleDbOperation(async () => {
+      const [updatedPayment] = await db
+        .update(testRetakePayments)
+        .set({ ...payment, updatedAt: new Date() })
+        .where(eq(testRetakePayments.id, id))
+        .returning();
+      return updatedPayment;
     });
   }
 }

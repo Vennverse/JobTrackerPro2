@@ -364,9 +364,10 @@ export default function RecruiterDashboard() {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="jobs" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="jobs">Job Postings</TabsTrigger>
             <TabsTrigger value="applications">Applications</TabsTrigger>
+            <TabsTrigger value="tests">Tests</TabsTrigger>
             <TabsTrigger value="chat">Messages</TabsTrigger>
           </TabsList>
 
@@ -1413,6 +1414,115 @@ export default function RecruiterDashboard() {
                 )}
               </CardContent>
             </Card>
+          </TabsContent>
+
+          {/* Tests Tab */}
+          <TabsContent value="tests">
+            <div className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <h3 className="text-lg font-semibold">Test Management</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Create and assign skills assessments to candidates
+                  </p>
+                </div>
+                <div className="flex gap-3">
+                  <Button
+                    onClick={() => setLocation("/recruiter/test-assignments")}
+                    variant="outline"
+                  >
+                    <FileText className="w-4 h-4 mr-2" />
+                    View Assignments
+                  </Button>
+                  <Button
+                    onClick={() => setLocation("/recruiter/test-management")}
+                    className="bg-blue-600 hover:bg-blue-700"
+                  >
+                    <Plus className="w-4 h-4 mr-2" />
+                    Manage Tests
+                  </Button>
+                </div>
+              </div>
+
+              {/* Test Quick Stats */}
+              <div className="grid gap-4 md:grid-cols-4">
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <FileText className="w-5 h-5 text-blue-600" />
+                      <div>
+                        <div className="text-2xl font-bold">-</div>
+                        <div className="text-sm text-gray-600">Test Templates</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <Clock className="w-5 h-5 text-yellow-600" />
+                      <div>
+                        <div className="text-2xl font-bold">-</div>
+                        <div className="text-sm text-gray-600">Pending Tests</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <CheckCircle className="w-5 h-5 text-green-600" />
+                      <div>
+                        <div className="text-2xl font-bold">-</div>
+                        <div className="text-sm text-gray-600">Completed</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardContent className="pt-6">
+                    <div className="flex items-center gap-2">
+                      <Award className="w-5 h-5 text-purple-600" />
+                      <div>
+                        <div className="text-2xl font-bold">-</div>
+                        <div className="text-sm text-gray-600">Pass Rate</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              </div>
+
+              {/* Getting Started Card */}
+              <Card className="border-dashed border-2 border-gray-300 dark:border-gray-600">
+                <CardContent className="pt-6 text-center">
+                  <FileText className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <h3 className="text-lg font-semibold mb-2">Get Started with Skills Testing</h3>
+                  <p className="text-gray-600 dark:text-gray-400 mb-4 max-w-md mx-auto">
+                    Create custom tests or use our platform templates to assess candidate skills. 
+                    Send tests via email and track results in real-time.
+                  </p>
+                  <div className="flex gap-3 justify-center">
+                    <Button
+                      onClick={() => setLocation("/recruiter/test-management")}
+                      variant="outline"
+                    >
+                      <FileText className="w-4 h-4 mr-2" />
+                      Browse Templates
+                    </Button>
+                    <Button
+                      onClick={() => setLocation("/recruiter/test-management")}
+                      className="bg-blue-600 hover:bg-blue-700"
+                    >
+                      <Plus className="w-4 h-4 mr-2" />
+                      Create Custom Test
+                    </Button>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
           </TabsContent>
 
           {/* Messages Tab */}

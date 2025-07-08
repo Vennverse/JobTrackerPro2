@@ -871,6 +871,89 @@ export const recruiterAnalytics = pgTable("recruiter_analytics", {
   index("recruiter_analytics_date_idx").on(table.date),
 ]);
 
+// Test system tables
+export const testTemplates = pgTable("test_templates", {
+  id: serial("id").primaryKey(),
+  title: varchar("title").notNull(),
+  description: text("description"),
+  category: varchar("category").notNull(), // "technical", "behavioral", "general"
+  jobProfile: varchar("job_profile").notNull(), // "software_engineer", "data_scientist", "marketing", etc.
+  difficultyLevel: varchar("difficulty_level").notNull(), // "beginner", "intermediate", "advanced", "expert"
+  timeLimit: integer("time_limit").notNull(), // in minutes
+  passingScore: integer("passing_score").notNull(), // percentage (0-100)
+  questions: jsonb("questions").notNull(), // array of question objects
+  createdBy: varchar("created_by").references(() => users.id), // null for platform templates
+  isGlobal: boolean("is_global").default(false), // platform-wide templates
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("test_templates_job_profile_idx").on(table.jobProfile),
+  index("test_templates_difficulty_idx").on(table.difficultyLevel),
+  index("test_templates_category_idx").on(table.category),
+  index("test_templates_created_by_idx").on(table.createdBy),
+]);
+
+export const testAssignments = pgTable("test_assignments", {
+  id: serial("id").primaryKey(),
+  testTemplateId: integer("test_template_id").references(() => testTemplates.id).notNull(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  jobSeekerId: varchar("job_seeker_id").references(() => users.id).notNull(),
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id), // optional link to job
+  
+  // Assignment details
+  assignedAt: timestamp("assigned_at").defaultNow(),
+  dueDate: timestamp("due_date").notNull(),
+  status: varchar("status").default("assigned"), // "assigned", "started", "completed", "expired"
+  
+  // Test taking details
+  startedAt: timestamp("started_at"),
+  completedAt: timestamp("completed_at"),
+  score: integer("score"), // percentage (0-100)
+  answers: jsonb("answers"), // user's answers
+  timeSpent: integer("time_spent"), // in seconds
+  
+  // Retake system
+  retakeAllowed: boolean("retake_allowed").default(false),
+  retakePaymentId: varchar("retake_payment_id"), // payment for retake
+  retakeCount: integer("retake_count").default(0),
+  maxRetakes: integer("max_retakes").default(1),
+  
+  // Notifications
+  emailSent: boolean("email_sent").default(false),
+  remindersSent: integer("reminders_sent").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("test_assignments_recruiter_idx").on(table.recruiterId),
+  index("test_assignments_job_seeker_idx").on(table.jobSeekerId),
+  index("test_assignments_job_posting_idx").on(table.jobPostingId),
+  index("test_assignments_status_idx").on(table.status),
+  index("test_assignments_due_date_idx").on(table.dueDate),
+]);
+
+export const testRetakePayments = pgTable("test_retake_payments", {
+  id: serial("id").primaryKey(),
+  testAssignmentId: integer("test_assignment_id").references(() => testAssignments.id).notNull(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  
+  // Payment details
+  amount: integer("amount").notNull(), // in cents ($5 = 500)
+  currency: varchar("currency").default("USD"),
+  paymentProvider: varchar("payment_provider").notNull(), // "stripe", "paypal", "razorpay"
+  paymentIntentId: varchar("payment_intent_id"),
+  paymentStatus: varchar("payment_status").default("pending"), // "pending", "completed", "failed"
+  
+  // Metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("test_retake_payments_assignment_idx").on(table.testAssignmentId),
+  index("test_retake_payments_user_idx").on(table.userId),
+  index("test_retake_payments_status_idx").on(table.paymentStatus),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -891,6 +974,11 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   jobSeekerConversations: many(chatConversations, { relationName: "jobSeekerChats" }),
   sentMessages: many(chatMessages),
   emailVerificationTokens: many(emailVerificationTokens),
+  // Test system relations
+  createdTestTemplates: many(testTemplates),
+  assignedTests: many(testAssignments, { relationName: "assignedTests" }),
+  receivedTests: many(testAssignments, { relationName: "receivedTests" }),
+  testRetakePayments: many(testRetakePayments),
 }));
 
 export const jobPostingsRelations = relations(jobPostings, ({ one, many }) => ({
@@ -1008,6 +1096,48 @@ export const dailyUsageRelations = relations(dailyUsage, ({ one }) => ({
   }),
 }));
 
+// Test system relations
+export const testTemplatesRelations = relations(testTemplates, ({ one, many }) => ({
+  createdBy: one(users, {
+    fields: [testTemplates.createdBy],
+    references: [users.id],
+  }),
+  assignments: many(testAssignments),
+}));
+
+export const testAssignmentsRelations = relations(testAssignments, ({ one, many }) => ({
+  testTemplate: one(testTemplates, {
+    fields: [testAssignments.testTemplateId],
+    references: [testTemplates.id],
+  }),
+  recruiter: one(users, {
+    fields: [testAssignments.recruiterId],
+    references: [users.id],
+    relationName: "assignedTests",
+  }),
+  jobSeeker: one(users, {
+    fields: [testAssignments.jobSeekerId],
+    references: [users.id],
+    relationName: "receivedTests",
+  }),
+  jobPosting: one(jobPostings, {
+    fields: [testAssignments.jobPostingId],
+    references: [jobPostings.id],
+  }),
+  retakePayments: many(testRetakePayments),
+}));
+
+export const testRetakePaymentsRelations = relations(testRetakePayments, ({ one }) => ({
+  testAssignment: one(testAssignments, {
+    fields: [testRetakePayments.testAssignmentId],
+    references: [testAssignments.id],
+  }),
+  user: one(users, {
+    fields: [testRetakePayments.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   id: true,
@@ -1115,6 +1245,26 @@ export const insertPasswordResetTokenSchema = createInsertSchema(passwordResetTo
   createdAt: true,
 });
 
+// Test system insert schemas
+export const insertTestTemplateSchema = createInsertSchema(testTemplates).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTestAssignmentSchema = createInsertSchema(testAssignments).omit({
+  id: true,
+  assignedAt: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertTestRetakePaymentSchema = createInsertSchema(testRetakePayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
 export type DailyUsage = typeof dailyUsage.$inferSelect;
@@ -1130,3 +1280,11 @@ export type InsertEmailVerificationToken = z.infer<typeof insertEmailVerificatio
 export type EmailVerificationToken = typeof emailVerificationTokens.$inferSelect;
 export type InsertPasswordResetToken = z.infer<typeof insertPasswordResetTokenSchema>;
 export type PasswordResetToken = typeof passwordResetTokens.$inferSelect;
+
+// Test system types
+export type TestTemplate = typeof testTemplates.$inferSelect;
+export type InsertTestTemplate = z.infer<typeof insertTestTemplateSchema>;
+export type TestAssignment = typeof testAssignments.$inferSelect;
+export type InsertTestAssignment = z.infer<typeof insertTestAssignmentSchema>;
+export type TestRetakePayment = typeof testRetakePayments.$inferSelect;
+export type InsertTestRetakePayment = z.infer<typeof insertTestRetakePaymentSchema>;

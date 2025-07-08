@@ -30,6 +30,10 @@ import MessagingPage from "@/pages/messaging";
 import ResumesPage from "@/pages/resumes";
 import JobDiscoveryPage from "@/pages/job-discovery-simple";
 import PremiumTargetingPage from "@/pages/premium-targeting";
+import TestManagement from "@/pages/test-management";
+import TestAssignments from "@/pages/test-assignments";
+import TestTaking from "@/pages/test-taking";
+import JobSeekerTests from "@/pages/job-seeker-tests";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -65,6 +69,8 @@ function Router() {
               <Route path="/recruiter/edit-job/:id" component={EditJob} />
               <Route path="/premium-targeting" component={PremiumTargetingPage} />
               <Route path="/premium-targeting-payment" component={PremiumTargetingPayment} />
+              <Route path="/recruiter/test-management" component={TestManagement} />
+              <Route path="/recruiter/test-assignments" component={TestAssignments} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={RecruiterSubscription} />
@@ -88,6 +94,8 @@ function Router() {
                   <Route path="/applications" component={Applications} />
                   <Route path="/jobs" component={Jobs} />
                   <Route path="/discover" component={JobDiscoveryPage} />
+                  <Route path="/job-seeker/tests" component={JobSeekerTests} />
+                  <Route path="/test/:id" component={TestTaking} />
                   <Route path="/jobs/:id" component={ViewJob} />
                   <Route path="/subscription" component={Subscription} />
                   <Route path="/chat" component={MessagingPage} />
