@@ -13,6 +13,7 @@ import Applications from "@/pages/applications";
 import Jobs from "@/pages/jobs";
 import Subscription from "@/pages/subscription";
 import RecruiterSubscription from "@/pages/recruiter-subscription";
+import PremiumTargetingPayment from "@/pages/premium-targeting-payment";
 import Onboarding from "@/pages/onboarding";
 import Landing from "@/pages/landing";
 import UserTypeSelection from "@/pages/user-type-selection";
@@ -63,6 +64,7 @@ function Router() {
               <Route path="/recruiter/post-job" component={PostJob} />
               <Route path="/recruiter/edit-job/:id" component={EditJob} />
               <Route path="/premium-targeting" component={PremiumTargetingPage} />
+              <Route path="/premium-targeting-payment" component={PremiumTargetingPayment} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={RecruiterSubscription} />

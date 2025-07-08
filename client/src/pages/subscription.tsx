@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
 import { Separator } from "@/components/ui/separator";
-import { Crown, Check, X, Zap, Brain, FileText } from "lucide-react";
+import { Crown, Check, X, Zap, Target, Brain, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionData {
@@ -31,7 +31,15 @@ interface SubscriptionData {
 
 export default function Subscription() {
   const { toast } = useToast();
-  // Job seeker subscription - no targeting functionality needed
+  const [pendingTargetingJob, setPendingTargetingJob] = useState<any>(null);
+
+  // Check for pending targeting job from Premium Targeting page
+  useEffect(() => {
+    const pending = localStorage.getItem('pendingTargetingJob');
+    if (pending) {
+      setPendingTargetingJob(JSON.parse(pending));
+    }
+  }, []);
 
   const { data: subscriptionData, isLoading } = useQuery<SubscriptionData>({
     queryKey: ['/api/subscription/status'],
@@ -43,10 +51,31 @@ export default function Subscription() {
     },
     onSuccess: async (response) => {
       queryClient.invalidateQueries({ queryKey: ['/api/subscription/status'] });
-      toast({
-        title: "Upgraded Successfully!",
-        description: "Welcome to AutoJobr Premium! Enjoy unlimited job search features.",
-      });
+      
+      // If there's a pending targeting job, create it now
+      if (pendingTargetingJob) {
+        try {
+          await apiRequest('POST', '/api/jobs/targeted', pendingTargetingJob);
+          localStorage.removeItem('pendingTargetingJob');
+          toast({
+            title: "Premium Targeting Job Created!",
+            description: `Your targeted job posting "${pendingTargetingJob.title}" is now live with premium targeting.`,
+          });
+          // Redirect to dashboard
+          window.location.href = '/';
+        } catch (error) {
+          toast({
+            title: "Job Creation Failed", 
+            description: "Premium subscription activated but job creation failed. Please try posting again.",
+            variant: "destructive"
+          });
+        }
+      } else {
+        toast({
+          title: "Upgraded Successfully!",
+          description: "Welcome to AutoJobr Premium! Enjoy unlimited access to all features.",
+        });
+      }
     },
     onError: (error: Error) => {
       toast({
@@ -227,13 +256,34 @@ export default function Subscription() {
     <div className="container mx-auto px-4 py-8">
       <div className="max-w-4xl mx-auto">
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold mb-2">Job Seeker Subscription</h1>
+          <h1 className="text-3xl font-bold mb-2">Subscription & Usage</h1>
           <p className="text-muted-foreground">
-            Manage your AutoJobr subscription and track your job search progress
+            Manage your AutoJobr subscription and track your daily usage
           </p>
         </div>
 
-
+        {/* Premium Targeting Notification */}
+        {pendingTargetingJob && (
+          <Card className="mb-6 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800">
+            <CardContent className="p-4">
+              <div className="flex items-center gap-3">
+                <Target className="h-6 w-6 text-purple-600" />
+                <div className="flex-1">
+                  <h4 className="font-semibold text-purple-800 dark:text-purple-200">
+                    Premium Targeting Job Pending
+                  </h4>
+                  <p className="text-sm text-purple-600 dark:text-purple-300">
+                    Job "{pendingTargetingJob.title}" ready to post with premium targeting for ${pendingTargetingJob.cost}. 
+                    Upgrade to Premium to activate targeted candidate matching.
+                  </p>
+                </div>
+                <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                  ${pendingTargetingJob.cost}
+                </Badge>
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         <div className="grid md:grid-cols-2 gap-6 mb-8">
           {/* Current Plan */}
@@ -418,7 +468,7 @@ export default function Subscription() {
           <Card>
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
-                <Brain className="h-5 w-5 text-green-500" />
+                <Target className="h-5 w-5 text-green-500" />
                 Daily Usage
               </CardTitle>
               <CardDescription>

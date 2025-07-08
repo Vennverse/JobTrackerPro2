@@ -110,8 +110,11 @@ export default function RecruiterSubscription() {
 
   // Payment handlers
   const handleStripePayment = async () => {
+    // Determine payment amount based on pending targeting job or default subscription
+    const amount = pendingTargetingJob ? (pendingTargetingJob.estimatedCost * 100) : 4900; // $49 for basic, or targeting cost
+    
     const response = await apiRequest('POST', '/api/create-payment-intent', {
-      amount: 4900, // $49 for recruiters
+      amount: amount,
       currency: 'usd',
     });
     
@@ -123,18 +126,26 @@ export default function RecruiterSubscription() {
   };
 
   const handlePayPalPayment = async () => {
-    // PayPal payment flow
+    // Determine payment amount based on pending targeting job or default subscription
+    const amount = pendingTargetingJob ? pendingTargetingJob.estimatedCost : 49; // $49 for basic, or targeting cost
+    
+    // PayPal payment flow would go here
     upgradeMutation.mutate({
       paypalOrderId: 'paypal-order-id',
-      paymentMethod: 'paypal'
+      paymentMethod: 'paypal',
+      amount: amount
     });
   };
 
   const handleRazorpayPayment = async () => {
-    // Razorpay payment flow
+    // Determine payment amount based on pending targeting job or default subscription
+    const amount = pendingTargetingJob ? pendingTargetingJob.estimatedCost : 49; // $49 for basic, or targeting cost
+    
+    // Razorpay payment flow would go here
     upgradeMutation.mutate({
       razorpayPaymentId: 'razorpay-payment-id',
-      paymentMethod: 'razorpay'
+      paymentMethod: 'razorpay',
+      amount: amount
     });
   };
 
@@ -246,7 +257,7 @@ export default function RecruiterSubscription() {
                 <div className="flex items-center justify-between">
                   <span className="text-sm font-medium">Price</span>
                   <span className="text-lg font-bold">
-                    {isPremium ? "$49/month" : "$0/month"}
+                    {isPremium ? "$49/month" : pendingTargetingJob ? `$${pendingTargetingJob.estimatedCost}` : "$49/month"}
                   </span>
                 </div>
 
@@ -255,9 +266,14 @@ export default function RecruiterSubscription() {
                 {!isPremium && (
                   <>
                     <div className="space-y-3">
-                      <h4 className="font-semibold text-lg">Upgrade to Premium</h4>
+                      <h4 className="font-semibold text-lg">
+                        {pendingTargetingJob ? 'Complete Premium Targeting Payment' : 'Upgrade to Premium'}
+                      </h4>
                       <div className="text-sm text-muted-foreground mb-4">
-                        Unlock advanced recruiting features and unlimited access
+                        {pendingTargetingJob 
+                          ? `Pay $${pendingTargetingJob.estimatedCost} for premium targeting of "${pendingTargetingJob.title}"` 
+                          : 'Unlock advanced recruiting features and unlimited access'
+                        }
                       </div>
                       
                       {/* Payment Method Selection */}
@@ -335,7 +351,9 @@ export default function RecruiterSubscription() {
                             Processing Payment...
                           </div>
                         ) : (
-                          `Pay $49/month with ${selectedPaymentMethod === 'stripe' ? 'Stripe' : 'PayPal'}`
+                          pendingTargetingJob 
+                            ? `Pay $${pendingTargetingJob.estimatedCost} with ${selectedPaymentMethod === 'stripe' ? 'Stripe' : 'PayPal'}` 
+                            : `Pay $49/month with ${selectedPaymentMethod === 'stripe' ? 'Stripe' : 'PayPal'}`
                         )}
                       </Button>
                     </div>
