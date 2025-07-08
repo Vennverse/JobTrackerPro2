@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { Link, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
@@ -9,6 +9,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Textarea } from "@/components/ui/textarea";
+import { Checkbox } from "@/components/ui/checkbox";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { z } from "zod";
@@ -25,7 +26,9 @@ import {
   Edit, 
   Trash2,
   Send,
-  Settings
+  Settings,
+  CheckSquare,
+  Square
 } from "lucide-react";
 
 const jobProfiles = [
@@ -67,8 +70,8 @@ const createTestSchema = z.object({
 
 const assignTestSchema = z.object({
   testTemplateId: z.number(),
-  jobSeekerId: z.string().min(1, "Job seeker is required"),
   jobPostingId: z.number().optional(),
+  candidateIds: z.array(z.string()).min(1, "At least one candidate must be selected"),
   dueDate: z.string().min(1, "Due date is required"),
 });
 
@@ -83,6 +86,8 @@ export default function TestManagement() {
   const [showCreateDialog, setShowCreateDialog] = useState(false);
   const [showAssignDialog, setShowAssignDialog] = useState(false);
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
+  const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
+  const [selectedJobPosting, setSelectedJobPosting] = useState<number | null>(null);
 
   // Fetch test templates
   const { data: templates = [], isLoading } = useQuery({
@@ -157,16 +162,35 @@ export default function TestManagement() {
     resolver: zodResolver(assignTestSchema),
     defaultValues: {
       testTemplateId: 0,
-      jobSeekerId: "",
+      jobPostingId: undefined,
+      candidateIds: [],
       dueDate: "",
     },
   });
 
   const assignTestMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/test-assignments", "POST", data),
-    onSuccess: () => {
-      toast({ title: "Test assigned successfully. Email notification sent to candidate." });
+    mutationFn: async (data: any) => {
+      // Submit for each selected candidate
+      const assignments = [];
+      for (const candidateId of data.candidateIds) {
+        const assignment = await apiRequest("/api/test-assignments", "POST", {
+          testTemplateId: data.testTemplateId,
+          jobSeekerId: candidateId,
+          jobPostingId: data.jobPostingId,
+          dueDate: data.dueDate,
+        });
+        assignments.push(assignment);
+      }
+      return assignments;
+    },
+    onSuccess: (assignments) => {
+      toast({ 
+        title: `Test assigned successfully to ${assignments.length} candidate(s)`, 
+        description: "Email notifications sent to all selected candidates." 
+      });
       setShowAssignDialog(false);
+      setSelectedCandidates([]);
+      setSelectedJobPosting(null);
       assignTestForm.reset();
     },
     onError: (error: any) => {
@@ -218,8 +242,31 @@ export default function TestManagement() {
     assignTestMutation.mutate({
       ...data,
       testTemplateId: selectedTemplate?.id,
+      candidateIds: selectedCandidates,
       dueDate: dueDate.toISOString(),
     });
+  };
+
+  // Helper functions for candidate selection
+  const handleCandidateSelect = (candidateId: string, checked: boolean) => {
+    if (checked) {
+      setSelectedCandidates([...selectedCandidates, candidateId]);
+    } else {
+      setSelectedCandidates(selectedCandidates.filter(id => id !== candidateId));
+    }
+  };
+
+  const handleSelectAll = (jobPostingId: number, candidates: any[]) => {
+    const allCandidateIds = candidates.map(app => app.applicantId);
+    if (selectedCandidates.length === allCandidateIds.length) {
+      setSelectedCandidates([]);
+    } else {
+      setSelectedCandidates(allCandidateIds);
+    }
+  };
+
+  const getCandidatesForJobPosting = (jobPostingId: number) => {
+    return applications.filter(app => app.jobPostingId === jobPostingId);
   };
 
   const getDifficultyColor = (level: string) => {
@@ -630,40 +677,106 @@ export default function TestManagement() {
 
       {/* Assign Test Dialog */}
       <Dialog open={showAssignDialog} onOpenChange={setShowAssignDialog}>
-        <DialogContent>
+        <DialogContent className="max-w-2xl max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Assign Test: {selectedTemplate?.title}</DialogTitle>
             <DialogDescription>
-              Select a candidate and set a deadline for this test assignment.
+              Select candidates from your job applications and set a deadline for this test assignment.
             </DialogDescription>
           </DialogHeader>
           <Form {...assignTestForm}>
             <form onSubmit={assignTestForm.handleSubmit(onAssignTest)} className="space-y-4">
-              <FormField
-                control={assignTestForm.control}
-                name="jobSeekerId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Select Candidate</FormLabel>
-                    <Select onValueChange={field.onChange} defaultValue={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Choose a candidate from your applications" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {applications.map((app: any) => (
-                          <SelectItem key={app.applicantId} value={app.applicantId}>
-                            {app.applicantName} - {app.jobPosting?.title || 'General Application'}
+              
+              {/* Job Posting Selection */}
+              <div className="space-y-3">
+                <FormLabel>Select Job Posting (Optional)</FormLabel>
+                <Select onValueChange={(value) => setSelectedJobPosting(value ? parseInt(value) : null)}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="All Applications" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="">All Applications</SelectItem>
+                    {Array.from(new Set(applications.map((app: any) => app.jobPosting?.id)))
+                      .filter(Boolean)
+                      .map((jobId: any) => {
+                        const job = applications.find((app: any) => app.jobPosting?.id === jobId)?.jobPosting;
+                        return (
+                          <SelectItem key={jobId} value={jobId.toString()}>
+                            {job?.title || `Job ${jobId}`}
                           </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
+                        );
+                      })}
+                  </SelectContent>
+                </Select>
+              </div>
 
+              {/* Candidate Selection */}
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <FormLabel>Select Candidates</FormLabel>
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => {
+                      const filteredApps = selectedJobPosting 
+                        ? applications.filter((app: any) => app.jobPosting?.id === selectedJobPosting)
+                        : applications;
+                      const allIds = filteredApps.map((app: any) => app.applicantId);
+                      setSelectedCandidates(
+                        selectedCandidates.length === allIds.length ? [] : allIds
+                      );
+                    }}
+                  >
+                    {selectedCandidates.length === (selectedJobPosting 
+                      ? applications.filter((app: any) => app.jobPosting?.id === selectedJobPosting)
+                      : applications).length ? (
+                      <>
+                        <Square className="w-4 h-4 mr-2" />
+                        Deselect All
+                      </>
+                    ) : (
+                      <>
+                        <CheckSquare className="w-4 h-4 mr-2" />
+                        Select All
+                      </>
+                    )}
+                  </Button>
+                </div>
+
+                {/* Candidate List */}
+                <div className="border rounded-lg max-h-60 overflow-y-auto">
+                  {(selectedJobPosting 
+                    ? applications.filter((app: any) => app.jobPosting?.id === selectedJobPosting)
+                    : applications
+                  ).map((app: any) => (
+                    <div key={app.applicantId} className="flex items-center space-x-3 p-3 border-b last:border-b-0 hover:bg-gray-50">
+                      <Checkbox
+                        id={`candidate-${app.applicantId}`}
+                        checked={selectedCandidates.includes(app.applicantId)}
+                        onCheckedChange={(checked) => handleCandidateSelect(app.applicantId, checked as boolean)}
+                      />
+                      <label 
+                        htmlFor={`candidate-${app.applicantId}`} 
+                        className="flex-1 cursor-pointer"
+                      >
+                        <div className="font-medium">{app.applicantName}</div>
+                        <div className="text-sm text-gray-500">
+                          {app.jobPosting?.title || 'General Application'} • {app.applicantEmail}
+                        </div>
+                      </label>
+                    </div>
+                  ))}
+                </div>
+
+                {selectedCandidates.length > 0 && (
+                  <div className="text-sm text-blue-600 bg-blue-50 p-2 rounded">
+                    {selectedCandidates.length} candidate(s) selected
+                  </div>
+                )}
+              </div>
+
+              {/* Due Date */}
               <FormField
                 control={assignTestForm.control}
                 name="dueDate"
@@ -682,6 +795,7 @@ export default function TestManagement() {
                 )}
               />
 
+              {/* Test Details */}
               <div className="bg-blue-50 p-4 rounded-lg">
                 <h4 className="font-semibold text-blue-900 mb-2">Test Details:</h4>
                 <div className="text-sm text-blue-800 space-y-1">
@@ -691,21 +805,26 @@ export default function TestManagement() {
                 </div>
               </div>
 
+              {/* Action Buttons */}
               <div className="flex gap-3">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => setShowAssignDialog(false)}
+                  onClick={() => {
+                    setShowAssignDialog(false);
+                    setSelectedCandidates([]);
+                    setSelectedJobPosting(null);
+                  }}
                   className="flex-1"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
-                  disabled={assignTestMutation.isPending}
+                  disabled={assignTestMutation.isPending || selectedCandidates.length === 0}
                   className="flex-1"
                 >
-                  {assignTestMutation.isPending ? "Assigning..." : "Assign Test"}
+                  {assignTestMutation.isPending ? "Assigning..." : `Assign Test to ${selectedCandidates.length} Candidate(s)`}
                 </Button>
               </div>
             </form>
