@@ -336,12 +336,12 @@ export default function Dashboard() {
       <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
         <Navbar />
         <div className="container mx-auto px-4 py-8">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
             {Array.from({ length: 4 }).map((_, i) => (
               <Skeleton key={i} className="h-32 rounded-xl" />
             ))}
           </div>
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
             {Array.from({ length: 6 }).map((_, i) => (
               <Skeleton key={i} className="h-64 rounded-xl" />
             ))}
@@ -368,14 +368,14 @@ export default function Dashboard() {
       <Navbar />
       
       <motion.div 
-        className="container mx-auto px-4 py-8"
+        className="w-full mx-auto px-4 py-4 sm:py-8 max-w-7xl"
         variants={containerVariants}
         initial="hidden"
         animate="visible"
       >
         {/* Welcome Header */}
         <motion.div 
-          className="mb-8"
+          className="mb-6 sm:mb-8"
           variants={itemVariants}
         >
           <div className="flex items-center justify-between mb-2">
@@ -424,7 +424,7 @@ export default function Dashboard() {
 
         {/* Enhanced Stats Cards */}
         <motion.div 
-          className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8"
+          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8"
           variants={itemVariants}
         >
           {[
@@ -495,7 +495,7 @@ export default function Dashboard() {
           ))}
         </motion.div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
           {/* Quick Actions Panel */}
           <motion.div 
             className="lg:col-span-1 space-y-6"

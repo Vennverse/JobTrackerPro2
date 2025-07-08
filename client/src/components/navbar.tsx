@@ -59,17 +59,17 @@ export function Navbar() {
   const navItems = getNavItems();
 
   return (
-    <nav className="bg-background/80 backdrop-blur-sm border-b border-border sticky top-0 z-50">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <nav className="bg-background/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 w-full">
+      <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-4">
+          <div className="flex items-center space-x-2 sm:space-x-4">
             <Link href="/" className="flex items-center space-x-2">
               <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
                 <Rocket className="w-4 h-4 text-primary-foreground" />
               </div>
-              <span className="text-xl font-bold text-foreground">AutoJobr</span>
+              <span className="text-lg sm:text-xl font-bold text-foreground">AutoJobr</span>
             </Link>
-            <div className="hidden md:flex space-x-6">
+            <div className="hidden md:flex space-x-4 lg:space-x-6">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location === item.href;
@@ -92,19 +92,8 @@ export function Navbar() {
             </div>
           </div>
           
-          <div className="flex items-center space-x-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
-              className="hidden sm:flex"
-            >
-              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
-              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
-              <span className="sr-only">Toggle theme</span>
-            </Button>
-            
-            {/* Mobile menu button */}
+          <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Mobile menu button - show first on mobile */}
             <Button
               variant="ghost"
               size="icon"
@@ -117,6 +106,17 @@ export function Navbar() {
                 <Menu className="h-5 w-5" />
               )}
               <span className="sr-only">Toggle menu</span>
+            </Button>
+            
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(theme === "light" ? "dark" : "light")}
+              className="hidden sm:flex"
+            >
+              <Sun className="h-4 w-4 rotate-0 scale-100 transition-all dark:-rotate-90 dark:scale-0" />
+              <Moon className="absolute h-4 w-4 rotate-90 scale-0 transition-all dark:rotate-0 dark:scale-100" />
+              <span className="sr-only">Toggle theme</span>
             </Button>
             
             <DropdownMenu>
@@ -173,8 +173,8 @@ export function Navbar() {
         
         {/* Mobile Navigation Menu */}
         {isMobileMenuOpen && (
-          <div className="md:hidden border-t border-border">
-            <div className="px-2 pt-2 pb-3 space-y-1">
+          <div className="md:hidden border-t border-border bg-background/95 backdrop-blur-sm">
+            <div className="px-2 pt-2 pb-3 space-y-1 max-h-screen overflow-y-auto">
               {navItems.map((item) => {
                 const Icon = item.icon;
                 const isActive = location === item.href;
