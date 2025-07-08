@@ -1,87 +1,58 @@
-import { useState, useEffect, useCallback } from "react";
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { useLocation, useParams } from "wouter";
+import { useState, useEffect, useRef } from "react";
+import { useQuery, useMutation } from "@tanstack/react-query";
+import { useParams } from "wouter";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Progress } from "@/components/ui/progress";
-import { Textarea } from "@/components/ui/textarea";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
-import { Label } from "@/components/ui/label";
-import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Textarea } from "@/components/ui/textarea";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   Clock, 
   AlertTriangle, 
-  CheckCircle, 
-  XCircle, 
-  ArrowRight, 
-  ArrowLeft, 
-  Timer,
-  Trophy,
-  RefreshCw,
-  DollarSign,
-  Home
+  Eye, 
+  EyeOff, 
+  Shield, 
+  Copy,
+  FileText,
+  Code,
+  CheckCircle 
 } from "lucide-react";
 
-interface TestQuestion {
-  id: string;
-  type: 'multiple_choice' | 'coding' | 'essay' | 'true_false';
-  question: string;
-  options?: string[];
-  correctAnswer?: string | number;
-  points: number;
-  explanation?: string;
-}
-
 export default function TestTaking() {
-  const { id } = useParams();
-  const [, setLocation] = useLocation();
+  const { assignmentId } = useParams();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
-
-  const [currentQuestionIndex, setCurrentQuestionIndex] = useState(0);
+  const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
-  const [timeRemaining, setTimeRemaining] = useState<number>(0);
+  const [timeLeft, setTimeLeft] = useState(0);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [testStarted, setTestStarted] = useState(false);
-  const [testCompleted, setTestCompleted] = useState(false);
-  const [showResults, setShowResults] = useState(false);
-  const [showRetakeDialog, setShowRetakeDialog] = useState(false);
-  const [startTime, setStartTime] = useState<Date | null>(null);
-  const [showConfirmSubmit, setShowConfirmSubmit] = useState(false);
+  const [warningCount, setWarningCount] = useState(0);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const [copyAttempts, setCopyAttempts] = useState(0);
+  const [tabSwitchCount, setTabSwitchCount] = useState(0);
+  const testContainerRef = useRef<HTMLDivElement>(null);
+  const startTimeRef = useRef<Date | null>(null);
 
-  // Fetch test assignment
   const { data: assignment, isLoading } = useQuery({
-    queryKey: [`/api/test-assignments/${id}`],
-    enabled: !!id,
+    queryKey: [`/api/test-assignments/${assignmentId}`],
+    enabled: !!assignmentId,
   });
 
-  // Start test mutation
-  const startTestMutation = useMutation({
-    mutationFn: () => apiRequest(`/api/test-assignments/${id}/start`, "POST"),
-    onSuccess: (data) => {
-      setTestStarted(true);
-      setStartTime(new Date(data.startedAt));
-      setTimeRemaining(assignment.testTemplate.timeLimit * 60);
-      toast({ title: "Test started! Good luck!" });
-    },
-    onError: (error: any) => {
-      toast({ 
-        title: "Error", 
-        description: error.message || "Failed to start test",
-        variant: "destructive" 
-      });
-    },
+  const { data: questions = [] } = useQuery({
+    queryKey: [`/api/test-assignments/${assignmentId}/questions`],
+    enabled: !!assignmentId && testStarted,
   });
 
-  // Submit test mutation
   const submitTestMutation = useMutation({
-    mutationFn: (data: any) => apiRequest(`/api/test-assignments/${id}/submit`, "POST", data),
-    onSuccess: (data) => {
-      setTestCompleted(true);
-      setShowResults(true);
+    mutationFn: (data: any) => apiRequest(`/api/test-assignments/${assignmentId}/submit`, "POST", data),
+    onSuccess: () => {
       toast({ title: "Test submitted successfully!" });
+      exitFullscreen();
     },
     onError: (error: any) => {
       toast({ 
@@ -92,14 +63,91 @@ export default function TestTaking() {
     },
   });
 
-  // Timer countdown effect
+  // Anti-cheating measures
   useEffect(() => {
-    if (!testStarted || testCompleted || timeRemaining <= 0) return;
+    if (!testStarted) return;
+
+    const handleVisibilityChange = () => {
+      if (document.hidden) {
+        setTabSwitchCount(prev => prev + 1);
+        setWarningCount(prev => prev + 1);
+        toast({
+          title: "Warning: Tab Switch Detected",
+          description: `You've switched tabs ${tabSwitchCount + 1} times. Multiple violations may result in test cancellation.`,
+          variant: "destructive"
+        });
+      }
+    };
+
+    const handleCopy = (e: ClipboardEvent) => {
+      e.preventDefault();
+      setCopyAttempts(prev => prev + 1);
+      setWarningCount(prev => prev + 1);
+      toast({
+        title: "Warning: Copy Attempt Detected",
+        description: `Copy/paste is disabled. Attempt ${copyAttempts + 1} recorded.`,
+        variant: "destructive"
+      });
+    };
+
+    const handlePaste = (e: ClipboardEvent) => {
+      e.preventDefault();
+      toast({
+        title: "Warning: Paste Blocked",
+        description: "Pasting content is not allowed during the test.",
+        variant: "destructive"
+      });
+    };
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Block common cheating key combinations
+      if (
+        (e.ctrlKey || e.metaKey) && 
+        (e.key === 'c' || e.key === 'v' || e.key === 'a' || e.key === 'f' || e.key === 't' || e.key === 'w')
+      ) {
+        e.preventDefault();
+        setWarningCount(prev => prev + 1);
+        toast({
+          title: "Warning: Blocked Action",
+          description: "Keyboard shortcuts are disabled during the test.",
+          variant: "destructive"
+        });
+      }
+    };
+
+    const handleRightClick = (e: MouseEvent) => {
+      e.preventDefault();
+      setWarningCount(prev => prev + 1);
+      toast({
+        title: "Warning: Right-click Blocked",
+        description: "Right-click is disabled during the test.",
+        variant: "destructive"
+      });
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    document.addEventListener('copy', handleCopy);
+    document.addEventListener('paste', handlePaste);
+    document.addEventListener('keydown', handleKeyDown);
+    document.addEventListener('contextmenu', handleRightClick);
+
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      document.removeEventListener('copy', handleCopy);
+      document.removeEventListener('paste', handlePaste);
+      document.removeEventListener('keydown', handleKeyDown);
+      document.removeEventListener('contextmenu', handleRightClick);
+    };
+  }, [testStarted, tabSwitchCount, copyAttempts, warningCount]);
+
+  // Timer
+  useEffect(() => {
+    if (!testStarted || timeLeft <= 0) return;
 
     const timer = setInterval(() => {
-      setTimeRemaining((prev) => {
+      setTimeLeft(prev => {
         if (prev <= 1) {
-          handleAutoSubmit();
+          handleSubmitTest();
           return 0;
         }
         return prev - 1;
@@ -107,369 +155,142 @@ export default function TestTaking() {
     }, 1000);
 
     return () => clearInterval(timer);
-  }, [testStarted, testCompleted, timeRemaining]);
+  }, [testStarted, timeLeft]);
 
-  const handleAutoSubmit = useCallback(() => {
-    if (!testCompleted) {
-      const timeSpent = startTime ? Math.floor((Date.now() - startTime.getTime()) / 1000) : 0;
-      submitTestMutation.mutate({ answers, timeSpent });
-      toast({ 
-        title: "Time's up!", 
-        description: "Your test has been automatically submitted.",
-        variant: "destructive" 
+  // Auto-submit on excessive violations
+  useEffect(() => {
+    if (warningCount >= 5) {
+      toast({
+        title: "Test Cancelled",
+        description: "Too many violations detected. Test will be submitted automatically.",
+        variant: "destructive"
       });
+      handleSubmitTest();
     }
-  }, [answers, startTime, testCompleted, submitTestMutation, toast]);
+  }, [warningCount]);
 
-  const formatTime = (seconds: number) => {
-    const hours = Math.floor(seconds / 3600);
-    const minutes = Math.floor((seconds % 3600) / 60);
-    const secs = seconds % 60;
-    
-    if (hours > 0) {
-      return `${hours}:${minutes.toString().padStart(2, '0')}:${secs.toString().padStart(2, '0')}`;
+  const enterFullscreen = () => {
+    if (testContainerRef.current?.requestFullscreen) {
+      testContainerRef.current.requestFullscreen();
+      setIsFullscreen(true);
     }
-    return `${minutes}:${secs.toString().padStart(2, '0')}`;
   };
 
-  const getTimeColor = (seconds: number, totalMinutes: number) => {
-    const percentage = (seconds / (totalMinutes * 60)) * 100;
-    if (percentage > 25) return "text-green-600";
-    if (percentage > 10) return "text-yellow-600";
-    return "text-red-600";
+  const exitFullscreen = () => {
+    if (document.exitFullscreen) {
+      document.exitFullscreen();
+      setIsFullscreen(false);
+    }
+  };
+
+  const startTest = () => {
+    if (assignment?.testTemplate?.timeLimit) {
+      setTimeLeft(assignment.testTemplate.timeLimit * 60);
+    }
+    setTestStarted(true);
+    startTimeRef.current = new Date();
+    enterFullscreen();
   };
 
   const handleAnswerChange = (questionId: string, answer: any) => {
-    setAnswers(prev => ({ ...prev, [questionId]: answer }));
+    setAnswers(prev => ({
+      ...prev,
+      [questionId]: answer
+    }));
   };
 
-  const handleSubmit = () => {
-    const timeSpent = startTime ? Math.floor((Date.now() - startTime.getTime()) / 1000) : 0;
-    submitTestMutation.mutate({ answers, timeSpent });
-    setShowConfirmSubmit(false);
+  const handleSubmitTest = () => {
+    if (isSubmitting) return;
+    
+    setIsSubmitting(true);
+    const timeSpent = startTimeRef.current ? Math.round((new Date().getTime() - startTimeRef.current.getTime()) / 1000) : 0;
+    
+    submitTestMutation.mutate({
+      answers,
+      timeSpent,
+      warningCount,
+      tabSwitchCount,
+      copyAttempts,
+    });
   };
 
-  const nextQuestion = () => {
-    if (currentQuestionIndex < assignment.testTemplate.questions.length - 1) {
-      setCurrentQuestionIndex(prev => prev + 1);
+  const formatTime = (seconds: number) => {
+    const mins = Math.floor(seconds / 60);
+    const secs = seconds % 60;
+    return `${mins}:${secs.toString().padStart(2, '0')}`;
+  };
+
+  const getQuestionIcon = (type: string) => {
+    switch (type) {
+      case 'coding': return <Code className="w-5 h-5" />;
+      case 'multiple_choice': return <CheckCircle className="w-5 h-5" />;
+      case 'multiple_select': return <CheckCircle className="w-5 h-5" />;
+      case 'short_answer': return <FileText className="w-5 h-5" />;
+      case 'long_answer': return <FileText className="w-5 h-5" />;
+      default: return <FileText className="w-5 h-5" />;
     }
-  };
-
-  const previousQuestion = () => {
-    if (currentQuestionIndex > 0) {
-      setCurrentQuestionIndex(prev => prev - 1);
-    }
-  };
-
-  const goToQuestion = (index: number) => {
-    setCurrentQuestionIndex(index);
-  };
-
-  const getQuestionStatus = (index: number, questionId: string) => {
-    if (answers[questionId] !== undefined && answers[questionId] !== '') {
-      return 'answered';
-    }
-    if (index === currentQuestionIndex) {
-      return 'current';
-    }
-    return 'unanswered';
-  };
-
-  const getAnsweredCount = () => {
-    return assignment.testTemplate.questions.filter((q: TestQuestion) => 
-      answers[q.id] !== undefined && answers[q.id] !== ''
-    ).length;
   };
 
   if (isLoading) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="flex items-center justify-center h-64">
-          <div className="text-center">
-            <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600 mx-auto"></div>
-            <p className="mt-4 text-gray-600">Loading test...</p>
-          </div>
-        </div>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
       </div>
     );
   }
 
   if (!assignment) {
     return (
-      <div className="container mx-auto px-4 py-8">
-        <Card>
-          <CardContent className="text-center py-12">
-            <XCircle className="w-16 h-16 text-red-500 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-2">Test Not Found</h2>
-            <p className="text-gray-600 mb-4">
-              The test assignment you're looking for doesn't exist or you don't have permission to access it.
-            </p>
-            <Button onClick={() => setLocation("/")}>
-              <Home className="w-4 h-4 mr-2" />
-              Return Home
-            </Button>
-          </CardContent>
-        </Card>
-      </div>
-    );
-  }
-
-  // Show results after completion
-  if (showResults) {
-    const score = submitTestMutation.data?.score || 0;
-    const passed = submitTestMutation.data?.passed || false;
-    const passingScore = assignment.testTemplate.passingScore;
-
-    return (
-      <div className="container mx-auto px-4 py-8 max-w-4xl">
-        <Card>
-          <CardHeader className="text-center">
-            <div className="mx-auto mb-4">
-              {passed ? (
-                <CheckCircle className="w-16 h-16 text-green-500" />
-              ) : (
-                <XCircle className="w-16 h-16 text-red-500" />
-              )}
-            </div>
-            <CardTitle className="text-2xl">
-              Test {passed ? "Completed Successfully!" : "Completed"}
-            </CardTitle>
-            <CardDescription>
-              {assignment.testTemplate.title}
-            </CardDescription>
-          </CardHeader>
-          <CardContent className="space-y-6">
-            {/* Score Display */}
-            <div className="text-center">
-              <div className={`text-6xl font-bold mb-2 ${passed ? 'text-green-600' : 'text-red-600'}`}>
-                {score}%
-              </div>
-              <div className="text-gray-600">
-                Your Score (Passing: {passingScore}%)
-              </div>
-              <Progress value={score} className="mt-4 max-w-xs mx-auto" />
-            </div>
-
-            {/* Results Summary */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">
-                  {getAnsweredCount()}/{assignment.testTemplate.questions.length}
-                </div>
-                <div className="text-sm text-gray-600">Questions Answered</div>
-              </div>
-              
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className="text-2xl font-bold text-gray-900">
-                  {formatTime(submitTestMutation.data?.timeSpent || 0)}
-                </div>
-                <div className="text-sm text-gray-600">Time Spent</div>
-              </div>
-              
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <div className={`text-2xl font-bold ${passed ? 'text-green-600' : 'text-red-600'}`}>
-                  {passed ? 'PASSED' : 'FAILED'}
-                </div>
-                <div className="text-sm text-gray-600">Result</div>
-              </div>
-            </div>
-
-            {/* Retake Option */}
-            {!passed && (
-              <div className="text-center p-6 bg-yellow-50 border border-yellow-200 rounded-lg">
-                <h3 className="text-lg font-semibold text-yellow-800 mb-2">
-                  Didn't Pass This Time?
-                </h3>
-                <p className="text-yellow-700 mb-4">
-                  You can retake this test for a small fee of $5. This gives you another chance to demonstrate your skills.
-                </p>
-                <Button 
-                  onClick={() => setShowRetakeDialog(true)}
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                >
-                  <RefreshCw className="w-4 h-4 mr-2" />
-                  Retake Test ($5)
-                </Button>
-              </div>
-            )}
-
-            {/* Success Message */}
-            {passed && (
-              <div className="text-center p-6 bg-green-50 border border-green-200 rounded-lg">
-                <h3 className="text-lg font-semibold text-green-800 mb-2">
-                  Congratulations!
-                </h3>
-                <p className="text-green-700">
-                  You've successfully passed this assessment. The recruiter has been notified of your results.
-                </p>
-              </div>
-            )}
-
-            <div className="text-center">
-              <Button onClick={() => setLocation("/job-seeker/tests")}>
-                View All My Tests
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Retake Payment Dialog */}
-        <Dialog open={showRetakeDialog} onOpenChange={setShowRetakeDialog}>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Retake Test</DialogTitle>
-              <DialogDescription>
-                Pay $5 to unlock one retake attempt for this test.
-              </DialogDescription>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <div className="flex items-center gap-2 text-blue-900 font-semibold mb-2">
-                  <DollarSign className="w-5 h-5" />
-                  Retake Fee: $5.00 USD
-                </div>
-                <p className="text-blue-800 text-sm">
-                  This one-time payment allows you to retake the test and potentially improve your score.
-                </p>
-              </div>
-              
-              <div className="grid gap-3">
-                <Button 
-                  onClick={() => {
-                    // Integrate with payment processing
-                    toast({ title: "Payment integration coming soon" });
-                  }}
-                  className="w-full"
-                >
-                  Pay with Stripe
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    // Integrate with PayPal
-                    toast({ title: "PayPal integration coming soon" });
-                  }}
-                  className="w-full"
-                >
-                  Pay with PayPal
-                </Button>
-                <Button 
-                  variant="outline"
-                  onClick={() => {
-                    // Integrate with Razorpay
-                    toast({ title: "Razorpay integration coming soon" });
-                  }}
-                  className="w-full"
-                >
-                  Pay with Razorpay
-                </Button>
-              </div>
-            </div>
-          </DialogContent>
-        </Dialog>
-      </div>
-    );
-  }
-
-  // Pre-test instructions
-  if (!testStarted) {
-    const dueDate = new Date(assignment.dueDate);
-    const isExpired = new Date() > dueDate;
-
-    if (isExpired) {
-      return (
-        <div className="container mx-auto px-4 py-8 max-w-2xl">
-          <Card>
-            <CardContent className="text-center py-12">
-              <Clock className="w-16 h-16 text-red-500 mx-auto mb-4" />
-              <h2 className="text-xl font-semibold mb-2 text-red-600">Test Expired</h2>
-              <p className="text-gray-600 mb-4">
-                This test assignment expired on {dueDate.toLocaleDateString()}. Please contact the recruiter if you need an extension.
-              </p>
-              <Button onClick={() => setLocation("/")}>
-                <Home className="w-4 h-4 mr-2" />
-                Return Home
-              </Button>
-            </CardContent>
-          </Card>
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">Test Assignment Not Found</h1>
+          <p className="text-gray-600">The test assignment you're looking for doesn't exist or has expired.</p>
         </div>
-      );
-    }
+      </div>
+    );
+  }
 
+  if (!testStarted) {
     return (
-      <div className="container mx-auto px-4 py-8 max-w-2xl">
+      <div className="max-w-2xl mx-auto p-6">
         <Card>
-          <CardHeader className="text-center">
-            <CardTitle className="text-2xl">{assignment.testTemplate.title}</CardTitle>
-            <CardDescription>
-              Skills Assessment
-            </CardDescription>
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Shield className="w-6 h-6" />
+              {assignment.testTemplate.title}
+            </CardTitle>
           </CardHeader>
           <CardContent className="space-y-6">
-            {/* Test Information */}
-            <div className="grid gap-4 md:grid-cols-2">
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
+            <div className="grid grid-cols-2 gap-4">
+              <div className="text-center p-4 bg-blue-50 rounded-lg">
                 <Clock className="w-8 h-8 text-blue-600 mx-auto mb-2" />
-                <div className="font-semibold">Duration</div>
-                <div className="text-sm text-gray-600">{assignment.testTemplate.timeLimit} minutes</div>
+                <div className="font-semibold">{assignment.testTemplate.timeLimit} Minutes</div>
+                <div className="text-sm text-gray-600">Time Limit</div>
               </div>
-              
-              <div className="text-center p-4 bg-gray-50 rounded-lg">
-                <Trophy className="w-8 h-8 text-yellow-600 mx-auto mb-2" />
-                <div className="font-semibold">Passing Score</div>
-                <div className="text-sm text-gray-600">{assignment.testTemplate.passingScore}%</div>
-              </div>
-            </div>
-
-            {/* Instructions */}
-            <div className="space-y-4">
-              <h3 className="font-semibold text-lg">Important Instructions:</h3>
-              <ul className="space-y-2 text-sm text-gray-700">
-                <li className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                  Once you start the test, the timer cannot be paused
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                  Make sure you have a stable internet connection
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                  Answer all questions to maximize your score
-                </li>
-                <li className="flex items-start gap-2">
-                  <AlertTriangle className="w-4 h-4 text-yellow-500 mt-0.5 flex-shrink-0" />
-                  The test will auto-submit when time runs out
-                </li>
-              </ul>
-            </div>
-
-            {/* Due Date Warning */}
-            <div className="p-4 bg-yellow-50 border border-yellow-200 rounded-lg">
-              <div className="flex items-center gap-2 text-yellow-800 font-semibold mb-1">
-                <Clock className="w-4 h-4" />
-                Due Date
-              </div>
-              <div className="text-yellow-700 text-sm">
-                Complete this test by {dueDate.toLocaleDateString()} at {dueDate.toLocaleTimeString()}
+              <div className="text-center p-4 bg-green-50 rounded-lg">
+                <CheckCircle className="w-8 h-8 text-green-600 mx-auto mb-2" />
+                <div className="font-semibold">{assignment.testTemplate.passingScore}%</div>
+                <div className="text-sm text-gray-600">Passing Score</div>
               </div>
             </div>
 
-            {assignment.testTemplate.description && (
-              <div className="p-4 bg-blue-50 rounded-lg">
-                <h4 className="font-semibold text-blue-900 mb-2">About This Test:</h4>
-                <p className="text-blue-800 text-sm">{assignment.testTemplate.description}</p>
-              </div>
-            )}
+            <Alert>
+              <AlertTriangle className="h-4 w-4" />
+              <AlertDescription>
+                <strong>Important Test Rules:</strong>
+                <ul className="mt-2 space-y-1">
+                  <li>• Test will run in fullscreen mode</li>
+                  <li>• Copy/paste is disabled</li>
+                  <li>• Tab switching is monitored</li>
+                  <li>• Right-click is disabled</li>
+                  <li>• 5 violations will auto-submit the test</li>
+                </ul>
+              </AlertDescription>
+            </Alert>
 
             <div className="text-center">
-              <Button 
-                onClick={() => startTestMutation.mutate()}
-                disabled={startTestMutation.isPending}
-                size="lg"
-                className="w-full md:w-auto"
-              >
-                {startTestMutation.isPending ? "Starting..." : "Start Test"}
+              <Button onClick={startTest} size="lg" className="px-8">
+                Start Test
               </Button>
             </div>
           </CardContent>
@@ -478,209 +299,156 @@ export default function TestTaking() {
     );
   }
 
-  // Test interface
-  const questions = assignment.testTemplate.questions as TestQuestion[];
-  const currentQuestion = questions[currentQuestionIndex];
-  const progress = ((currentQuestionIndex + 1) / questions.length) * 100;
+  const currentQ = questions[currentQuestion];
+  const progress = ((currentQuestion + 1) / questions.length) * 100;
 
   return (
-    <div className="container mx-auto px-4 py-6 max-w-4xl">
-      {/* Header with timer */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
+    <div ref={testContainerRef} className="min-h-screen bg-gray-50">
+      {/* Header */}
+      <div className="bg-white shadow-sm border-b sticky top-0 z-10">
+        <div className="max-w-4xl mx-auto px-4 py-4">
           <div className="flex items-center justify-between">
-            <div>
+            <div className="flex items-center gap-4">
               <h1 className="text-xl font-bold">{assignment.testTemplate.title}</h1>
-              <p className="text-sm text-gray-600">
-                Question {currentQuestionIndex + 1} of {questions.length}
-              </p>
+              <Badge variant="secondary">
+                Question {currentQuestion + 1} of {questions.length}
+              </Badge>
             </div>
-            
-            <div className="text-right">
-              <div className={`text-2xl font-bold ${getTimeColor(timeRemaining, assignment.testTemplate.timeLimit)}`}>
-                {formatTime(timeRemaining)}
+            <div className="flex items-center gap-4">
+              {warningCount > 0 && (
+                <Badge variant="destructive">
+                  <AlertTriangle className="w-4 h-4 mr-1" />
+                  {warningCount} Warning{warningCount > 1 ? 's' : ''}
+                </Badge>
+              )}
+              <div className="flex items-center gap-2">
+                <Clock className="w-4 h-4" />
+                <span className={`font-mono ${timeLeft < 300 ? 'text-red-600' : 'text-gray-900'}`}>
+                  {formatTime(timeLeft)}
+                </span>
               </div>
-              <div className="text-xs text-gray-600">Time Remaining</div>
             </div>
           </div>
-          
-          <Progress value={progress} className="mt-4" />
-        </CardContent>
-      </Card>
-
-      <div className="grid gap-6 lg:grid-cols-4">
-        {/* Question Navigation */}
-        <div className="lg:col-span-1">
-          <Card>
-            <CardHeader>
-              <CardTitle className="text-sm">Questions</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-5 lg:grid-cols-3 gap-2">
-                {questions.map((q, index) => {
-                  const status = getQuestionStatus(index, q.id);
-                  return (
-                    <Button
-                      key={q.id}
-                      variant={status === 'current' ? 'default' : 'outline'}
-                      size="sm"
-                      className={`text-xs h-8 ${
-                        status === 'answered' ? 'border-green-500 bg-green-50' : 
-                        status === 'current' ? '' : 'border-gray-300'
-                      }`}
-                      onClick={() => goToQuestion(index)}
-                    >
-                      {index + 1}
-                    </Button>
-                  );
-                })}
-              </div>
-              
-              <div className="mt-4 text-xs space-y-1">
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-green-100 border border-green-500 rounded"></div>
-                  <span>Answered ({getAnsweredCount()})</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <div className="w-3 h-3 bg-white border border-gray-300 rounded"></div>
-                  <span>Unanswered ({questions.length - getAnsweredCount()})</span>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
+          <Progress value={progress} className="mt-2" />
         </div>
+      </div>
 
-        {/* Current Question */}
-        <div className="lg:col-span-3">
+      {/* Question Content */}
+      <div className="max-w-4xl mx-auto p-6">
+        {currentQ && (
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <Badge variant="outline">
-                  {currentQuestion.type.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase())}
-                </Badge>
-                <span className="text-sm text-gray-600">{currentQuestion.points} points</span>
-              </div>
+              <CardTitle className="flex items-center gap-2">
+                {getQuestionIcon(currentQ.type)}
+                Question {currentQuestion + 1}
+                <Badge className="ml-2">{currentQ.points} points</Badge>
+              </CardTitle>
             </CardHeader>
             <CardContent className="space-y-6">
-              <div>
-                <h2 className="text-lg font-semibold mb-4">{currentQuestion.question}</h2>
-                
-                {/* Multiple Choice */}
-                {currentQuestion.type === 'multiple_choice' && currentQuestion.options && (
+              <div className="prose max-w-none">
+                <p className="text-lg">{currentQ.question}</p>
+              </div>
+
+              {/* Answer Input */}
+              <div className="space-y-4">
+                {currentQ.type === 'multiple_choice' && (
                   <RadioGroup
-                    value={answers[currentQuestion.id]?.toString() || ''}
-                    onValueChange={(value) => handleAnswerChange(currentQuestion.id, parseInt(value))}
+                    value={answers[currentQ.id]?.toString()}
+                    onValueChange={(value) => handleAnswerChange(currentQ.id, parseInt(value))}
                   >
-                    {currentQuestion.options.map((option, index) => (
+                    {currentQ.options?.map((option: string, index: number) => (
                       <div key={index} className="flex items-center space-x-2">
                         <RadioGroupItem value={index.toString()} id={`option-${index}`} />
-                        <Label htmlFor={`option-${index}`} className="flex-1 cursor-pointer">
-                          {option}
-                        </Label>
+                        <label htmlFor={`option-${index}`} className="cursor-pointer">
+                          {String.fromCharCode(65 + index)}. {option}
+                        </label>
                       </div>
                     ))}
                   </RadioGroup>
                 )}
 
-                {/* True/False */}
-                {currentQuestion.type === 'true_false' && (
+                {currentQ.type === 'multiple_select' && (
+                  <div className="space-y-2">
+                    {currentQ.options?.map((option: string, index: number) => (
+                      <div key={index} className="flex items-center space-x-2">
+                        <Checkbox
+                          id={`option-${index}`}
+                          checked={answers[currentQ.id]?.includes(index)}
+                          onCheckedChange={(checked) => {
+                            const current = answers[currentQ.id] || [];
+                            if (checked) {
+                              handleAnswerChange(currentQ.id, [...current, index]);
+                            } else {
+                              handleAnswerChange(currentQ.id, current.filter((i: number) => i !== index));
+                            }
+                          }}
+                        />
+                        <label htmlFor={`option-${index}`} className="cursor-pointer">
+                          {String.fromCharCode(65 + index)}. {option}
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                )}
+
+                {currentQ.type === 'true_false' && (
                   <RadioGroup
-                    value={answers[currentQuestion.id]?.toString() || ''}
-                    onValueChange={(value) => handleAnswerChange(currentQuestion.id, value === 'true')}
+                    value={answers[currentQ.id]?.toString()}
+                    onValueChange={(value) => handleAnswerChange(currentQ.id, value === 'true')}
                   >
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="true" id="true" />
-                      <Label htmlFor="true" className="cursor-pointer">True</Label>
+                      <label htmlFor="true" className="cursor-pointer">True</label>
                     </div>
                     <div className="flex items-center space-x-2">
                       <RadioGroupItem value="false" id="false" />
-                      <Label htmlFor="false" className="cursor-pointer">False</Label>
+                      <label htmlFor="false" className="cursor-pointer">False</label>
                     </div>
                   </RadioGroup>
                 )}
 
-                {/* Essay/Coding */}
-                {(currentQuestion.type === 'essay' || currentQuestion.type === 'coding') && (
+                {['short_answer', 'long_answer', 'coding', 'scenario', 'case_study'].includes(currentQ.type) && (
                   <Textarea
-                    placeholder={currentQuestion.type === 'coding' ? 
-                      "Write your code here..." : 
-                      "Write your answer here..."
-                    }
-                    value={answers[currentQuestion.id] || ''}
-                    onChange={(e) => handleAnswerChange(currentQuestion.id, e.target.value)}
-                    className="min-h-[200px] font-mono"
+                    placeholder="Enter your answer here..."
+                    value={answers[currentQ.id] || ''}
+                    onChange={(e) => handleAnswerChange(currentQ.id, e.target.value)}
+                    className={`min-h-${currentQ.type === 'short_answer' ? '24' : '48'}`}
                   />
                 )}
               </div>
 
               {/* Navigation */}
-              <div className="flex items-center justify-between pt-4 border-t">
+              <div className="flex justify-between pt-4">
                 <Button
                   variant="outline"
-                  onClick={previousQuestion}
-                  disabled={currentQuestionIndex === 0}
+                  onClick={() => setCurrentQuestion(Math.max(0, currentQuestion - 1))}
+                  disabled={currentQuestion === 0}
                 >
-                  <ArrowLeft className="w-4 h-4 mr-2" />
                   Previous
                 </Button>
 
                 <div className="flex gap-2">
-                  {currentQuestionIndex === questions.length - 1 ? (
-                    <Button 
-                      onClick={() => setShowConfirmSubmit(true)}
-                      className="bg-green-600 hover:bg-green-700"
+                  {currentQuestion < questions.length - 1 ? (
+                    <Button
+                      onClick={() => setCurrentQuestion(currentQuestion + 1)}
                     >
-                      Submit Test
+                      Next
                     </Button>
                   ) : (
-                    <Button onClick={nextQuestion}>
-                      Next
-                      <ArrowRight className="w-4 h-4 ml-2" />
+                    <Button
+                      onClick={handleSubmitTest}
+                      disabled={isSubmitting}
+                      className="bg-green-600 hover:bg-green-700"
+                    >
+                      {isSubmitting ? "Submitting..." : "Submit Test"}
                     </Button>
                   )}
                 </div>
               </div>
             </CardContent>
           </Card>
-        </div>
+        )}
       </div>
-
-      {/* Confirm Submit Dialog */}
-      <Dialog open={showConfirmSubmit} onOpenChange={setShowConfirmSubmit}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Submit Test?</DialogTitle>
-            <DialogDescription>
-              Are you sure you want to submit your test? This action cannot be undone.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="space-y-4">
-            <div className="p-4 bg-gray-50 rounded-lg">
-              <div className="text-sm space-y-1">
-                <div>Questions answered: {getAnsweredCount()} of {questions.length}</div>
-                <div>Time remaining: {formatTime(timeRemaining)}</div>
-              </div>
-            </div>
-            
-            <div className="flex gap-3">
-              <Button
-                variant="outline"
-                onClick={() => setShowConfirmSubmit(false)}
-                className="flex-1"
-              >
-                Continue Test
-              </Button>
-              <Button
-                onClick={handleSubmit}
-                disabled={submitTestMutation.isPending}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                {submitTestMutation.isPending ? "Submitting..." : "Submit Test"}
-              </Button>
-            </div>
-          </div>
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }

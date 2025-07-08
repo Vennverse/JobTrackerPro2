@@ -690,12 +690,12 @@ export default function TestManagement() {
               {/* Job Posting Selection */}
               <div className="space-y-3">
                 <FormLabel>Select Job Posting (Optional)</FormLabel>
-                <Select onValueChange={(value) => setSelectedJobPosting(value ? parseInt(value) : null)}>
+                <Select onValueChange={(value) => setSelectedJobPosting(value === "all" ? null : parseInt(value))}>
                   <SelectTrigger>
                     <SelectValue placeholder="All Applications" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="">All Applications</SelectItem>
+                    <SelectItem value="all">All Applications</SelectItem>
                     {Array.from(new Set(applications.map((app: any) => app.jobPosting?.id)))
                       .filter(Boolean)
                       .map((jobId: any) => {

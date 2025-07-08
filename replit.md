@@ -89,3 +89,7 @@ The application is fully migrated and operational on Replit with all core featur
 - ✅ **Test Template Management**: Platform templates + custom recruiter templates with full CRUD operations
 - ✅ **Email Notifications**: Automated test assignment emails with due dates and test URLs
 - ✅ **Payment Integration**: $5 retake fee system with Stripe/PayPal/Razorpay support
+- ✅ **Question Builder**: Comprehensive question creation interface with multiple question types and domains
+- ✅ **Anti-Cheating System**: Copy-paste prevention, tab monitoring, fullscreen mode, and violation warnings
+- ✅ **Real-Time Monitoring**: Live test progress tracking with time alerts and automatic submission
+- ✅ **Enhanced Landing Pages**: Updated main landing page and new recruiter features page with all offerings

@@ -24,7 +24,10 @@ import {
   Award,
   Search,
   PenTool,
-  Monitor
+  Monitor,
+  TestTube,
+  Timer,
+  CheckSquare
 } from "lucide-react";
 
 export default function Landing() {
@@ -47,6 +50,18 @@ export default function Landing() {
       title: "Smart Chrome Extension",
       description: "Works seamlessly across 50+ job boards including LinkedIn, Indeed, Workday, Greenhouse, Lever, and iCIMS. Auto-fill forms instantly with your profile data.",
       highlight: "50+ Job Boards"
+    },
+    {
+      icon: TestTube,
+      title: "Comprehensive Test System",
+      description: "AI-powered technical assessments with automatic scoring across multiple domains: technical, finance, marketing, sales, HR, and general knowledge.",
+      highlight: "New: AI Scoring"
+    },
+    {
+      icon: Shield,
+      title: "Anti-Cheating Protection",
+      description: "Advanced proctoring with copy-paste prevention, tab monitoring, fullscreen mode, and automatic warning system. 5 violations auto-submit test.",
+      highlight: "Secure Testing"
     },
     {
       icon: Target,
@@ -83,6 +98,24 @@ export default function Landing() {
       title: "Premium Features",
       description: "Unlimited resumes, advanced analytics, priority support, enhanced AI features, and usage limits removal for power users.",
       highlight: "$10/month"
+    },
+    {
+      icon: CheckSquare,
+      title: "Multi-Candidate Testing",
+      description: "Assign tests to multiple candidates simultaneously with job posting filters, checkbox selection, and automated email notifications.",
+      highlight: "Bulk Assignment"
+    },
+    {
+      icon: Timer,
+      title: "Real-Time Monitoring",
+      description: "Live test progress tracking with time monitoring, violation alerts, and comprehensive scoring analytics for all question types.",
+      highlight: "Live Tracking"
+    },
+    {
+      icon: Globe,
+      title: "Job Discovery Playlists",
+      description: "Spotify-like job browsing with curated playlists, bookmarking, and multi-source aggregation from LinkedIn, Indeed, and Glassdoor.",
+      highlight: "New: Job Playlists"
     }
   ];
 

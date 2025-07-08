@@ -34,6 +34,8 @@ import TestManagement from "@/pages/test-management";
 import TestAssignments from "@/pages/test-assignments";
 import TestTaking from "@/pages/test-taking";
 import JobSeekerTests from "@/pages/job-seeker-tests";
+import QuestionBuilder from "@/pages/question-builder";
+import RecruiterFeatures from "@/pages/recruiter-features";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -71,6 +73,7 @@ function Router() {
               <Route path="/premium-targeting-payment" component={PremiumTargetingPayment} />
               <Route path="/recruiter/test-management" component={TestManagement} />
               <Route path="/recruiter/test-assignments" component={TestAssignments} />
+              <Route path="/recruiter/question-builder/:templateId" component={QuestionBuilder} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={RecruiterSubscription} />
@@ -121,6 +124,8 @@ function Router() {
           <Route path="/" component={Landing} />
           <Route path="/auth" component={AuthPage} />
           <Route path="/email-verification" component={() => <EmailVerificationPage />} />
+          <Route path="/recruiters" component={RecruiterFeatures} />
+          <Route path="/test/:id" component={TestTaking} />
         </>
       )}
       <Route component={NotFound} />
