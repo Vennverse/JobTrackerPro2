@@ -62,6 +62,13 @@ AutoJobr is a comprehensive job application platform that connects job seekers w
 ## Current Status
 The application is fully migrated and operational on Replit with all core features working correctly.
 
+### Recent UI Improvements (January 2025)
+- ✅ **Separated Payment Pages**: Created distinct subscription pages for job seekers and recruiters
+- ✅ **Job Seeker Subscription**: Clean, focused payment page with resume analysis and application tracking
+- ✅ **Recruiter Subscription**: Dedicated page with job posting, premium targeting, and candidate management features
+- ✅ **UI Separation**: Removed premium targeting elements from job seeker interface
+- ✅ **Route Management**: Proper routing for user-type-specific subscription pages
+
 ### Premium B2B Targeting Feature (January 2025)
 - ✅ **Premium Targeting System**: Complete B2B revenue model allowing companies to target specific candidate groups
 - ✅ **Advanced Filtering**: Education (schools, degrees, GPA), experience, skills, clubs, certifications

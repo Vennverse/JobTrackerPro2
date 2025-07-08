@@ -12,6 +12,7 @@ import Profile from "@/pages/profile";
 import Applications from "@/pages/applications";
 import Jobs from "@/pages/jobs";
 import Subscription from "@/pages/subscription";
+import RecruiterSubscription from "@/pages/recruiter-subscription";
 import Onboarding from "@/pages/onboarding";
 import Landing from "@/pages/landing";
 import UserTypeSelection from "@/pages/user-type-selection";
@@ -64,7 +65,7 @@ function Router() {
               <Route path="/premium-targeting" component={PremiumTargetingPage} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
-              <Route path="/subscription" component={Subscription} />
+              <Route path="/subscription" component={RecruiterSubscription} />
               <Route path="/chat" component={MessagingPage} />
             </>
           ) : user?.userType === 'job_seeker' ? (
