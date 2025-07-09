@@ -885,6 +885,16 @@ export const testTemplates = pgTable("test_templates", {
   createdBy: varchar("created_by").references(() => users.id), // null for platform templates
   isGlobal: boolean("is_global").default(false), // platform-wide templates
   isActive: boolean("is_active").default(true),
+  
+  // Question bank integration
+  useQuestionBank: boolean("use_question_bank").default(false), // Auto-generate from question bank
+  tags: text("tags").array(), // job profile tags for question selection
+  aptitudeQuestions: integer("aptitude_questions").default(15), // 50%
+  englishQuestions: integer("english_questions").default(6), // 20%
+  domainQuestions: integer("domain_questions").default(9), // 30%
+  includeExtremeQuestions: boolean("include_extreme_questions").default(true),
+  customQuestions: jsonb("custom_questions").default("[]"), // Manual questions
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -892,6 +902,59 @@ export const testTemplates = pgTable("test_templates", {
   index("test_templates_difficulty_idx").on(table.difficultyLevel),
   index("test_templates_category_idx").on(table.category),
   index("test_templates_created_by_idx").on(table.createdBy),
+]);
+
+// Question bank table for storing pre-built questions
+export const questionBank = pgTable("question_bank", {
+  id: serial("id").primaryKey(),
+  questionId: varchar("question_id").unique().notNull(), // unique identifier from question bank
+  type: varchar("type").notNull(), // multiple_choice, coding, etc.
+  category: varchar("category").notNull(), // general_aptitude, english, domain_specific
+  domain: varchar("domain").notNull(), // general, technical, finance, marketing, etc.
+  subCategory: varchar("sub_category").notNull(),
+  difficulty: varchar("difficulty").notNull(), // easy, medium, hard, extreme
+  question: text("question").notNull(),
+  options: text("options").array(),
+  correctAnswer: text("correct_answer"),
+  explanation: text("explanation"),
+  points: integer("points").default(5),
+  timeLimit: integer("time_limit").default(2), // in minutes
+  tags: text("tags").array(),
+  keywords: text("keywords").array(),
+  
+  // Coding question specific fields
+  testCases: text("test_cases"),
+  boilerplate: text("boilerplate"),
+  language: varchar("language"),
+  
+  // Metadata
+  isActive: boolean("is_active").default(true),
+  createdBy: varchar("created_by").references(() => users.id),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("question_bank_category_idx").on(table.category),
+  index("question_bank_domain_idx").on(table.domain),
+  index("question_bank_difficulty_idx").on(table.difficulty),
+  index("question_bank_tags_idx").on(table.tags),
+]);
+
+// Test generation logs for tracking auto-generated tests
+export const testGenerationLogs = pgTable("test_generation_logs", {
+  id: serial("id").primaryKey(),
+  testTemplateId: integer("test_template_id").references(() => testTemplates.id),
+  assignmentId: integer("assignment_id").references(() => testAssignments.id),
+  generatedQuestions: jsonb("generated_questions").notNull(), // Questions selected from bank
+  generationParams: jsonb("generation_params").notNull(), // Parameters used for generation
+  totalQuestions: integer("total_questions").notNull(),
+  aptitudeCount: integer("aptitude_count").default(0),
+  englishCount: integer("english_count").default(0),
+  domainCount: integer("domain_count").default(0),
+  extremeCount: integer("extreme_count").default(0),
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("test_generation_logs_template_idx").on(table.testTemplateId),
+  index("test_generation_logs_assignment_idx").on(table.assignmentId),
 ]);
 
 export const testAssignments = pgTable("test_assignments", {

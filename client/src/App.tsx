@@ -36,6 +36,7 @@ import TestTaking from "@/pages/test-taking";
 import JobSeekerTests from "@/pages/job-seeker-tests";
 import QuestionBuilder from "@/pages/question-builder";
 import RecruiterFeatures from "@/pages/recruiter-features";
+import QuestionBank from "@/pages/question-bank";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -74,6 +75,7 @@ function Router() {
               <Route path="/recruiter/test-management" component={TestManagement} />
               <Route path="/recruiter/test-assignments" component={TestAssignments} />
               <Route path="/recruiter/question-builder/:templateId" component={QuestionBuilder} />
+              <Route path="/recruiter/question-bank" component={QuestionBank} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={RecruiterSubscription} />

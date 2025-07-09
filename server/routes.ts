@@ -6094,5 +6094,172 @@ Host: https://autojobr.com`;
     }
   });
 
+  // Question Bank API endpoints
+  app.post('/api/question-bank/init', isAuthenticated, async (req: any, res) => {
+    try {
+      const { questionBankService } = await import('./questionBankService');
+      await questionBankService.initializeQuestionBank();
+      res.json({ message: 'Question bank initialized successfully' });
+    } catch (error) {
+      console.error('Error initializing question bank:', error);
+      res.status(500).json({ message: 'Failed to initialize question bank' });
+    }
+  });
+
+  app.get('/api/question-bank/domains', isAuthenticated, async (req: any, res) => {
+    try {
+      const { questionBankService } = await import('./questionBankService');
+      const domains = await questionBankService.getAvailableDomains();
+      res.json(domains);
+    } catch (error) {
+      console.error('Error fetching domains:', error);
+      res.status(500).json({ message: 'Failed to fetch domains' });
+    }
+  });
+
+  app.get('/api/question-bank/tags', isAuthenticated, async (req: any, res) => {
+    try {
+      const { questionBankService } = await import('./questionBankService');
+      const tags = await questionBankService.getAvailableTags();
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      res.status(500).json({ message: 'Failed to fetch tags' });
+    }
+  });
+
+  app.get('/api/question-bank/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const { questionBankService } = await import('./questionBankService');
+      const stats = await questionBankService.getQuestionStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching question stats:', error);
+      res.status(500).json({ message: 'Failed to fetch question stats' });
+    }
+  });
+
+  app.get('/api/question-bank/search', isAuthenticated, async (req: any, res) => {
+    try {
+      const { q, category, domain, limit = 20 } = req.query;
+      const { questionBankService } = await import('./questionBankService');
+      const questions = await questionBankService.searchQuestions(
+        q as string,
+        category as string,
+        domain as string,
+        parseInt(limit as string)
+      );
+      res.json(questions);
+    } catch (error) {
+      console.error('Error searching questions:', error);
+      res.status(500).json({ message: 'Failed to search questions' });
+    }
+  });
+
+  app.post('/api/question-bank/questions', isAuthenticated, async (req: any, res) => {
+    try {
+      const { questionBankService } = await import('./questionBankService');
+      const question = await questionBankService.addCustomQuestion(req.body, req.user.id);
+      res.json(question);
+    } catch (error) {
+      console.error('Error adding custom question:', error);
+      res.status(500).json({ message: 'Failed to add custom question' });
+    }
+  });
+
+  app.get('/api/question-bank/questions/:category', isAuthenticated, async (req: any, res) => {
+    try {
+      const { category } = req.params;
+      const { tags, difficulty, limit = 10 } = req.query;
+      const { questionBankService } = await import('./questionBankService');
+      
+      const questions = await questionBankService.getQuestionsByCategory(
+        category,
+        tags ? (tags as string).split(',') : [],
+        difficulty ? (difficulty as string).split(',') : ['easy', 'medium', 'hard', 'extreme'],
+        parseInt(limit as string)
+      );
+      
+      res.json(questions);
+    } catch (error) {
+      console.error('Error fetching questions by category:', error);
+      res.status(500).json({ message: 'Failed to fetch questions by category' });
+    }
+  });
+
+  app.get('/api/question-bank/domains/:domain', isAuthenticated, async (req: any, res) => {
+    try {
+      const { domain } = req.params;
+      const { tags, limit = 10 } = req.query;
+      const { questionBankService } = await import('./questionBankService');
+      
+      const questions = await questionBankService.getQuestionsByDomain(
+        domain,
+        tags ? (tags as string).split(',') : [],
+        parseInt(limit as string)
+      );
+      
+      res.json(questions);
+    } catch (error) {
+      console.error('Error fetching questions by domain:', error);
+      res.status(500).json({ message: 'Failed to fetch questions by domain' });
+    }
+  });
+
+  app.post('/api/test-templates/:id/generate', isAuthenticated, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const { questionBankService } = await import('./questionBankService');
+      
+      // Get template details
+      const template = await storage.getTestTemplate(templateId);
+      if (!template) {
+        return res.status(404).json({ message: 'Test template not found' });
+      }
+      
+      // Generate questions based on template tags
+      const questions = await questionBankService.generateTestForProfile(
+        template.tags || [],
+        (template.aptitudeQuestions || 15) + (template.englishQuestions || 6) + (template.domainQuestions || 9),
+        {
+          aptitude: template.aptitudeQuestions || 15,
+          english: template.englishQuestions || 6,
+          domain: template.domainQuestions || 9
+        },
+        template.includeExtremeQuestions || true
+      );
+      
+      // Log the generation
+      await questionBankService.logTestGeneration(
+        templateId,
+        null,
+        questions,
+        {
+          tags: template.tags,
+          distribution: {
+            aptitude: template.aptitudeQuestions || 15,
+            english: template.englishQuestions || 6,
+            domain: template.domainQuestions || 9
+          },
+          includeExtreme: template.includeExtremeQuestions || true
+        }
+      );
+      
+      res.json({
+        questions,
+        stats: {
+          total: questions.length,
+          aptitude: questions.filter(q => q.category === 'general_aptitude').length,
+          english: questions.filter(q => q.category === 'english').length,
+          domain: questions.filter(q => q.category === 'domain_specific').length,
+          extreme: questions.filter(q => q.difficulty === 'extreme').length
+        }
+      });
+    } catch (error) {
+      console.error('Error generating test questions:', error);
+      res.status(500).json({ message: 'Failed to generate test questions' });
+    }
+  });
+
   return httpServer;
 }

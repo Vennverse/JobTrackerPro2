@@ -912,17 +912,19 @@ export class DatabaseStorage implements IStorage {
   // Test system operations
   async getTestTemplates(jobProfile?: string, isGlobal?: boolean): Promise<TestTemplate[]> {
     return await handleDbOperation(async () => {
-      let query = db.select().from(testTemplates).where(eq(testTemplates.isActive, true));
+      let conditions: any[] = [eq(testTemplates.isActive, true)];
       
       if (jobProfile) {
-        query = query.where(eq(testTemplates.jobProfile, jobProfile));
+        conditions.push(eq(testTemplates.jobProfile, jobProfile));
       }
       
       if (isGlobal !== undefined) {
-        query = query.where(eq(testTemplates.isGlobal, isGlobal));
+        conditions.push(eq(testTemplates.isGlobal, isGlobal));
       }
       
-      return await query.orderBy(desc(testTemplates.createdAt));
+      return await db.select().from(testTemplates)
+        .where(and(...conditions))
+        .orderBy(desc(testTemplates.createdAt));
     }, []);
   }
 
@@ -960,17 +962,24 @@ export class DatabaseStorage implements IStorage {
   // Test assignments
   async getTestAssignments(recruiterId?: string, jobSeekerId?: string): Promise<TestAssignment[]> {
     return await handleDbOperation(async () => {
-      let query = db.select().from(testAssignments);
+      let conditions: any[] = [];
       
       if (recruiterId) {
-        query = query.where(eq(testAssignments.recruiterId, recruiterId));
+        conditions.push(eq(testAssignments.recruiterId, recruiterId));
       }
       
       if (jobSeekerId) {
-        query = query.where(eq(testAssignments.jobSeekerId, jobSeekerId));
+        conditions.push(eq(testAssignments.jobSeekerId, jobSeekerId));
       }
       
-      return await query.orderBy(desc(testAssignments.assignedAt));
+      if (conditions.length > 0) {
+        return await db.select().from(testAssignments)
+          .where(and(...conditions))
+          .orderBy(desc(testAssignments.assignedAt));
+      } else {
+        return await db.select().from(testAssignments)
+          .orderBy(desc(testAssignments.assignedAt));
+      }
     }, []);
   }
 
