@@ -25,6 +25,10 @@ const questionSchema = z.object({
   difficulty: z.enum(['easy', 'medium', 'hard']),
   keywords: z.array(z.string()).optional(),
   timeLimit: z.number().min(1).optional(),
+  // Coding question specific fields
+  testCases: z.string().optional(),
+  boilerplate: z.string().optional(),
+  language: z.enum(['javascript', 'python']).optional(),
 });
 
 export default function QuestionBuilder({ templateId }: { templateId: number }) {
@@ -46,6 +50,9 @@ export default function QuestionBuilder({ templateId }: { templateId: number }) 
       difficulty: 'medium' as const,
       keywords: [],
       timeLimit: 2,
+      testCases: "",
+      boilerplate: "",
+      language: 'javascript' as const,
     },
   });
 
@@ -378,6 +385,28 @@ export default function QuestionBuilder({ templateId }: { templateId: number }) 
 
               {questionType === 'coding' && (
                 <div className="space-y-4">
+                  <FormField
+                    control={questionForm.control}
+                    name="language"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Programming Language</FormLabel>
+                        <Select onValueChange={field.onChange} defaultValue={field.value}>
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="javascript">JavaScript</SelectItem>
+                            <SelectItem value="python">Python</SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
                   <FormField
                     control={questionForm.control}
                     name="testCases"

@@ -5579,9 +5579,14 @@ Host: https://autojobr.com`;
       const templateId = parseInt(req.params.id);
       const userId = req.user.id;
       
-      // Check if template exists and belongs to user
+      // Check if templateId is valid
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: "Invalid template ID" });
+      }
+      
+      // Check if template exists and belongs to user or is global
       const template = await storage.getTestTemplate(templateId);
-      if (!template || template.createdBy !== userId) {
+      if (!template || (template.createdBy !== userId && !template.isGlobal)) {
         return res.status(404).json({ message: "Test template not found" });
       }
       
@@ -5675,6 +5680,40 @@ Host: https://autojobr.com`;
     } catch (error) {
       console.error("Error updating template:", error);
       res.status(500).json({ message: "Failed to update template" });
+    }
+  });
+
+  // Code execution endpoint for coding questions
+  app.post('/api/execute-code', isAuthenticated, async (req: any, res) => {
+    try {
+      const { code, language, testCases, question } = req.body;
+      
+      if (!code || !language || !testCases) {
+        return res.status(400).json({ message: "Missing required fields" });
+      }
+
+      const { codeExecutionService } = await import('./codeExecutionService');
+      
+      // Execute code with test cases
+      const executionResult = await codeExecutionService.executeCode(code, language, testCases);
+      
+      // If execution was successful, also get AI evaluation
+      let aiEvaluation = null;
+      if (executionResult.success && question) {
+        try {
+          aiEvaluation = await codeExecutionService.evaluateWithAI(code, question, testCases);
+        } catch (error) {
+          console.error('AI evaluation failed:', error);
+        }
+      }
+      
+      res.json({
+        ...executionResult,
+        aiEvaluation
+      });
+    } catch (error) {
+      console.error("Error executing code:", error);
+      res.status(500).json({ message: "Failed to execute code" });
     }
   });
 
