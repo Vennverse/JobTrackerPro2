@@ -5651,6 +5651,68 @@ Host: https://autojobr.com`;
       }
       
       await storage.deleteTestQuestion(questionId);
+      res.json({ message: "Question deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting question:", error);
+      res.status(500).json({ message: "Failed to delete question" });
+    }
+  });
+
+  // Edit test template endpoint
+  app.put('/api/test-templates/:id', isAuthenticated, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const userId = req.user.id;
+      
+      // Check if template exists and belongs to user
+      const template = await storage.getTestTemplate(templateId);
+      if (!template || template.createdBy !== userId) {
+        return res.status(404).json({ message: "Test template not found" });
+      }
+      
+      const updatedTemplate = await storage.updateTestTemplate(templateId, req.body);
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error("Error updating template:", error);
+      res.status(500).json({ message: "Failed to update template" });
+    }
+  });ed to create question" });
+    }
+  });
+
+  app.put('/api/test-templates/:id/questions/:questionId', isAuthenticated, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const questionId = parseInt(req.params.questionId);
+      const userId = req.user.id;
+      
+      // Check if template exists and belongs to user
+      const template = await storage.getTestTemplate(templateId);
+      if (!template || template.createdBy !== userId) {
+        return res.status(404).json({ message: "Test template not found" });
+      }
+      
+      const question = await storage.updateTestQuestion(questionId, req.body);
+      res.json(question);
+    } catch (error) {
+      console.error("Error updating question:", error);
+      res.status(500).json({ message: "Failed to update question" });
+    }
+  });
+
+  app.delete('/api/test-templates/:id/questions/:questionId', isAuthenticated, async (req: any, res) => {
+    try {
+      const templateId = parseInt(req.params.id);
+      const questionId = parseInt(req.params.questionId);
+      const userId = req.user.id;
+      
+      // Check if template exists and belongs to user
+      const template = await storage.getTestTemplate(templateId);
+      if (!template || template.createdBy !== userId) {
+        return res.status(404).json({ message: "Test template not found" });
+      }
+      
+      await storage.deleteTestQuestion(questionId);
       res.json({ message: "Question deleted" });
     } catch (error) {
       console.error("Error deleting question:", error);

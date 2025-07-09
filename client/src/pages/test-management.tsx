@@ -443,10 +443,7 @@ export default function TestManagement() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => {
-                        // Edit functionality would go here
-                        toast({ title: "Edit functionality coming soon" });
-                      }}
+                      onClick={() => setLocation(`/recruiter/question-builder/${template.id}`)}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>

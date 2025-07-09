@@ -346,7 +346,113 @@ export default function QuestionBuilder({ templateId }: { templateId: number }) 
                       )}
                     />
                   ))}
+                  
+                  {questionType === 'multiple_choice' && (
+                    <FormField
+                      control={questionForm.control}
+                      name="correctAnswer"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel>Correct Answer</FormLabel>
+                          <Select onValueChange={(value) => field.onChange(parseInt(value))} value={field.value?.toString()}>
+                            <FormControl>
+                              <SelectTrigger>
+                                <SelectValue placeholder="Select correct answer" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {[0, 1, 2, 3].map((index) => (
+                                <SelectItem key={index} value={index.toString()}>
+                                  Option {String.fromCharCode(65 + index)}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  )}
                 </div>
+              )}
+
+              {questionType === 'coding' && (
+                <div className="space-y-4">
+                  <FormField
+                    control={questionForm.control}
+                    name="testCases"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Test Cases (JSON format)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={`Example:
+[
+  {
+    "input": "hello",
+    "expected": "Hello",
+    "description": "Capitalize first letter"
+  },
+  {
+    "input": "world",
+    "expected": "World", 
+    "description": "Another test case"
+  }
+]`}
+                            className="min-h-[120px] font-mono text-sm"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                  
+                  <FormField
+                    control={questionForm.control}
+                    name="boilerplate"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Boilerplate Code (Optional)</FormLabel>
+                        <FormControl>
+                          <Textarea
+                            placeholder={`function solution(input) {
+  // Your code here
+  return input;
+}`}
+                            className="min-h-[100px] font-mono text-sm"
+                            {...field}
+                          />
+                        </FormControl>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                </div>
+              )}
+
+              {questionType === 'true_false' && (
+                <FormField
+                  control={questionForm.control}
+                  name="correctAnswer"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Correct Answer</FormLabel>
+                      <Select onValueChange={field.onChange} value={field.value?.toString()}>
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Select correct answer" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          <SelectItem value="true">True</SelectItem>
+                          <SelectItem value="false">False</SelectItem>
+                        </SelectContent>
+                      </Select>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
               )}
 
               <div className="grid grid-cols-2 gap-4">
