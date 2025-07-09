@@ -169,8 +169,8 @@ export default function Landing() {
               <Button variant="ghost" onClick={() => document.getElementById('pricing')?.scrollIntoView({ behavior: 'smooth' })}>
                 Pricing
               </Button>
-              <Button variant="ghost" onClick={() => window.location.href = "/post-job"}>
-                Post Job
+              <Button variant="ghost" onClick={() => window.location.href = "/recruiter-features"}>
+                For Recruiters
               </Button>
               <Button onClick={handleLogin} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700">
                 Get Started Free
@@ -196,7 +196,7 @@ export default function Landing() {
               </span>
             </h1>
             <p className="text-xl text-muted-foreground mb-8 max-w-3xl mx-auto">
-              AutoJobr automates job applications across 50+ boards with AI-powered matching and ATS optimization.
+              AutoJobr connects job seekers and recruiters with AI-powered automation, smart matching, and comprehensive hiring tools across 50+ job boards.
             </p>
             
             {/* Visual Dashboard Preview */}
@@ -352,6 +352,138 @@ export default function Landing() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">Track Everything</h3>
                 <p className="text-sm text-muted-foreground">Unified dashboard</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* Two-Sided Platform Section */}
+      <section className="py-20 bg-gradient-to-br from-blue-50/50 to-purple-50/50 dark:from-blue-950/20 dark:to-purple-950/20">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center mb-16">
+            <h2 className="text-3xl sm:text-4xl font-bold text-foreground mb-4">
+              The Complete Hiring Platform
+            </h2>
+            <p className="text-xl text-muted-foreground max-w-3xl mx-auto">
+              AutoJobr connects job seekers and recruiters with powerful AI tools for efficient hiring
+            </p>
+          </div>
+
+          <div className="grid lg:grid-cols-2 gap-12">
+            {/* Job Seekers Section */}
+            <div className="space-y-6">
+              <div className="text-center lg:text-left">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-blue-600 rounded-2xl mb-4">
+                  <Search className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4">For Job Seekers</h3>
+                <p className="text-muted-foreground mb-6">
+                  Land your dream job with AI-powered automation and smart matching
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold">AI Auto-Fill Applications</h4>
+                    <p className="text-sm text-muted-foreground">Works across 50+ job boards including LinkedIn, Indeed, Workday</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold">Resume ATS Optimization</h4>
+                    <p className="text-sm text-muted-foreground">85% pass rate with keyword optimization and formatting analysis</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold">Job Discovery Playlists</h4>
+                    <p className="text-sm text-muted-foreground">Spotify-like browsing with curated job collections</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold">AI Cover Letter Generator</h4>
+                    <p className="text-sm text-muted-foreground">Personalized letters that get responses</p>
+                  </div>
+                </div>
+              </div>
+              
+              <Button 
+                size="lg" 
+                onClick={handleLogin} 
+                className="w-full lg:w-auto bg-blue-600 hover:bg-blue-700"
+              >
+                <Rocket className="w-4 h-4 mr-2" />
+                Start Job Search - Free
+              </Button>
+            </div>
+
+            {/* Recruiters Section */}
+            <div className="space-y-6">
+              <div className="text-center lg:text-left">
+                <div className="inline-flex items-center justify-center w-16 h-16 bg-purple-600 rounded-2xl mb-4">
+                  <Users className="w-8 h-8 text-white" />
+                </div>
+                <h3 className="text-2xl font-bold text-foreground mb-4">For Recruiters</h3>
+                <p className="text-muted-foreground mb-6">
+                  Find top talent with advanced targeting and comprehensive testing tools
+                </p>
+              </div>
+              
+              <div className="space-y-4">
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold">Premium Targeting System</h4>
+                    <p className="text-sm text-muted-foreground">Target candidates by education, skills, experience, certifications</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold">AI-Powered Test System</h4>
+                    <p className="text-sm text-muted-foreground">Technical, coding, and behavioral assessments with automatic scoring</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold">Anti-Cheating Protection</h4>
+                    <p className="text-sm text-muted-foreground">Tab monitoring, copy-paste prevention, violation tracking</p>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3">
+                  <CheckCircle className="w-5 h-5 text-green-500 mt-0.5 flex-shrink-0" />
+                  <div>
+                    <h4 className="font-semibold">Multi-Candidate Testing</h4>
+                    <p className="text-sm text-muted-foreground">Bulk test assignments with email notifications</p>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="flex flex-col sm:flex-row gap-3">
+                <Button 
+                  size="lg" 
+                  onClick={() => window.location.href = "/recruiter-features"} 
+                  variant="outline"
+                  className="border-purple-600 text-purple-600 hover:bg-purple-50"
+                >
+                  Learn More
+                </Button>
+                <Button 
+                  size="lg" 
+                  onClick={handleLogin} 
+                  className="bg-purple-600 hover:bg-purple-700"
+                >
+                  <Target className="w-4 h-4 mr-2" />
+                  Start Hiring - $49/mo
+                </Button>
               </div>
             </div>
           </div>

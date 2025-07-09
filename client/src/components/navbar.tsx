@@ -34,7 +34,12 @@ export function Navbar() {
 
   // Define navigation items based on user type
   const getNavItems = () => {
-    if (user?.userType === 'recruiter' || user?.userType === 'company') {
+    if (!user) {
+      // For non-authenticated users
+      return [
+        { href: "/recruiter-features", label: "For Recruiters", icon: Users },
+      ];
+    } else if (user?.userType === 'recruiter' || user?.userType === 'company') {
       return [
         { href: "/", label: "Dashboard", icon: BarChart3 },
         { href: "/post-job", label: "Post Job", icon: Plus },
@@ -119,23 +124,35 @@ export function Navbar() {
               <span className="sr-only">Toggle theme</span>
             </Button>
             
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild className="hidden md:flex">
-                <Button variant="ghost" className="relative h-8 w-8 rounded-full">
-                  <Avatar className="h-8 w-8">
-                    <AvatarImage 
-                      src={user?.profileImageUrl || ""} 
-                      alt={`${user?.firstName} ${user?.lastName}`} 
-                    />
-                    <AvatarFallback>
-                      {user?.firstName?.[0] && user?.lastName?.[0] 
-                        ? `${user.firstName[0]}${user.lastName[0]}` 
-                        : user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'
-                      }
-                    </AvatarFallback>
-                  </Avatar>
-                </Button>
-              </DropdownMenuTrigger>
+            {/* Login button for non-authenticated users */}
+            {!user && (
+              <Button 
+                onClick={() => window.location.href = "/auth"} 
+                className="bg-primary hover:bg-primary/90"
+              >
+                Sign In
+              </Button>
+            )}
+
+            {/* User dropdown for authenticated users */}
+            {user && (
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild className="hidden md:flex">
+                  <Button variant="ghost" className="relative h-8 w-8 rounded-full">
+                    <Avatar className="h-8 w-8">
+                      <AvatarImage 
+                        src={user?.profileImageUrl || ""} 
+                        alt={`${user?.firstName} ${user?.lastName}`} 
+                      />
+                      <AvatarFallback>
+                        {user?.firstName?.[0] && user?.lastName?.[0] 
+                          ? `${user.firstName[0]}${user.lastName[0]}` 
+                          : user?.name?.[0]?.toUpperCase() || user?.email?.[0]?.toUpperCase() || 'U'
+                        }
+                      </AvatarFallback>
+                    </Avatar>
+                  </Button>
+                </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end" forceMount>
                 <div className="flex items-center justify-start gap-2 p-2">
                   <div className="flex flex-col space-y-1 leading-none">
@@ -167,7 +184,8 @@ export function Navbar() {
                   <span>Log out</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
-            </DropdownMenu>
+              </DropdownMenu>
+            )}
           </div>
         </div>
         
@@ -209,6 +227,18 @@ export function Navbar() {
                 <span>Toggle {theme === "light" ? "Dark" : "Light"} Mode</span>
               </button>
               
+              {/* Mobile login button for non-authenticated users */}
+              {!user && (
+                <div className="border-t border-border pt-4 mt-4">
+                  <Button 
+                    onClick={() => window.location.href = "/auth"} 
+                    className="w-full bg-primary hover:bg-primary/90"
+                  >
+                    Sign In
+                  </Button>
+                </div>
+              )}
+
               {/* Mobile user section */}
               {user && (
                 <>
