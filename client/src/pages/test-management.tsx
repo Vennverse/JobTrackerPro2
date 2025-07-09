@@ -101,7 +101,10 @@ export default function TestManagement() {
 
   // Initialize platform templates
   const initTemplatesMutation = useMutation({
-    mutationFn: () => apiRequest("/api/admin/init-test-templates", "POST"),
+    mutationFn: async () => {
+      const response = await apiRequest("/api/admin/init-test-templates", "POST");
+      return await response.json();
+    },
     onSuccess: () => {
       toast({ title: "Platform test templates initialized successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/test-templates"] });
@@ -141,7 +144,10 @@ export default function TestManagement() {
   });
 
   const createTestMutation = useMutation({
-    mutationFn: (data: any) => apiRequest("/api/test-templates", "POST", data),
+    mutationFn: async (data: any) => {
+      const response = await apiRequest("/api/test-templates", "POST", data);
+      return await response.json();
+    },
     onSuccess: () => {
       toast({ title: "Test template created successfully" });
       setShowCreateDialog(false);
@@ -173,12 +179,13 @@ export default function TestManagement() {
       // Submit for each selected candidate
       const assignments = [];
       for (const candidateId of data.candidateIds) {
-        const assignment = await apiRequest("/api/test-assignments", "POST", {
+        const response = await apiRequest("/api/test-assignments", "POST", {
           testTemplateId: data.testTemplateId,
           jobSeekerId: candidateId,
           jobPostingId: data.jobPostingId,
           dueDate: data.dueDate,
         });
+        const assignment = await response.json();
         assignments.push(assignment);
       }
       return assignments;
@@ -204,7 +211,10 @@ export default function TestManagement() {
 
   // Delete test template
   const deleteTestMutation = useMutation({
-    mutationFn: (id: number) => apiRequest(`/api/test-templates/${id}`, "DELETE"),
+    mutationFn: async (id: number) => {
+      const response = await apiRequest(`/api/test-templates/${id}`, "DELETE");
+      return await response.json();
+    },
     onSuccess: () => {
       toast({ title: "Test template deleted successfully" });
       queryClient.invalidateQueries({ queryKey: ["/api/test-templates"] });
@@ -229,9 +239,22 @@ export default function TestManagement() {
   });
 
   const onCreateTest = (data: any) => {
+    // Ensure we have proper questions array with at least one question
+    const questions = data.questions || [
+      {
+        id: "q1",
+        type: "multiple_choice",
+        question: "Sample question - please edit this after creation",
+        options: ["Option A", "Option B", "Option C", "Option D"],
+        correctAnswer: 0,
+        points: 10,
+        explanation: "This is a sample question that should be edited"
+      }
+    ];
+
     createTestMutation.mutate({
       ...data,
-      questions: [], // For custom tests, questions would need to be added separately
+      questions: questions,
     });
   };
 
@@ -749,8 +772,8 @@ export default function TestManagement() {
                   {(selectedJobPosting 
                     ? applications.filter((app: any) => app.jobPostingId === selectedJobPosting)
                     : applications
-                  ).map((app: any) => (
-                    <div key={app.applicantId} className="flex items-center space-x-3 p-3 border-b last:border-b-0 hover:bg-gray-50">
+                  ).map((app: any, index: number) => (
+                    <div key={`${app.applicantId}-${app.id || index}`} className="flex items-center space-x-3 p-3 border-b last:border-b-0 hover:bg-gray-50">
                       <Checkbox
                         id={`candidate-${app.applicantId}`}
                         checked={selectedCandidates.includes(app.applicantId)}

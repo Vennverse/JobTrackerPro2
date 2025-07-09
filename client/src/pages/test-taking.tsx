@@ -45,7 +45,7 @@ export default function TestTaking() {
 
   const { data: questions = [] } = useQuery({
     queryKey: [`/api/test-assignments/${assignmentId}/questions`],
-    enabled: !!assignmentId && testStarted,
+    enabled: !!assignmentId,
   });
 
   const submitTestMutation = useMutation({

@@ -5817,6 +5817,45 @@ Host: https://autojobr.com`;
     }
   });
 
+  // Get questions for test assignment (job seeker only)
+  app.get('/api/test-assignments/:id/questions', isAuthenticated, async (req: any, res) => {
+    try {
+      const assignmentId = parseInt(req.params.id);
+      const assignment = await storage.getTestAssignment(assignmentId);
+      
+      if (!assignment) {
+        return res.status(404).json({ message: 'Test assignment not found' });
+      }
+
+      // Only the assigned job seeker can access questions
+      if (assignment.jobSeekerId !== req.user.id) {
+        return res.status(403).json({ message: 'Access denied' });
+      }
+
+      // Allow access to questions if test is assigned or started
+      if (assignment.status !== 'assigned' && assignment.status !== 'started') {
+        return res.status(400).json({ message: 'Test is not available' });
+      }
+
+      // Get test template with questions
+      const template = await storage.getTestTemplate(assignment.testTemplateId);
+      if (!template) {
+        return res.status(404).json({ message: 'Test template not found' });
+      }
+
+      // Return questions (parse if stored as JSON string)
+      let questions = template.questions;
+      if (typeof questions === 'string') {
+        questions = JSON.parse(questions);
+      }
+      
+      res.json(questions);
+    } catch (error) {
+      console.error('Error fetching test questions:', error);
+      res.status(500).json({ message: 'Failed to fetch test questions' });
+    }
+  });
+
   // Start test (job seeker only)
   app.post('/api/test-assignments/:id/start', isAuthenticated, async (req: any, res) => {
     try {
