@@ -699,9 +699,21 @@ export class DatabaseStorage implements IStorage {
           reviewedAt: jobPostingApplications.reviewedAt,
           updatedAt: jobPostingApplications.updatedAt,
           resumeData: sql`NULL`.as('resumeData'),
+          // Include job posting information directly as separate fields
+          jobPostingTitle: jobPostings.title,
+          jobPostingCompany: jobPostings.companyName,
+          jobPostingLocation: jobPostings.location,
+          jobPostingType: jobPostings.jobType,
+          jobPostingWorkMode: jobPostings.workMode,
+          // Include applicant information
+          applicantName: sql`CONCAT(${users.firstName}, ' ', ${users.lastName})`.as('applicantName'),
+          applicantEmail: users.email,
+          applicantFirstName: users.firstName,
+          applicantLastName: users.lastName,
         })
         .from(jobPostingApplications)
         .innerJoin(jobPostings, eq(jobPostingApplications.jobPostingId, jobPostings.id))
+        .leftJoin(users, eq(jobPostingApplications.applicantId, users.id))
         .where(eq(jobPostings.recruiterId, recruiterId))
         .orderBy(desc(jobPostingApplications.appliedAt));
     }, []);

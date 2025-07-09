@@ -5723,11 +5723,12 @@ Host: https://autojobr.com`;
 
       const assignments = await storage.getTestAssignments(req.user.id);
       
-      // Enrich with test template and job seeker info
+      // Enrich with test template, job seeker, and job posting info
       const enrichedAssignments = await Promise.all(assignments.map(async (assignment) => {
-        const [template, jobSeeker] = await Promise.all([
+        const [template, jobSeeker, jobPosting] = await Promise.all([
           storage.getTestTemplate(assignment.testTemplateId),
-          storage.getUser(assignment.jobSeekerId)
+          storage.getUser(assignment.jobSeekerId),
+          assignment.jobPostingId ? storage.getJobPosting(assignment.jobPostingId) : null
         ]);
 
         return {
@@ -5738,7 +5739,15 @@ Host: https://autojobr.com`;
             firstName: jobSeeker?.firstName,
             lastName: jobSeeker?.lastName,
             email: jobSeeker?.email,
-          }
+          },
+          jobPosting: jobPosting ? {
+            id: jobPosting.id,
+            title: jobPosting.title,
+            companyName: jobPosting.companyName,
+            location: jobPosting.location,
+            jobType: jobPosting.jobType,
+            workMode: jobPosting.workMode,
+          } : null
         };
       }));
       

@@ -696,13 +696,13 @@ export default function TestManagement() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Applications</SelectItem>
-                    {Array.from(new Set(applications.map((app: any) => app.jobPosting?.id)))
+                    {Array.from(new Set(applications.map((app: any) => app.jobPostingId)))
                       .filter(Boolean)
                       .map((jobId: any) => {
-                        const job = applications.find((app: any) => app.jobPosting?.id === jobId)?.jobPosting;
+                        const job = applications.find((app: any) => app.jobPostingId === jobId);
                         return (
                           <SelectItem key={jobId} value={jobId.toString()}>
-                            {job?.title || `Job ${jobId}`}
+                            {job?.jobPostingTitle || `Job ${jobId}`}
                           </SelectItem>
                         );
                       })}
@@ -720,7 +720,7 @@ export default function TestManagement() {
                     size="sm"
                     onClick={() => {
                       const filteredApps = selectedJobPosting 
-                        ? applications.filter((app: any) => app.jobPosting?.id === selectedJobPosting)
+                        ? applications.filter((app: any) => app.jobPostingId === selectedJobPosting)
                         : applications;
                       const allIds = filteredApps.map((app: any) => app.applicantId);
                       setSelectedCandidates(
@@ -729,7 +729,7 @@ export default function TestManagement() {
                     }}
                   >
                     {selectedCandidates.length === (selectedJobPosting 
-                      ? applications.filter((app: any) => app.jobPosting?.id === selectedJobPosting)
+                      ? applications.filter((app: any) => app.jobPostingId === selectedJobPosting)
                       : applications).length ? (
                       <>
                         <Square className="w-4 h-4 mr-2" />
@@ -747,7 +747,7 @@ export default function TestManagement() {
                 {/* Candidate List */}
                 <div className="border rounded-lg max-h-60 overflow-y-auto">
                   {(selectedJobPosting 
-                    ? applications.filter((app: any) => app.jobPosting?.id === selectedJobPosting)
+                    ? applications.filter((app: any) => app.jobPostingId === selectedJobPosting)
                     : applications
                   ).map((app: any) => (
                     <div key={app.applicantId} className="flex items-center space-x-3 p-3 border-b last:border-b-0 hover:bg-gray-50">
@@ -762,7 +762,7 @@ export default function TestManagement() {
                       >
                         <div className="font-medium">{app.applicantName}</div>
                         <div className="text-sm text-gray-500">
-                          {app.jobPosting?.title || 'General Application'} • {app.applicantEmail}
+                          {app.jobPostingTitle || 'General Application'} • {app.applicantEmail}
                         </div>
                       </label>
                     </div>

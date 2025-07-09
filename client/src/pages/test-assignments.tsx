@@ -530,6 +530,12 @@ export default function TestAssignments() {
                         {assignment.testTemplate?.title}
                       </div>
                       
+                      {assignment.jobPosting && (
+                        <div className="text-sm text-blue-600 mt-1">
+                          Applied to: {assignment.jobPosting.title}
+                        </div>
+                      )}
+                      
                       <div className="flex items-center gap-4 mt-2 text-xs text-gray-500">
                         <span className="flex items-center gap-1">
                           <Calendar className="w-3 h-3" />
