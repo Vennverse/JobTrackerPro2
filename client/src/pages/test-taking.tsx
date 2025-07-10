@@ -95,10 +95,10 @@ export default function TestTaking() {
 
   // Anti-cheating measures
   useEffect(() => {
-    if (!testStarted) return;
+    if (!testStarted || isSubmitting || showResultsModal) return;
 
     const handleVisibilityChange = () => {
-      if (document.hidden) {
+      if (document.hidden && !isSubmitting && !showResultsModal) {
         setTabSwitchCount(prev => prev + 1);
         setWarningCount(prev => prev + 1);
         toast({
@@ -110,6 +110,7 @@ export default function TestTaking() {
     };
 
     const handleCopy = (e: ClipboardEvent) => {
+      if (isSubmitting || showResultsModal) return;
       e.preventDefault();
       setCopyAttempts(prev => prev + 1);
       setWarningCount(prev => prev + 1);
@@ -121,6 +122,7 @@ export default function TestTaking() {
     };
 
     const handlePaste = (e: ClipboardEvent) => {
+      if (isSubmitting || showResultsModal) return;
       e.preventDefault();
       toast({
         title: "Warning: Paste Blocked",
@@ -130,6 +132,7 @@ export default function TestTaking() {
     };
 
     const handleKeyDown = (e: KeyboardEvent) => {
+      if (isSubmitting || showResultsModal) return;
       // Block common cheating key combinations
       if (
         (e.ctrlKey || e.metaKey) && 
@@ -146,6 +149,7 @@ export default function TestTaking() {
     };
 
     const handleRightClick = (e: MouseEvent) => {
+      if (isSubmitting || showResultsModal) return;
       e.preventDefault();
       setWarningCount(prev => prev + 1);
       toast({
@@ -168,7 +172,7 @@ export default function TestTaking() {
       document.removeEventListener('keydown', handleKeyDown);
       document.removeEventListener('contextmenu', handleRightClick);
     };
-  }, [testStarted, tabSwitchCount, copyAttempts, warningCount]);
+  }, [testStarted, tabSwitchCount, copyAttempts, warningCount, isSubmitting, showResultsModal]);
 
   // Timer
   useEffect(() => {
@@ -189,7 +193,7 @@ export default function TestTaking() {
 
   // Auto-submit on excessive violations  
   useEffect(() => {
-    if (warningCount >= 5 && !isSubmitting) {
+    if (warningCount >= 5 && !isSubmitting && !showResultsModal && testStarted) {
       toast({
         title: "Test Cancelled",
         description: "Too many violations detected. Test will be submitted automatically.",
@@ -197,10 +201,12 @@ export default function TestTaking() {
       });
       // Add a small delay to ensure the user sees the message
       setTimeout(() => {
-        handleSubmitTest();
+        if (!isSubmitting && !showResultsModal) {
+          handleSubmitTest();
+        }
       }, 2000);
     }
-  }, [warningCount, isSubmitting]);
+  }, [warningCount, isSubmitting, showResultsModal, testStarted]);
 
   const enterFullscreen = () => {
     if (testContainerRef.current?.requestFullscreen) {
@@ -233,9 +239,10 @@ export default function TestTaking() {
   };
 
   const handleSubmitTest = () => {
-    if (isSubmitting) return;
+    if (isSubmitting || showResultsModal) return;
     
     setIsSubmitting(true);
+    setTestStarted(false); // Stop anti-cheating monitoring
     const timeSpent = startTimeRef.current ? Math.round((new Date().getTime() - startTimeRef.current.getTime()) / 1000) : 0;
     
     submitTestMutation.mutate({
