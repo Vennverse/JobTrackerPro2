@@ -76,7 +76,6 @@ const createTestSchema = z.object({
 const assignTestSchema = z.object({
   testTemplateId: z.number(),
   jobPostingId: z.number().optional(),
-  candidateIds: z.array(z.string()).min(1, "At least one candidate must be selected"),
   dueDate: z.string().min(1, "Due date is required"),
 });
 
@@ -215,7 +214,6 @@ export default function TestManagement() {
     defaultValues: {
       testTemplateId: 0,
       jobPostingId: undefined,
-      candidateIds: [],
       dueDate: "",
     },
   });
@@ -366,8 +364,8 @@ export default function TestManagement() {
       dueDate.setHours(23, 59, 59); // Set to end of day
       
       const assignmentData = {
-        ...data,
         testTemplateId: selectedTemplate.id,
+        jobPostingId: data.jobPostingId,
         candidateIds: selectedCandidates,
         dueDate: dueDate.toISOString(),
       };
@@ -611,7 +609,13 @@ export default function TestManagement() {
                   onClick={() => {
                     setSelectedTemplate(template);
                     setShowAssignDialog(true);
-                    assignTestForm.setValue("testTemplateId", template.id);
+                    setSelectedCandidates([]);
+                    setSelectedJobPosting(null);
+                    assignTestForm.reset({
+                      testTemplateId: template.id,
+                      jobPostingId: undefined,
+                      dueDate: "",
+                    });
                   }}
                 >
                   <Send className="w-4 h-4 mr-2" />
@@ -1082,6 +1086,7 @@ export default function TestManagement() {
                     setShowAssignDialog(false);
                     setSelectedCandidates([]);
                     setSelectedJobPosting(null);
+                    assignTestForm.reset();
                   }}
                   className="flex-1"
                 >
