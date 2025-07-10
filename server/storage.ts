@@ -959,6 +959,122 @@ export class DatabaseStorage implements IStorage {
     });
   }
 
+  // Individual test question operations (these decode JSON from template.questions field)
+  async getTestTemplateQuestions(templateId: number): Promise<any[]> {
+    return await handleDbOperation(async () => {
+      const template = await this.getTestTemplate(templateId);
+      if (!template || !template.questions) {
+        return [];
+      }
+      
+      try {
+        const questions = JSON.parse(template.questions);
+        return Array.isArray(questions) ? questions : [];
+      } catch (error) {
+        console.error('Error parsing questions JSON:', error);
+        return [];
+      }
+    }, []);
+  }
+
+  async createTestQuestion(question: any): Promise<any> {
+    return await handleDbOperation(async () => {
+      const template = await this.getTestTemplate(question.testTemplateId);
+      if (!template) {
+        throw new Error('Test template not found');
+      }
+      
+      let questions = [];
+      try {
+        questions = template.questions ? JSON.parse(template.questions) : [];
+      } catch (error) {
+        questions = [];
+      }
+      
+      // Add new question with unique ID
+      const newQuestion = {
+        ...question,
+        id: `q${Date.now()}`,
+        createdAt: new Date().toISOString()
+      };
+      
+      questions.push(newQuestion);
+      
+      // Update template with new questions array
+      await this.updateTestTemplate(question.testTemplateId, {
+        questions: JSON.stringify(questions)
+      });
+      
+      return newQuestion;
+    });
+  }
+
+  async updateTestQuestion(questionId: string, updatedQuestion: any): Promise<any> {
+    return await handleDbOperation(async () => {
+      const template = await this.getTestTemplate(updatedQuestion.testTemplateId);
+      if (!template) {
+        throw new Error('Test template not found');
+      }
+      
+      let questions = [];
+      try {
+        questions = template.questions ? JSON.parse(template.questions) : [];
+      } catch (error) {
+        questions = [];
+      }
+      
+      // Find and update the question
+      const questionIndex = questions.findIndex((q: any) => q.id === questionId);
+      if (questionIndex === -1) {
+        throw new Error('Question not found');
+      }
+      
+      questions[questionIndex] = {
+        ...questions[questionIndex],
+        ...updatedQuestion,
+        updatedAt: new Date().toISOString()
+      };
+      
+      // Update template with modified questions array
+      await this.updateTestTemplate(updatedQuestion.testTemplateId, {
+        questions: JSON.stringify(questions)
+      });
+      
+      return questions[questionIndex];
+    });
+  }
+
+  async deleteTestQuestion(questionId: string): Promise<void> {
+    // This function needs the template ID, which we'll need to find first
+    // For now, we'll implement it in a way that searches through templates
+    await handleDbOperation(async () => {
+      // Find all templates to locate the question
+      const templates = await this.getTestTemplates();
+      
+      for (const template of templates) {
+        if (!template.questions) continue;
+        
+        try {
+          let questions = JSON.parse(template.questions);
+          const originalLength = questions.length;
+          questions = questions.filter((q: any) => q.id !== questionId);
+          
+          if (questions.length < originalLength) {
+            // Question was found and removed
+            await this.updateTestTemplate(template.id, {
+              questions: JSON.stringify(questions)
+            });
+            return;
+          }
+        } catch (error) {
+          continue;
+        }
+      }
+      
+      throw new Error('Question not found');
+    });
+  }
+
   // Test assignments
   async getTestAssignments(recruiterId?: string, jobSeekerId?: string): Promise<TestAssignment[]> {
     return await handleDbOperation(async () => {
