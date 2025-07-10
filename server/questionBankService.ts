@@ -278,9 +278,10 @@ export class QuestionBankService {
   
   // Search questions by keywords
   async searchQuestions(
-    searchTerm: string,
+    searchTerm?: string,
     category?: string,
     domain?: string,
+    difficulty?: string,
     limit: number = 20
   ): Promise<any[]> {
     try {
@@ -296,21 +297,28 @@ export class QuestionBankService {
         whereConditions.push(eq(questionBank.domain, domain));
       }
       
+      if (difficulty) {
+        whereConditions.push(eq(questionBank.difficulty, difficulty));
+      }
+      
       const questions = await db.select()
         .from(questionBank)
         .where(and(...whereConditions))
         .limit(limit * 3); // Get more for better filtering
       
-      // Filter by search term (simple text search)
-      const filtered = questions.filter(q => 
-        q.question.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        q.keywords?.some(keyword => 
-          keyword.toLowerCase().includes(searchTerm.toLowerCase())
-        ) ||
-        q.tags?.some(tag => 
-          tag.toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      );
+      // Filter by search term if provided
+      let filtered = questions;
+      if (searchTerm && searchTerm.trim() !== '') {
+        filtered = questions.filter(q => 
+          q.question?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          q.keywords?.some(keyword => 
+            keyword?.toLowerCase().includes(searchTerm.toLowerCase())
+          ) ||
+          q.tags?.some(tag => 
+            tag?.toLowerCase().includes(searchTerm.toLowerCase())
+          )
+        );
+      }
       
       return filtered.slice(0, limit).map(q => ({
         ...q,
