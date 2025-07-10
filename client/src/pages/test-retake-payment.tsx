@@ -46,13 +46,10 @@ export default function TestRetakePayment() {
       // For demo purposes, we'll simulate payment processing
       await new Promise(resolve => setTimeout(resolve, 2000)); // Simulate API call
       
-      return await apiRequest(`/api/test-assignments/${params.id}/retake/payment`, {
-        method: 'POST',
-        body: JSON.stringify({
-          paymentProvider: paymentMethod,
-          paymentIntentId: `${paymentMethod}_${Date.now()}`, // Mock payment ID
-          ...paymentData
-        }),
+      return await apiRequest(`/api/test-assignments/${params.id}/retake/payment`, "POST", {
+        paymentProvider: paymentMethod,
+        paymentIntentId: `${paymentMethod}_${Date.now()}`, // Mock payment ID
+        ...paymentData
       });
     },
     onSuccess: () => {

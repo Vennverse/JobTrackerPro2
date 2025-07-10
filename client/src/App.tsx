@@ -38,6 +38,7 @@ import TestRetakePayment from "@/pages/test-retake-payment";
 import QuestionBuilder from "@/pages/question-builder";
 import RecruiterFeatures from "@/pages/recruiter-features";
 import QuestionBank from "@/pages/question-bank";
+import QuestionBankAdmin from "@/pages/admin/question-bank";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -79,6 +80,7 @@ function Router() {
                 {(params) => <QuestionBuilder templateId={parseInt(params.templateId)} />}
               </Route>
               <Route path="/recruiter/question-bank" component={QuestionBank} />
+              <Route path="/admin/question-bank" component={QuestionBankAdmin} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={RecruiterSubscription} />
