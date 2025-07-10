@@ -28,7 +28,8 @@ import {
   Send,
   Settings,
   CheckSquare,
-  Square
+  Square,
+  BookOpen
 } from "lucide-react";
 
 const jobProfiles = [
@@ -451,6 +452,13 @@ export default function TestManagement() {
           </p>
         </div>
         <div className="flex gap-3">
+          <Button
+            onClick={() => setLocation("/admin/question-bank")}
+            variant="outline"
+          >
+            <BookOpen className="w-4 h-4 mr-2" />
+            Question Bank
+          </Button>
           <Button
             onClick={() => setLocation("/recruiter/test-assignments")}
             variant="outline"

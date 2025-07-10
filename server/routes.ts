@@ -6394,5 +6394,87 @@ Host: https://autojobr.com`;
     }
   });
 
+  // ========================================
+  // QUESTION BANK MANAGEMENT API
+  // ========================================
+
+  // Search questions in the question bank
+  app.get('/api/question-bank/search', isAuthenticated, async (req: any, res) => {
+    try {
+      const { q, category, domain, difficulty } = req.query;
+      
+      const { questionBankService } = await import('./questionBankService');
+      
+      const questions = await questionBankService.searchQuestions(
+        q ? String(q) : undefined,
+        category ? String(category) : undefined,
+        domain ? String(domain) : undefined,
+        difficulty ? String(difficulty) : undefined
+      );
+      
+      res.json(questions);
+    } catch (error) {
+      console.error('Error searching questions:', error);
+      res.status(500).json({ message: 'Failed to search questions' });
+    }
+  });
+
+  // Get question bank statistics
+  app.get('/api/question-bank/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const { questionBankService } = await import('./questionBankService');
+      const stats = await questionBankService.getQuestionStats();
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching question stats:', error);
+      res.status(500).json({ message: 'Failed to fetch question statistics' });
+    }
+  });
+
+  // Add new question to the question bank
+  app.post('/api/question-bank/questions', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      // For now, allow recruiters to add questions (can be restricted to admins later)
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: "Access denied. Recruiter account required." });
+      }
+
+      const { questionBankService } = await import('./questionBankService');
+      const question = await questionBankService.addCustomQuestion(req.body, userId);
+      
+      res.status(201).json(question);
+    } catch (error) {
+      console.error('Error adding question:', error);
+      res.status(500).json({ message: 'Failed to add question' });
+    }
+  });
+
+  // Get available domains
+  app.get('/api/question-bank/domains', isAuthenticated, async (req: any, res) => {
+    try {
+      const { questionBankService } = await import('./questionBankService');
+      const domains = await questionBankService.getAvailableDomains();
+      res.json(domains);
+    } catch (error) {
+      console.error('Error fetching domains:', error);
+      res.status(500).json({ message: 'Failed to fetch domains' });
+    }
+  });
+
+  // Get available tags
+  app.get('/api/question-bank/tags', isAuthenticated, async (req: any, res) => {
+    try {
+      const { questionBankService } = await import('./questionBankService');
+      const tags = await questionBankService.getAvailableTags();
+      res.json(tags);
+    } catch (error) {
+      console.error('Error fetching tags:', error);
+      res.status(500).json({ message: 'Failed to fetch tags' });
+    }
+  });
+
   return httpServer;
 }
