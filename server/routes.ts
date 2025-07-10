@@ -5503,16 +5503,18 @@ Host: https://autojobr.com`;
         return res.status(400).json({ message: 'Missing required fields' });
       }
 
-      // Ensure questions exist and have at least one question
-      if (!questions || !Array.isArray(questions) || questions.length === 0) {
-        return res.status(400).json({ message: 'At least one question is required' });
+      // Handle both manual questions and question bank templates
+      const { useQuestionBank } = req.body;
+      
+      if (!useQuestionBank && (!questions || !Array.isArray(questions) || questions.length === 0)) {
+        return res.status(400).json({ message: 'At least one question is required when not using question bank' });
       }
 
       const templateData = {
         ...req.body,
         createdBy: req.user.id,
         isGlobal: false, // Custom templates are not global
-        questions: JSON.stringify(questions), // Store as JSON string for database
+        questions: questions && questions.length > 0 ? JSON.stringify(questions) : JSON.stringify([]), // Store as JSON string for database
       };
 
       const template = await storage.createTestTemplate(templateData);

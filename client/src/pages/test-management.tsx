@@ -57,6 +57,11 @@ const createTestSchema = z.object({
   difficultyLevel: z.string().min(1, "Difficulty level is required"),
   timeLimit: z.number().min(1, "Time limit must be at least 1 minute"),
   passingScore: z.number().min(0).max(100, "Passing score must be between 0-100"),
+  useQuestionBank: z.boolean().default(false),
+  aptitudeQuestions: z.number().min(0).max(50).default(15),
+  englishQuestions: z.number().min(0).max(30).default(6),
+  domainQuestions: z.number().min(0).max(30).default(9),
+  includeExtremeQuestions: z.boolean().default(true),
   questions: z.array(z.object({
     id: z.string(),
     type: z.enum(['multiple_choice', 'coding', 'essay', 'true_false']),
@@ -88,6 +93,7 @@ export default function TestManagement() {
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null);
   const [selectedCandidates, setSelectedCandidates] = useState<string[]>([]);
   const [selectedJobPosting, setSelectedJobPosting] = useState<number | null>(null);
+  const [useQuestionBank, setUseQuestionBank] = useState(false);
 
   // Fetch test templates
   const { data: templates = [], isLoading } = useQuery({
@@ -129,6 +135,11 @@ export default function TestManagement() {
       difficultyLevel: "",
       timeLimit: 30,
       passingScore: 70,
+      useQuestionBank: false,
+      aptitudeQuestions: 15,
+      englishQuestions: 6,
+      domainQuestions: 9,
+      includeExtremeQuestions: true,
       questions: [
         {
           id: "q1",
@@ -142,6 +153,12 @@ export default function TestManagement() {
       ],
     },
   });
+
+  // Watch for useQuestionBank form changes
+  const watchUseQuestionBank = createTestForm.watch("useQuestionBank");
+  useEffect(() => {
+    setUseQuestionBank(watchUseQuestionBank);
+  }, [watchUseQuestionBank]);
 
   const createTestMutation = useMutation({
     mutationFn: async (data: any) => {
@@ -239,18 +256,23 @@ export default function TestManagement() {
   });
 
   const onCreateTest = (data: any) => {
-    // Ensure we have proper questions array with at least one question
-    const questions = data.questions || [
-      {
-        id: "q1",
-        type: "multiple_choice",
-        question: "Sample question - please edit this after creation",
-        options: ["Option A", "Option B", "Option C", "Option D"],
-        correctAnswer: 0,
-        points: 10,
-        explanation: "This is a sample question that should be edited"
-      }
-    ];
+    // Handle question bank vs manual questions
+    let questions = [];
+    
+    if (!data.useQuestionBank) {
+      // Use manual questions with at least one sample
+      questions = data.questions && data.questions.length > 0 ? data.questions : [
+        {
+          id: "q1",
+          type: "multiple_choice",
+          question: "Sample question - please edit this after creation",
+          options: ["Option A", "Option B", "Option C", "Option D"],
+          correctAnswer: 0,
+          points: 10,
+          explanation: "This is a sample question that should be edited"
+        }
+      ];
+    }
 
     createTestMutation.mutate({
       ...data,
@@ -443,7 +465,11 @@ export default function TestManagement() {
                     <Button
                       size="sm"
                       variant="ghost"
-                      onClick={() => setLocation(`/recruiter/question-builder/${template.id}`)}
+                      onClick={() => {
+                        if (template.id) {
+                          setLocation(`/recruiter/question-builder/${template.id}`);
+                        }
+                      }}
                     >
                       <Edit className="w-4 h-4" />
                     </Button>
@@ -671,6 +697,128 @@ export default function TestManagement() {
                     </FormItem>
                   )}
                 />
+              </div>
+
+              {/* Question Bank Options */}
+              <div className="space-y-4 border-t pt-4">
+                <FormField
+                  control={createTestForm.control}
+                  name="useQuestionBank"
+                  render={({ field }) => (
+                    <FormItem className="flex flex-row items-center justify-between rounded-lg border p-4">
+                      <div className="space-y-0.5">
+                        <FormLabel className="text-base">Use Question Bank</FormLabel>
+                        <div className="text-sm text-gray-600">
+                          Auto-generate questions from our curated question bank (14 questions available)
+                        </div>
+                      </div>
+                      <FormControl>
+                        <Checkbox
+                          checked={field.value}
+                          onCheckedChange={(checked) => {
+                            field.onChange(checked);
+                            setUseQuestionBank(checked as boolean);
+                          }}
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+
+                {useQuestionBank && (
+                  <div className="space-y-4 pl-4 border-l-2 border-blue-200">
+                    <div className="text-sm text-gray-600 mb-3">
+                      Configure automatic question distribution:
+                    </div>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                      <FormField
+                        control={createTestForm.control}
+                        name="aptitudeQuestions"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Aptitude Questions</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                max="50" 
+                                {...field} 
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <div className="text-xs text-gray-500">Logic & reasoning</div>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={createTestForm.control}
+                        name="englishQuestions"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>English Questions</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                max="30" 
+                                {...field} 
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <div className="text-xs text-gray-500">Grammar & vocabulary</div>
+                          </FormItem>
+                        )}
+                      />
+
+                      <FormField
+                        control={createTestForm.control}
+                        name="domainQuestions"
+                        render={({ field }) => (
+                          <FormItem>
+                            <FormLabel>Technical Questions</FormLabel>
+                            <FormControl>
+                              <Input 
+                                type="number" 
+                                min="0" 
+                                max="30" 
+                                {...field} 
+                                onChange={(e) => field.onChange(parseInt(e.target.value) || 0)}
+                              />
+                            </FormControl>
+                            <div className="text-xs text-gray-500">Job-specific skills</div>
+                          </FormItem>
+                        )}
+                      />
+                    </div>
+
+                    <FormField
+                      control={createTestForm.control}
+                      name="includeExtremeQuestions"
+                      render={({ field }) => (
+                        <FormItem className="flex flex-row items-center space-x-3 space-y-0">
+                          <FormControl>
+                            <Checkbox
+                              checked={field.value}
+                              onCheckedChange={field.onChange}
+                            />
+                          </FormControl>
+                          <div className="space-y-1 leading-none">
+                            <FormLabel>Include challenging questions</FormLabel>
+                            <div className="text-sm text-gray-600">
+                              Add harder questions to better evaluate top candidates
+                            </div>
+                          </div>
+                        </FormItem>
+                      )}
+                    />
+                  </div>
+                )}
+
+                <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-lg">
+                  <strong>Note:</strong> After creating the template, you can add custom questions or edit auto-generated ones in the Question Builder.
+                </div>
               </div>
 
               <div className="flex gap-3 pt-4">
