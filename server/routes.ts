@@ -5904,12 +5904,82 @@ Host: https://autojobr.com`;
         return res.status(404).json({ message: 'Test template not found' });
       }
 
-      // Return questions (parse if stored as JSON string)
-      let questions = template.questions;
-      if (typeof questions === 'string') {
-        questions = JSON.parse(questions);
+      let questions = [];
+
+      // Check if template uses question bank for dynamic question generation
+      if (template.useQuestionBank) {
+        console.log(`[DEBUG] Generating questions from question bank for template: ${template.title}`);
+        
+        try {
+          // Import question bank service dynamically
+          const { QuestionBankService } = await import('./questionBankService');
+          const questionBankService = new QuestionBankService();
+          
+          // Get tags for question generation
+          const tags = template.tags || ['general'];
+          
+          // Generate questions with specified distribution
+          const generatedQuestions = await questionBankService.generateTestForProfile(
+            tags,
+            (template.aptitudeQuestions || 15) + (template.englishQuestions || 6) + (template.domainQuestions || 9),
+            {
+              aptitude: template.aptitudeQuestions || 15,
+              english: template.englishQuestions || 6,
+              domain: template.domainQuestions || 9,
+            },
+            template.includeExtremeQuestions
+          );
+          
+          console.log(`[DEBUG] Generated ${generatedQuestions.length} questions from question bank`);
+          questions = generatedQuestions;
+          
+          // Store generated questions in test generation log for tracking
+          try {
+            await storage.createTestGenerationLog({
+              testTemplateId: template.id,
+              assignmentId: assignmentId,
+              generatedQuestions: generatedQuestions,
+              generationParams: {
+                tags,
+                totalQuestions: generatedQuestions.length,
+                aptitudeQuestions: template.aptitudeQuestions || 15,
+                englishQuestions: template.englishQuestions || 6,
+                domainQuestions: template.domainQuestions || 9,
+                includeExtremeQuestions: template.includeExtremeQuestions
+              },
+              totalQuestions: generatedQuestions.length,
+              aptitudeCount: template.aptitudeQuestions || 15,
+              englishCount: template.englishQuestions || 6,
+              domainCount: template.domainQuestions || 9,
+              extremeCount: template.includeExtremeQuestions ? Math.floor(generatedQuestions.length * 0.1) : 0
+            });
+          } catch (logError) {
+            console.warn('Failed to log test generation, continuing:', logError.message);
+          }
+          
+        } catch (error) {
+          console.error('Error generating questions from bank, falling back to static questions:', error);
+          // Fallback to static questions
+          questions = template.questions;
+          if (typeof questions === 'string') {
+            questions = JSON.parse(questions);
+          }
+        }
+      } else {
+        console.log(`[DEBUG] Using static questions for template: ${template.title}`);
+        // Use static questions from template
+        questions = template.questions;
+        if (typeof questions === 'string') {
+          questions = JSON.parse(questions);
+        }
+      }
+
+      // Add any custom questions from the template
+      if (template.customQuestions && Array.isArray(template.customQuestions)) {
+        questions = [...questions, ...template.customQuestions];
       }
       
+      console.log(`[DEBUG] Returning ${questions.length} questions for assignment ${assignmentId}`);
       res.json(questions);
     } catch (error) {
       console.error('Error fetching test questions:', error);

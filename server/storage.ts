@@ -17,6 +17,7 @@ import {
   testTemplates,
   testAssignments,
   testRetakePayments,
+  testGenerationLogs,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -1162,6 +1163,47 @@ export class DatabaseStorage implements IStorage {
         .returning();
       return updatedPayment;
     });
+  }
+
+  // Test generation logs for tracking auto-generated tests
+  async createTestGenerationLog(log: {
+    testTemplateId: number;
+    assignmentId: number;
+    generatedQuestions: any[];
+    generationParams: any;
+    totalQuestions: number;
+    aptitudeCount: number;
+    englishCount: number;
+    domainCount: number;
+    extremeCount: number;
+  }): Promise<any> {
+    return await handleDbOperation(async () => {
+      const [newLog] = await db.insert(testGenerationLogs).values(log).returning();
+      return newLog;
+    });
+  }
+
+  async getTestGenerationLogs(testTemplateId?: number, assignmentId?: number): Promise<any[]> {
+    return await handleDbOperation(async () => {
+      let conditions: any[] = [];
+      
+      if (testTemplateId) {
+        conditions.push(eq(testGenerationLogs.testTemplateId, testTemplateId));
+      }
+      
+      if (assignmentId) {
+        conditions.push(eq(testGenerationLogs.assignmentId, assignmentId));
+      }
+      
+      if (conditions.length > 0) {
+        return await db.select().from(testGenerationLogs)
+          .where(and(...conditions))
+          .orderBy(desc(testGenerationLogs.createdAt));
+      } else {
+        return await db.select().from(testGenerationLogs)
+          .orderBy(desc(testGenerationLogs.createdAt));
+      }
+    }, []);
   }
 }
 

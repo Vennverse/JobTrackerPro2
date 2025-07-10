@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation } from "@tanstack/react-query";
-import { useParams } from "wouter";
+import { useParams, useLocation } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -9,7 +9,10 @@ import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Checkbox } from "@/components/ui/checkbox";
 import { Textarea } from "@/components/ui/textarea";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
+import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
 import { 
   Clock, 
@@ -25,7 +28,9 @@ import {
 
 export default function TestTaking() {
   const { id: assignmentId } = useParams();
+  const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
   const [timeLeft, setTimeLeft] = useState(0);
@@ -37,15 +42,20 @@ export default function TestTaking() {
   const [tabSwitchCount, setTabSwitchCount] = useState(0);
   const testContainerRef = useRef<HTMLDivElement>(null);
   const startTimeRef = useRef<Date | null>(null);
+  
+  // Authentication state
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [isLoggingIn, setIsLoggingIn] = useState(false);
 
   const { data: assignment, isLoading } = useQuery({
     queryKey: [`/api/test-assignments/${assignmentId}`],
-    enabled: !!assignmentId,
+    enabled: !!assignmentId && isAuthenticated,
   });
 
   const { data: questions = [] } = useQuery({
     queryKey: [`/api/test-assignments/${assignmentId}/questions`],
-    enabled: !!assignmentId,
+    enabled: !!assignmentId && isAuthenticated,
   });
 
   const submitTestMutation = useMutation({
@@ -220,6 +230,39 @@ export default function TestTaking() {
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
 
+  // Login function
+  const handleLogin = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setIsLoggingIn(true);
+    
+    try {
+      const response = await apiRequest("/api/auth/email/login", "POST", {
+        email,
+        password,
+      });
+      
+      if (response.ok) {
+        toast({ title: "Login successful! Loading your test..." });
+        window.location.reload(); // Refresh to update auth state
+      } else {
+        const error = await response.json();
+        toast({
+          title: "Login failed",
+          description: error.message || "Invalid credentials",
+          variant: "destructive"
+        });
+      }
+    } catch (error) {
+      toast({
+        title: "Login failed",
+        description: "Unable to connect to server",
+        variant: "destructive"
+      });
+    } finally {
+      setIsLoggingIn(false);
+    }
+  };
+
   const getQuestionIcon = (type: string) => {
     switch (type) {
       case 'coding': return <Code className="w-5 h-5" />;
@@ -231,10 +274,69 @@ export default function TestTaking() {
     }
   };
 
-  if (isLoading) {
+  if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
         <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-blue-600"></div>
+      </div>
+    );
+  }
+
+  // Show login form if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-gray-50">
+        <Card className="w-full max-w-md">
+          <CardHeader>
+            <CardTitle className="text-center">Login to Take Test</CardTitle>
+            <p className="text-center text-gray-600">
+              Please log in to access your assigned test
+            </p>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleLogin} className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="email">Email</Label>
+                <Input
+                  id="email"
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="Enter your email"
+                  required
+                />
+              </div>
+              <div className="space-y-2">
+                <Label htmlFor="password">Password</Label>
+                <Input
+                  id="password"
+                  type="password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  placeholder="Enter your password"
+                  required
+                />
+              </div>
+              <Button 
+                type="submit" 
+                className="w-full" 
+                disabled={isLoggingIn}
+              >
+                {isLoggingIn ? "Logging in..." : "Login"}
+              </Button>
+              <div className="text-center text-sm text-gray-600">
+                Don't have an account?{" "}
+                <Button 
+                  variant="link" 
+                  className="p-0 h-auto"
+                  onClick={() => setLocation("/auth")}
+                >
+                  Sign up here
+                </Button>
+              </div>
+            </form>
+          </CardContent>
+        </Card>
       </div>
     );
   }
@@ -244,7 +346,25 @@ export default function TestTaking() {
       <div className="flex items-center justify-center min-h-screen">
         <div className="text-center">
           <h1 className="text-2xl font-bold mb-4">Test Assignment Not Found</h1>
-          <p className="text-gray-600">The test assignment you're looking for doesn't exist or has expired.</p>
+          <p className="text-gray-600 mb-4">The test assignment you're looking for doesn't exist or has expired.</p>
+          <Button onClick={() => setLocation("/job-seeker/tests")}>
+            View All Your Tests
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Show message if no questions are available
+  if (questions.length === 0 && !isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold mb-4">No Questions Available</h1>
+          <p className="text-gray-600 mb-4">This test doesn't have any questions yet. Please contact the recruiter.</p>
+          <Button onClick={() => setLocation("/job-seeker/tests")}>
+            View All Your Tests
+          </Button>
         </div>
       </div>
     );
