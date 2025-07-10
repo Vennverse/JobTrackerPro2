@@ -24,7 +24,7 @@ import {
 } from "lucide-react";
 
 export default function TestTaking() {
-  const { assignmentId } = useParams();
+  const { id: assignmentId } = useParams();
   const { toast } = useToast();
   const [currentQuestion, setCurrentQuestion] = useState(0);
   const [answers, setAnswers] = useState<Record<string, any>>({});
