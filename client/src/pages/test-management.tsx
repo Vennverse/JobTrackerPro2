@@ -222,17 +222,36 @@ export default function TestManagement() {
 
   const assignTestMutation = useMutation({
     mutationFn: async (data: any) => {
+      console.log('assignTestMutation called with:', data);
+      
+      // Validate required fields
+      if (!data.testTemplateId || !data.candidateIds || data.candidateIds.length === 0) {
+        throw new Error('Missing required fields for test assignment');
+      }
+      
       // Submit for each selected candidate
       const assignments = [];
       for (const candidateId of data.candidateIds) {
-        const response = await apiRequest("/api/test-assignments", "POST", {
+        console.log('Assigning test to candidate:', candidateId);
+        
+        const assignmentPayload = {
           testTemplateId: data.testTemplateId,
           jobSeekerId: candidateId,
           jobPostingId: data.jobPostingId,
           dueDate: data.dueDate,
-        });
-        const assignment = await response.json();
-        assignments.push(assignment);
+        };
+        
+        console.log('Assignment payload:', assignmentPayload);
+        
+        try {
+          const response = await apiRequest("/api/test-assignments", "POST", assignmentPayload);
+          const assignment = await response.json();
+          assignments.push(assignment);
+          console.log('Successfully assigned test to candidate:', candidateId);
+        } catch (error) {
+          console.error('Error assigning test to candidate:', candidateId, error);
+          throw error;
+        }
       }
       return assignments;
     },
@@ -310,15 +329,23 @@ export default function TestManagement() {
   };
 
   const onAssignTest = (data: any) => {
+    console.log('onAssignTest called with data:', data);
+    console.log('selectedTemplate:', selectedTemplate);
+    console.log('selectedCandidates:', selectedCandidates);
+    
     const dueDate = new Date(data.dueDate);
     dueDate.setHours(23, 59, 59); // Set to end of day
     
-    assignTestMutation.mutate({
+    const assignmentData = {
       ...data,
       testTemplateId: selectedTemplate?.id,
       candidateIds: selectedCandidates,
       dueDate: dueDate.toISOString(),
-    });
+    };
+    
+    console.log('Assignment data to submit:', assignmentData);
+    
+    assignTestMutation.mutate(assignmentData);
   };
 
   // Helper functions for candidate selection
