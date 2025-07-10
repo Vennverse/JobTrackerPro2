@@ -163,12 +163,41 @@ export default function TestManagement() {
   const createTestMutation = useMutation({
     mutationFn: async (data: any) => {
       const response = await apiRequest("/api/test-templates", "POST", data);
-      return await response.json();
+      const template = await response.json();
+      
+      // If using question bank, generate questions automatically
+      if (data.useQuestionBank) {
+        try {
+          const generateResponse = await apiRequest(`/api/test-templates/${template.id}/generate`, "POST", {
+            aptitudeQuestions: data.aptitudeQuestions,
+            englishQuestions: data.englishQuestions,
+            domainQuestions: data.domainQuestions,
+            includeExtremeQuestions: data.includeExtremeQuestions,
+            jobProfile: data.jobProfile,
+            difficultyLevel: data.difficultyLevel
+          });
+          const generatedQuestions = await generateResponse.json();
+          return { ...template, questionsGenerated: generatedQuestions.length };
+        } catch (error) {
+          console.error("Failed to generate questions:", error);
+          return { ...template, questionsGenerated: 0 };
+        }
+      }
+      
+      return template;
     },
-    onSuccess: () => {
-      toast({ title: "Test template created successfully" });
+    onSuccess: (data: any) => {
+      if (data.questionsGenerated > 0) {
+        toast({ 
+          title: "Test template created successfully",
+          description: `Generated ${data.questionsGenerated} questions from question bank`
+        });
+      } else {
+        toast({ title: "Test template created successfully" });
+      }
       setShowCreateDialog(false);
       createTestForm.reset();
+      setUseQuestionBank(false);
       queryClient.invalidateQueries({ queryKey: ["/api/test-templates"] });
     },
     onError: (error: any) => {
@@ -540,11 +569,11 @@ export default function TestManagement() {
 
       {/* Create Test Dialog */}
       <Dialog open={showCreateDialog} onOpenChange={setShowCreateDialog}>
-        <DialogContent className="max-w-2xl">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Create Custom Test Template</DialogTitle>
             <DialogDescription>
-              Create a custom test template for your specific requirements. You'll be able to add questions after creation.
+              Create a custom test template for your specific requirements. You can use our question bank or add questions after creation.
             </DialogDescription>
           </DialogHeader>
           <Form {...createTestForm}>
@@ -725,7 +754,7 @@ export default function TestManagement() {
                   )}
                 />
 
-                {useQuestionBank && (
+                {(useQuestionBank || watchUseQuestionBank) && (
                   <div className="space-y-4 pl-4 border-l-2 border-blue-200">
                     <div className="text-sm text-gray-600 mb-3">
                       Configure automatic question distribution:

@@ -74,7 +74,9 @@ function Router() {
               <Route path="/premium-targeting-payment" component={PremiumTargetingPayment} />
               <Route path="/recruiter/test-management" component={TestManagement} />
               <Route path="/recruiter/test-assignments" component={TestAssignments} />
-              <Route path="/recruiter/question-builder/:templateId" component={QuestionBuilder} />
+              <Route path="/recruiter/question-builder/:templateId">
+                {(params) => <QuestionBuilder templateId={parseInt(params.templateId)} />}
+              </Route>
               <Route path="/recruiter/question-bank" component={QuestionBank} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
