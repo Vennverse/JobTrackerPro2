@@ -14,6 +14,7 @@ import { Label } from "@/components/ui/label";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/hooks/use-auth";
 import { apiRequest } from "@/lib/queryClient";
+import { TestResultsModal } from "@/components/TestResultsModal";
 import { 
   Clock, 
   AlertTriangle, 
@@ -47,6 +48,10 @@ export default function TestTaking() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [isLoggingIn, setIsLoggingIn] = useState(false);
+  
+  // Results modal state
+  const [showResultsModal, setShowResultsModal] = useState(false);
+  const [testResults, setTestResults] = useState<any>(null);
 
   const { data: assignment, isLoading } = useQuery({
     queryKey: [`/api/test-assignments/${assignmentId}`],
@@ -60,11 +65,26 @@ export default function TestTaking() {
 
   const submitTestMutation = useMutation({
     mutationFn: (data: any) => apiRequest(`/api/test-assignments/${assignmentId}/submit`, "POST", data),
-    onSuccess: () => {
-      toast({ title: "Test submitted successfully!" });
+    onSuccess: (response: any) => {
       exitFullscreen();
+      setIsSubmitting(false);
+      
+      // Store test results and show modal for all completions
+      const timeSpent = startTimeRef.current ? Math.round((new Date().getTime() - startTimeRef.current.getTime()) / 1000) : 0;
+      
+      setTestResults({
+        score: response.score || 0,
+        passingScore: assignment?.testTemplate?.passingScore || 70,
+        timeSpent,
+        violations: warningCount,
+        testTitle: assignment?.testTemplate?.title || 'Test',
+        recruiterName: assignment?.recruiter?.name || assignment?.recruiter?.companyName || 'Recruiter'
+      });
+      
+      setShowResultsModal(true);
     },
     onError: (error: any) => {
+      setIsSubmitting(false);
       toast({ 
         title: "Error", 
         description: error.message || "Failed to submit test",
@@ -277,6 +297,16 @@ export default function TestTaking() {
     }
   };
 
+  const handleModalClose = () => {
+    setShowResultsModal(false);
+    setLocation('/job-seeker/tests');
+  };
+
+  const handleRetakePayment = () => {
+    setShowResultsModal(false);
+    setLocation(`/test/${assignmentId}/retake-payment`);
+  };
+
   if (authLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -353,6 +383,39 @@ export default function TestTaking() {
           <Button onClick={() => setLocation("/job-seeker/tests")}>
             View All Your Tests
           </Button>
+        </div>
+      </div>
+    );
+  }
+
+  // Check if test is already completed - prevent retaking
+  if (assignment?.status === 'completed') {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center space-y-4">
+          <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto">
+            <CheckCircle className="w-8 h-8 text-green-600" />
+          </div>
+          <h1 className="text-2xl font-bold">Test Already Completed</h1>
+          <p className="text-gray-600 max-w-md">
+            You have already completed this test and scored {assignment.score}%. 
+            {assignment.score >= (assignment.testTemplate?.passingScore || 70) 
+              ? ' Congratulations on passing! You can retake to achieve an even higher score.' 
+              : ' You can purchase a retake to improve your score.'}
+          </p>
+          <div className="flex gap-4 justify-center">
+            <Button onClick={() => setLocation("/job-seeker/tests")}>
+              View All Tests
+            </Button>
+            <Button 
+              onClick={() => setLocation(`/test/${assignmentId}/retake-payment`)}
+              className="bg-blue-600 hover:bg-blue-700"
+            >
+              {assignment.score >= (assignment.testTemplate?.passingScore || 70) 
+                ? 'Improve Score - $5' 
+                : 'Purchase Retake - $5'}
+            </Button>
+          </div>
         </div>
       </div>
     );
@@ -572,6 +635,21 @@ export default function TestTaking() {
           </Card>
         )}
       </div>
+
+      {/* Test Results Modal */}
+      {testResults && (
+        <TestResultsModal
+          isOpen={showResultsModal}
+          onClose={handleModalClose}
+          onRetakePayment={handleRetakePayment}
+          score={testResults.score}
+          passingScore={testResults.passingScore}
+          timeSpent={testResults.timeSpent}
+          violations={testResults.violations}
+          testTitle={testResults.testTitle}
+          recruiterName={testResults.recruiterName}
+        />
+      )}
     </div>
   );
 }

@@ -34,6 +34,7 @@ import TestManagement from "@/pages/test-management";
 import TestAssignments from "@/pages/test-assignments";
 import TestTaking from "@/pages/test-taking";
 import JobSeekerTests from "@/pages/job-seeker-tests";
+import TestRetakePayment from "@/pages/test-retake-payment";
 import QuestionBuilder from "@/pages/question-builder";
 import RecruiterFeatures from "@/pages/recruiter-features";
 import QuestionBank from "@/pages/question-bank";
@@ -103,6 +104,9 @@ function Router() {
                   <Route path="/discover" component={JobDiscoveryPage} />
                   <Route path="/job-seeker/tests" component={JobSeekerTests} />
                   <Route path="/test/:id" component={TestTaking} />
+                  <Route path="/test/:id/retake-payment">
+                    {(params) => <TestRetakePayment />}
+                  </Route>
                   <Route path="/jobs/:id" component={ViewJob} />
                   <Route path="/subscription" component={Subscription} />
                   <Route path="/chat" component={MessagingPage} />

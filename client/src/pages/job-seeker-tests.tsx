@@ -19,7 +19,9 @@ import {
   PlayCircle, 
   FileText,
   RefreshCw,
-  Building
+  Building,
+  AlertTriangle,
+  TrendingUp
 } from "lucide-react";
 
 const statusIcons = {
@@ -88,17 +90,44 @@ export default function JobSeekerTests() {
 
   const getActionButton = (assignment: any) => {
     const isExpired = isOverdue(assignment.dueDate, assignment.status);
+    const passingScore = assignment.testTemplate?.passingScore || 70;
+    const hasFailed = assignment.status === 'completed' && assignment.score < passingScore;
     
     if (assignment.status === 'completed') {
       return (
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setLocation(`/test/${assignment.id}`)}
-        >
-          <FileText className="w-4 h-4 mr-2" />
-          View Results
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setLocation(`/test/${assignment.id}`)}
+          >
+            <FileText className="w-4 h-4 mr-2" />
+            View Results
+          </Button>
+          
+          {/* Show retake option for failed tests */}
+          {hasFailed && !assignment.retakeAllowed && (
+            <Button
+              size="sm"
+              onClick={() => setLocation(`/test/${assignment.id}/retake-payment`)}
+              className="bg-blue-600 hover:bg-blue-700 text-white"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Retake $5
+            </Button>
+          )}
+          
+          {assignment.retakeAllowed && (
+            <Button
+              size="sm"
+              onClick={() => setLocation(`/test/${assignment.id}`)}
+              className="bg-green-600 hover:bg-green-700 text-white"
+            >
+              <RefreshCw className="w-4 h-4 mr-2" />
+              Start Retake
+            </Button>
+          )}
+        </div>
       );
     }
     
@@ -321,37 +350,100 @@ export default function JobSeekerTests() {
                       
                       {/* Results Display */}
                       {assignment.status === 'completed' && (
-                        <div className="mt-4 p-3 bg-gray-50 rounded-lg">
-                          <div className="flex items-center justify-between">
-                            <div className="flex items-center gap-4">
-                              <div className="text-center">
-                                <div className={`text-xl font-bold ${getScoreColor(assignment.score, assignment.testTemplate?.passingScore)}`}>
-                                  {assignment.score}%
+                        <div className="mt-4 space-y-3">
+                          <div className="p-3 bg-gray-50 rounded-lg">
+                            <div className="flex items-center justify-between">
+                              <div className="flex items-center gap-4">
+                                <div className="text-center">
+                                  <div className={`text-xl font-bold ${getScoreColor(assignment.score, assignment.testTemplate?.passingScore)}`}>
+                                    {assignment.score}%
+                                  </div>
+                                  <div className="text-xs text-gray-600">Score</div>
                                 </div>
-                                <div className="text-xs text-gray-600">Score</div>
+                                
+                                <div className="text-center">
+                                  <div className={`text-lg font-bold ${assignment.score >= assignment.testTemplate?.passingScore ? 'text-green-600' : 'text-red-600'}`}>
+                                    {assignment.score >= assignment.testTemplate?.passingScore ? 'PASSED' : 'FAILED'}
+                                  </div>
+                                  <div className="text-xs text-gray-600">Result</div>
+                                </div>
+                                
+                                {assignment.timeSpent && (
+                                  <div className="text-center">
+                                    <div className="text-lg font-bold text-gray-700">
+                                      {Math.round(assignment.timeSpent / 60)}m
+                                    </div>
+                                    <div className="text-xs text-gray-600">Time</div>
+                                  </div>
+                                )}
                               </div>
                               
-                              <div className="text-center">
-                                <div className={`text-lg font-bold ${assignment.score >= assignment.testTemplate?.passingScore ? 'text-green-600' : 'text-red-600'}`}>
-                                  {assignment.score >= assignment.testTemplate?.passingScore ? 'PASSED' : 'FAILED'}
-                                </div>
-                                <div className="text-xs text-gray-600">Result</div>
+                              <div className="flex items-center gap-2">
+                                <Progress 
+                                  value={assignment.score} 
+                                  className="w-24"
+                                />
+                                {assignment.retakeAllowed && (
+                                  <Badge variant="outline" className="text-xs">
+                                    <RefreshCw className="w-3 h-3 mr-1" />
+                                    Retake Available
+                                  </Badge>
+                                )}
                               </div>
                             </div>
-                            
-                            <div className="flex items-center gap-2">
-                              <Progress 
-                                value={assignment.score} 
-                                className="w-24"
-                              />
-                              {assignment.retakeAllowed && (
-                                <Badge variant="outline" className="text-xs">
-                                  <RefreshCw className="w-3 h-3 mr-1" />
-                                  Retake Available
-                                </Badge>
-                              )}
-                            </div>
                           </div>
+                          
+                          {/* Violations Warning */}
+                          {assignment.answers?._violations?.totalViolations > 0 && (
+                            <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+                              <div className="flex items-center gap-2 text-yellow-700">
+                                <AlertTriangle className="w-4 h-4" />
+                                <span className="font-medium text-sm">
+                                  {assignment.answers._violations.totalViolations} violation(s) detected
+                                </span>
+                              </div>
+                              <p className="text-xs text-yellow-600 mt-1">
+                                Score reduced due to potential cheating behavior
+                              </p>
+                            </div>
+                          )}
+                          
+                          {/* Retake Motivation for Failed Tests */}
+                          {assignment.score < assignment.testTemplate?.passingScore && !assignment.retakeAllowed && (
+                            <div className="p-4 bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg">
+                              <div className="flex items-start gap-3">
+                                <TrendingUp className="w-5 h-5 text-blue-600 mt-0.5 flex-shrink-0" />
+                                <div className="flex-1">
+                                  <h4 className="font-semibold text-blue-900 text-sm">Don't Give Up - Show Your True Potential!</h4>
+                                  <p className="text-sm text-blue-700 mt-1 mb-3">
+                                    You were just {assignment.testTemplate?.passingScore - assignment.score} points away from passing. 
+                                    A retake could be the difference between landing your dream job and missing out.
+                                  </p>
+                                  <div className="grid grid-cols-2 gap-2 text-xs text-blue-600">
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3" />
+                                      <span>Fresh questions</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3" />
+                                      <span>Learn from mistakes</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3" />
+                                      <span>Prove dedication</span>
+                                    </div>
+                                    <div className="flex items-center gap-1">
+                                      <CheckCircle className="w-3 h-3" />
+                                      <span>Impress recruiter</span>
+                                    </div>
+                                  </div>
+                                  <div className="mt-3 text-xs text-blue-600 font-medium">
+                                    💡 Many successful candidates retake tests to improve their scores
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       )}
                       
