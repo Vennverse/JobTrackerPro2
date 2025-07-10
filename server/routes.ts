@@ -6030,7 +6030,15 @@ Host: https://autojobr.com`;
   app.post('/api/test-assignments/:id/submit', isAuthenticated, async (req: any, res) => {
     try {
       const assignmentId = parseInt(req.params.id);
-      const { answers, timeSpent } = req.body;
+      const { answers, timeSpent, warningCount, tabSwitchCount, copyAttempts } = req.body;
+      
+      console.log(`[DEBUG] Test submission for assignment ${assignmentId}:`, {
+        answersCount: Object.keys(answers || {}).length,
+        timeSpent,
+        warningCount,
+        tabSwitchCount,
+        copyAttempts
+      });
       
       const assignment = await storage.getTestAssignment(assignmentId);
       
@@ -6054,21 +6062,74 @@ Host: https://autojobr.com`;
         return res.status(404).json({ message: 'Test template not found' });
       }
 
-      // Calculate score
-      const score = testService.calculateScore(template.questions as any[], answers);
+      // Debug the template questions structure
+      console.log(`[DEBUG] Template questions type:`, typeof template.questions);
+      console.log(`[DEBUG] Template questions length:`, Array.isArray(template.questions) ? template.questions.length : 'Not array');
+      console.log(`[DEBUG] Template questions sample:`, JSON.stringify(template.questions).slice(0, 200));
+      console.log(`[DEBUG] Answers:`, Object.keys(answers || {}));
 
-      // Update assignment with results
+      // Calculate base score - handle case where questions might not be in the expected format
+      let score = 0;
+      try {
+        // Check if template.questions is actually an array
+        const questionsArray = Array.isArray(template.questions) ? template.questions : [];
+        if (questionsArray.length === 0) {
+          // Fall back to getting questions dynamically if template doesn't have them
+          console.log(`[DEBUG] No questions in template, fetching from question bank...`);
+          const { questionBankService } = await import('./questionBankService');
+          const dynamicQuestions = await questionBankService.generateTestQuestions(template.tags || ['react'], 10);
+          score = testService.calculateScore(dynamicQuestions, answers);
+        } else {
+          score = testService.calculateScore(questionsArray, answers);
+        }
+      } catch (error) {
+        console.error(`[ERROR] Score calculation failed:`, error);
+        // Give a basic score based on number of answers provided
+        const totalQuestions = questions.length || 10;
+        const answersProvided = Object.keys(answers || {}).length;
+        score = Math.round((answersProvided / totalQuestions) * 50); // 50% for attempting
+      }
+      
+      // Apply penalties for violations (reduce score by 5% per violation, max 50% reduction)
+      const totalViolations = (warningCount || 0) + (tabSwitchCount || 0) + (copyAttempts || 0);
+      const violationPenalty = Math.min(totalViolations * 5, 50); // Max 50% penalty
+      score = Math.max(0, score - violationPenalty);
+      
+      console.log(`[DEBUG] Calculated score: ${score}, violations: ${totalViolations}, penalty: ${violationPenalty}%`);
+      
+      // Ensure score is a valid number
+      if (isNaN(score) || !isFinite(score)) {
+        score = 0;
+        console.warn(`[WARNING] Invalid score calculated, setting to 0`);
+      }
+
+      // Log violations for audit trail
+      if (totalViolations > 0) {
+        console.log(`[AUDIT] Test submission with violations - Assignment ${assignmentId}, User ${req.user.id}, Violations: ${totalViolations}, Penalty: ${violationPenalty}%`);
+      }
+
+      // Update assignment with results including violations tracking
       const updatedAssignment = await storage.updateTestAssignment(assignmentId, {
         status: 'completed',
         completedAt: new Date(),
         score,
-        answers,
-        timeSpent,
+        answers: {
+          ...answers,
+          _violations: {
+            warningCount: warningCount || 0,
+            tabSwitchCount: tabSwitchCount || 0,
+            copyAttempts: copyAttempts || 0,
+            totalViolations
+          }
+        },
+        timeSpent: timeSpent || 0,
       });
       
       res.json({
         ...updatedAssignment,
-        passed: score >= template.passingScore
+        passed: score >= template.passingScore,
+        violationsDetected: totalViolations,
+        penaltyApplied: violationPenalty
       });
     } catch (error) {
       console.error('Error submitting test:', error);

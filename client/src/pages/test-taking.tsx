@@ -167,17 +167,20 @@ export default function TestTaking() {
     return () => clearInterval(timer);
   }, [testStarted, timeLeft]);
 
-  // Auto-submit on excessive violations
+  // Auto-submit on excessive violations  
   useEffect(() => {
-    if (warningCount >= 5) {
+    if (warningCount >= 5 && !isSubmitting) {
       toast({
         title: "Test Cancelled",
         description: "Too many violations detected. Test will be submitted automatically.",
         variant: "destructive"
       });
-      handleSubmitTest();
+      // Add a small delay to ensure the user sees the message
+      setTimeout(() => {
+        handleSubmitTest();
+      }, 2000);
     }
-  }, [warningCount]);
+  }, [warningCount, isSubmitting]);
 
   const enterFullscreen = () => {
     if (testContainerRef.current?.requestFullscreen) {
