@@ -329,23 +329,60 @@ export default function TestManagement() {
   };
 
   const onAssignTest = (data: any) => {
-    console.log('onAssignTest called with data:', data);
-    console.log('selectedTemplate:', selectedTemplate);
-    console.log('selectedCandidates:', selectedCandidates);
-    
-    const dueDate = new Date(data.dueDate);
-    dueDate.setHours(23, 59, 59); // Set to end of day
-    
-    const assignmentData = {
-      ...data,
-      testTemplateId: selectedTemplate?.id,
-      candidateIds: selectedCandidates,
-      dueDate: dueDate.toISOString(),
-    };
-    
-    console.log('Assignment data to submit:', assignmentData);
-    
-    assignTestMutation.mutate(assignmentData);
+    try {
+      console.log('onAssignTest called with data:', data);
+      console.log('selectedTemplate:', selectedTemplate);
+      console.log('selectedCandidates:', selectedCandidates);
+      
+      // Validate required data
+      if (!selectedTemplate?.id) {
+        toast({
+          title: "Error",
+          description: "No test template selected",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (selectedCandidates.length === 0) {
+        toast({
+          title: "Error", 
+          description: "Please select at least one candidate",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      if (!data.dueDate) {
+        toast({
+          title: "Error",
+          description: "Please select a due date",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      const dueDate = new Date(data.dueDate);
+      dueDate.setHours(23, 59, 59); // Set to end of day
+      
+      const assignmentData = {
+        ...data,
+        testTemplateId: selectedTemplate.id,
+        candidateIds: selectedCandidates,
+        dueDate: dueDate.toISOString(),
+      };
+      
+      console.log('Assignment data to submit:', assignmentData);
+      
+      assignTestMutation.mutate(assignmentData);
+    } catch (error) {
+      console.error('Error in onAssignTest:', error);
+      toast({
+        title: "Error",
+        description: "Failed to prepare test assignment",
+        variant: "destructive"
+      });
+    }
   };
 
   // Helper functions for candidate selection
@@ -909,7 +946,14 @@ export default function TestManagement() {
             </DialogDescription>
           </DialogHeader>
           <Form {...assignTestForm}>
-            <form onSubmit={assignTestForm.handleSubmit(onAssignTest)} className="space-y-4">
+            <form onSubmit={assignTestForm.handleSubmit(onAssignTest, (errors) => {
+              console.error('Form validation errors:', errors);
+              toast({
+                title: "Form Error",
+                description: "Please check all required fields",
+                variant: "destructive"
+              });
+            })} className="space-y-4">
               
               {/* Job Posting Selection */}
               <div className="space-y-3">
