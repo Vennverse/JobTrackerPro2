@@ -6274,12 +6274,13 @@ Host: https://autojobr.com`;
 
   app.get('/api/question-bank/search', isAuthenticated, async (req: any, res) => {
     try {
-      const { q, category, domain, limit = 20 } = req.query;
+      const { q, category, domain, difficulty, limit = 20 } = req.query;
       const { questionBankService } = await import('./questionBankService');
       const questions = await questionBankService.searchQuestions(
         q as string,
         category as string,
         domain as string,
+        difficulty as string,
         parseInt(limit as string)
       );
       res.json(questions);
@@ -6398,26 +6399,7 @@ Host: https://autojobr.com`;
   // QUESTION BANK MANAGEMENT API
   // ========================================
 
-  // Search questions in the question bank
-  app.get('/api/question-bank/search', isAuthenticated, async (req: any, res) => {
-    try {
-      const { q, category, domain, difficulty } = req.query;
-      
-      const { questionBankService } = await import('./questionBankService');
-      
-      const questions = await questionBankService.searchQuestions(
-        q ? String(q) : undefined,
-        category ? String(category) : undefined,
-        domain ? String(domain) : undefined,
-        difficulty ? String(difficulty) : undefined
-      );
-      
-      res.json(questions);
-    } catch (error) {
-      console.error('Error searching questions:', error);
-      res.status(500).json({ message: 'Failed to search questions' });
-    }
-  });
+
 
   // Get question bank statistics
   app.get('/api/question-bank/stats', isAuthenticated, async (req: any, res) => {
