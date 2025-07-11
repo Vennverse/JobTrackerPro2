@@ -521,7 +521,7 @@ export default function TestManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Profiles</SelectItem>
-                {jobProfiles.map((profile) => (
+                {jobProfiles.filter(profile => profile && profile.trim()).map((profile) => (
                   <SelectItem key={profile} value={profile}>
                     {profile.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
                   </SelectItem>
@@ -534,7 +534,7 @@ export default function TestManagement() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">All Levels</SelectItem>
-                {difficultyLevels.map((level) => (
+                {difficultyLevels.filter(level => level && level.trim()).map((level) => (
                   <SelectItem key={level} value={level}>
                     {level.charAt(0).toUpperCase() + level.slice(1)}
                   </SelectItem>
@@ -699,7 +699,7 @@ export default function TestManagement() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {categories.map((category) => (
+                          {categories.filter(category => category && category.trim()).map((category) => (
                             <SelectItem key={category} value={category}>
                               {category.charAt(0).toUpperCase() + category.slice(1)}
                             </SelectItem>
@@ -724,7 +724,7 @@ export default function TestManagement() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {jobProfiles.map((profile) => (
+                          {jobProfiles.filter(profile => profile && profile.trim()).map((profile) => (
                             <SelectItem key={profile} value={profile}>
                               {profile.replace(/_/g, " ").replace(/\b\w/g, l => l.toUpperCase())}
                             </SelectItem>
@@ -751,7 +751,7 @@ export default function TestManagement() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {difficultyLevels.map((level) => (
+                          {difficultyLevels.filter(level => level && level.trim()).map((level) => (
                             <SelectItem key={level} value={level}>
                               {level.charAt(0).toUpperCase() + level.slice(1)}
                             </SelectItem>
