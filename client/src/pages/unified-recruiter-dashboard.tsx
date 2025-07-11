@@ -57,6 +57,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { RecruiterNavbar } from "@/components/RecruiterNavbar";
 
 export default function RecruiterDashboard() {
   const [location, setLocation] = useLocation();
@@ -86,6 +87,12 @@ export default function RecruiterDashboard() {
   // Fetch applications for recruiter's jobs
   const { data: applications = [], isLoading: applicationsLoading } = useQuery({
     queryKey: ["/api/recruiter/applications"],
+  });
+
+  // Fetch current user
+  const { data: user } = useQuery({
+    queryKey: ["/api/user"],
+    retry: false,
   });
 
   // Fetch chat conversations
@@ -220,44 +227,7 @@ export default function RecruiterDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-white dark:bg-gray-800 border-b">
-        <div className="container mx-auto px-4 py-6">
-          <div className="flex items-center justify-between">
-            <div>
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-2">
-                <Building className="w-8 h-8 text-blue-600" />
-                Recruiter Dashboard
-                <Badge
-                  variant="secondary"
-                  className="text-xs bg-blue-100 text-blue-700"
-                >
-                  ✓ Verified
-                </Badge>
-              </h1>
-              <p className="text-gray-600 dark:text-gray-400 mt-1">
-                Manage your job postings and connect with talented candidates
-              </p>
-            </div>
-            <div className="flex gap-3">
-              <Button
-                onClick={() => setLocation("/premium-targeting")}
-                className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700"
-              >
-                <Zap className="w-4 h-4 mr-2" />
-                Premium Targeting
-              </Button>
-              <Button
-                onClick={() => setLocation("/recruiter/post-job")}
-                className="bg-blue-600 hover:bg-blue-700"
-              >
-                <Plus className="w-4 h-4 mr-2" />
-                Post New Job
-              </Button>
-            </div>
-          </div>
-        </div>
-      </div>
+      <RecruiterNavbar user={user} />
 
       {/* Dashboard Content */}
       <div className="container mx-auto px-4 py-8">

@@ -32,14 +32,13 @@ const setCache = (key: string, data: any) => {
 import { storage } from "./storage";
 import { setupAuth, isAuthenticated } from "./auth";
 import { groqService } from "./groqService";
-import { subscriptionService, USAGE_LIMITS } from "./subscriptionService";
+import { subscriptionService } from "./subscriptionService";
 import { sendEmail, generateVerificationEmail } from "./emailService";
 import { fileStorage } from "./fileStorage";
 import { testService } from "./testService";
-import { db } from "./db";
-import * as schema from "@shared/schema";
-import { eq, desc } from "drizzle-orm";
 import { paymentService } from "./paymentService";
+import { setupPaymentRoutes } from "./paymentRoutes";
+import { requirePremium, requireEnterprise, checkUsageLimit as checkSubscriptionUsageLimit } from "./middleware/subscriptionMiddleware";
 import crypto from "crypto";
 import { 
   insertUserProfileSchema,
@@ -125,6 +124,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Auth middleware
   await setupAuth(app);
 
+  // Setup payment routes
+  setupPaymentRoutes(app);
+
   // Login redirect route (for landing page buttons)
   app.get('/api/login', (req, res) => {
     res.redirect('/auth');
@@ -134,6 +136,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get('/api/auth/user', isAuthenticated, async (req: any, res) => {
     try {
       // Use the user data from the authentication middleware
+      res.json(req.user);
+    } catch (error) {
+      console.error("Error fetching user:", error);
+      res.status(500).json({ message: "Failed to fetch user" });
+    }
+  });
+
+  // User data route for authenticated users
+  app.get('/api/user', isAuthenticated, async (req: any, res) => {
+    try {
       res.json(req.user);
     } catch (error) {
       console.error("Error fetching user:", error);

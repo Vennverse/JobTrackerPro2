@@ -1,180 +1,190 @@
-import { db } from "./db";
-import { users, dailyUsage } from "@shared/schema";
-import { eq, and } from "drizzle-orm";
+import { db } from './db';
+import { users } from '@shared/schema';
+import { eq } from 'drizzle-orm';
 
-// Daily usage limits for free vs pro users
-export const USAGE_LIMITS = {
+export interface SubscriptionLimits {
+  jobPostings: number;
+  applications: number;
+  customTests: number;
+  premiumTargeting: boolean;
+  analytics: boolean;
+  apiAccess: boolean;
+  prioritySupport: boolean;
+  whiteLabel: boolean;
+  dedicatedManager: boolean;
+}
+
+export const SUBSCRIPTION_LIMITS: Record<string, SubscriptionLimits> = {
   free: {
-    jobAnalyses: 5,
-    resumeAnalyses: 2,
-    applications: 10,
-    autoFills: 15,
+    jobPostings: 2,
+    applications: 50,
+    customTests: 0,
+    premiumTargeting: false,
+    analytics: false,
+    apiAccess: false,
+    prioritySupport: false,
+    whiteLabel: false,
+    dedicatedManager: false
   },
   premium: {
-    jobAnalyses: -1, // unlimited
-    resumeAnalyses: -1, // unlimited
+    jobPostings: -1, // unlimited
     applications: -1, // unlimited
-    autoFills: -1, // unlimited
+    customTests: 50,
+    premiumTargeting: true,
+    analytics: true,
+    apiAccess: true,
+    prioritySupport: true,
+    whiteLabel: false,
+    dedicatedManager: false
   },
+  enterprise: {
+    jobPostings: -1, // unlimited
+    applications: -1, // unlimited
+    customTests: -1, // unlimited
+    premiumTargeting: true,
+    analytics: true,
+    apiAccess: true,
+    prioritySupport: true,
+    whiteLabel: true,
+    dedicatedManager: true
+  }
 };
 
 export class SubscriptionService {
-  private getTodayDate(): string {
-    return new Date().toISOString().split('T')[0]; // YYYY-MM-DD format
-  }
-
   async getUserSubscription(userId: string) {
     const [user] = await db.select().from(users).where(eq(users.id, userId));
+    if (!user) throw new Error('User not found');
+
     return {
-      planType: user?.planType || 'free',
-      subscriptionStatus: user?.subscriptionStatus || 'free',
-      isPremiumUser: user?.planType === 'premium' && user?.subscriptionStatus === 'active',
+      planType: user.planType || 'free',
+      subscriptionStatus: user.subscriptionStatus || 'free',
+      limits: SUBSCRIPTION_LIMITS[user.planType || 'free']
     };
   }
 
-  async getDailyUsage(userId: string, date?: string) {
-    const targetDate = date || this.getTodayDate();
-    
-    const [usage] = await db
-      .select()
-      .from(dailyUsage)
-      .where(and(
-        eq(dailyUsage.userId, userId),
-        eq(dailyUsage.date, targetDate)
-      ));
-
-    return usage || {
-      jobAnalysesCount: 0,
-      resumeAnalysesCount: 0,
-      applicationsCount: 0,
-      autoFillUsageCount: 0,
-    };
-  }
-
-  async canUseFeature(userId: string, feature: keyof typeof USAGE_LIMITS.free): Promise<{
-    canUse: boolean;
-    remainingUsage: number;
-    upgradeRequired: boolean;
-    resetTime: string;
-  }> {
+  async canAccessFeature(userId: string, feature: keyof SubscriptionLimits): Promise<boolean> {
     const subscription = await this.getUserSubscription(userId);
-    const usage = await this.getDailyUsage(userId);
+    const limit = subscription.limits[feature];
     
-    // Premium users have unlimited access
-    if (subscription.planType === 'premium') {
-      return {
-        canUse: true,
-        remainingUsage: -1, // unlimited
-        upgradeRequired: false,
-        resetTime: '',
-      };
+    if (typeof limit === 'boolean') {
+      return limit;
     }
-
-    const limit = USAGE_LIMITS.free[feature];
-    const usageKey = feature === 'autoFills' ? 'autoFillsCount' : `${feature}Count`;
-    const currentUsage = usage[usageKey as keyof typeof usage] as number || 0;
-    const remaining = Math.max(0, limit - currentUsage);
     
-    const tomorrow = new Date();
-    tomorrow.setDate(tomorrow.getDate() + 1);
-    tomorrow.setHours(0, 0, 0, 0);
-    
-    return {
-      canUse: remaining > 0,
-      remainingUsage: remaining,
-      upgradeRequired: remaining === 0,
-      resetTime: tomorrow.toISOString(),
-    };
+    return limit !== 0;
   }
 
-  async incrementUsage(userId: string, feature: keyof typeof USAGE_LIMITS.free) {
-    const today = this.getTodayDate();
+  async checkLimit(userId: string, feature: 'jobPostings' | 'applications' | 'customTests', currentCount: number): Promise<{ allowed: boolean; limit: number; remaining: number }> {
+    const subscription = await this.getUserSubscription(userId);
+    const limit = subscription.limits[feature] as number;
     
-    // Get or create today's usage record
-    const [existingUsage] = await db
-      .select()
-      .from(dailyUsage)
-      .where(and(
-        eq(dailyUsage.userId, userId),
-        eq(dailyUsage.date, today)
-      ));
-
-    const featureColumn = `${feature}Count` as keyof typeof USAGE_LIMITS.free;
-    
-    if (existingUsage) {
-      // Update existing record
-      const updateData = {
-        [featureColumn]: (existingUsage[featureColumn as keyof typeof existingUsage] as number || 0) + 1,
-        updatedAt: new Date(),
-      };
-      
-      await db
-        .update(dailyUsage)
-        .set(updateData)
-        .where(eq(dailyUsage.id, existingUsage.id));
-    } else {
-      // Create new record
-      const insertData = {
-        userId,
-        date: today,
-        jobAnalysesCount: feature === 'jobAnalyses' ? 1 : 0,
-        resumeAnalysesCount: feature === 'resumeAnalyses' ? 1 : 0,
-        applicationsCount: feature === 'applications' ? 1 : 0,
-        autoFillsCount: feature === 'autoFills' ? 1 : 0,
-      };
-      
-      await db.insert(dailyUsage).values(insertData);
+    if (limit === -1) {
+      return { allowed: true, limit: -1, remaining: -1 };
     }
+    
+    const remaining = Math.max(0, limit - currentCount);
+    const allowed = currentCount < limit;
+    
+    return { allowed, limit, remaining };
   }
 
-  async updateUserSubscription(userId: string, subscriptionData: {
+  async updateSubscription(userId: string, updates: {
+    planType?: string;
+    subscriptionStatus?: string;
+    paymentProvider?: string;
     stripeCustomerId?: string;
     stripeSubscriptionId?: string;
     paypalSubscriptionId?: string;
-    paypalOrderId?: string;
     razorpayPaymentId?: string;
-    razorpayOrderId?: string;
-    paymentProvider?: string;
-    subscriptionStatus?: string;
-    planType?: string;
     subscriptionStartDate?: Date;
     subscriptionEndDate?: Date;
   }) {
-    await db
-      .update(users)
+    await db.update(users)
       .set({
-        ...subscriptionData,
-        updatedAt: new Date(),
+        ...updates,
+        updatedAt: new Date()
       })
       .where(eq(users.id, userId));
   }
 
+  async processSuccessfulPayment(userId: string, paymentData: {
+    planType: string;
+    paymentProvider: 'stripe' | 'paypal' | 'razorpay';
+    paymentId: string;
+    billingCycle: 'monthly' | 'annual';
+    amount: number;
+  }) {
+    const endDate = new Date();
+    if (paymentData.billingCycle === 'annual') {
+      endDate.setFullYear(endDate.getFullYear() + 1);
+    } else {
+      endDate.setMonth(endDate.getMonth() + 1);
+    }
+
+    const updates: any = {
+      planType: paymentData.planType,
+      subscriptionStatus: 'active',
+      paymentProvider: paymentData.paymentProvider,
+      subscriptionStartDate: new Date(),
+      subscriptionEndDate: endDate
+    };
+
+    switch (paymentData.paymentProvider) {
+      case 'stripe':
+        updates.stripeSubscriptionId = paymentData.paymentId;
+        break;
+      case 'paypal':
+        updates.paypalSubscriptionId = paymentData.paymentId;
+        break;
+      case 'razorpay':
+        updates.razorpayPaymentId = paymentData.paymentId;
+        break;
+    }
+
+    await this.updateSubscription(userId, updates);
+  }
+
   async getUsageStats(userId: string) {
-    const subscription = await this.getUserSubscription(userId);
-    const usage = await this.getDailyUsage(userId);
-    
-    const limits = subscription.isPremiumUser ? USAGE_LIMITS.premium : USAGE_LIMITS.free;
+    // Get current usage counts from database
+    // This would typically involve counting records from various tables
+    // For now, we'll return mock data - implement actual counting as needed
     
     return {
-      subscription: {
-        planType: subscription.planType,
-        subscriptionStatus: subscription.subscriptionStatus,
-        subscriptionEndDate: null, // Add if we track end dates
-      },
-      usage: {
-        jobAnalyses: usage.jobAnalysesCount || 0,
-        resumeAnalyses: usage.resumeAnalysesCount || 0,
-        applications: usage.applicationsCount || 0,
-        autoFills: usage.autoFillsCount || 0,
-      },
-      limits: subscription.isPremiumUser ? null : {
-        jobAnalyses: limits.jobAnalyses,
-        resumeAnalyses: limits.resumeAnalyses,
-        applications: limits.applications,
-        autoFills: limits.autoFills,
-      },
-      resetTime: new Date(new Date().setHours(24, 0, 0, 0)).toISOString(),
+      jobPostings: 0, // Count from job_postings table
+      applications: 0, // Count from applications table  
+      customTests: 0, // Count from test_templates table
     };
+  }
+
+  async isFeatureAccessible(userId: string, feature: keyof SubscriptionLimits): Promise<{ accessible: boolean; reason?: string; upgradeRequired?: boolean }> {
+    try {
+      const subscription = await this.getUserSubscription(userId);
+      const hasAccess = await this.canAccessFeature(userId, feature);
+      
+      if (hasAccess) {
+        return { accessible: true };
+      }
+      
+      const currentPlan = subscription.planType;
+      let requiredPlan = '';
+      
+      // Determine required plan for feature
+      if (SUBSCRIPTION_LIMITS.premium[feature]) {
+        requiredPlan = 'premium';
+      } else if (SUBSCRIPTION_LIMITS.enterprise[feature]) {
+        requiredPlan = 'enterprise';
+      }
+      
+      return {
+        accessible: false,
+        reason: `This feature requires a ${requiredPlan} plan. You are currently on the ${currentPlan} plan.`,
+        upgradeRequired: true
+      };
+    } catch (error) {
+      return {
+        accessible: false,
+        reason: 'Unable to verify subscription status'
+      };
+    }
   }
 }
 

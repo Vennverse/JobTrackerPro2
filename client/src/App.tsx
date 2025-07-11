@@ -39,6 +39,7 @@ import QuestionBuilder from "@/pages/question-builder";
 import RecruiterFeatures from "@/pages/recruiter-features";
 import QuestionBank from "@/pages/question-bank";
 import QuestionBankAdmin from "@/pages/admin/question-bank";
+import RecruiterPremium from "@/pages/recruiter/premium";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -74,6 +75,7 @@ function Router() {
               <Route path="/recruiter/edit-job/:id" component={EditJob} />
               <Route path="/premium-targeting" component={PremiumTargetingPage} />
               <Route path="/premium-targeting-payment" component={PremiumTargetingPayment} />
+              <Route path="/recruiter/premium" component={RecruiterPremium} />
               <Route path="/recruiter/test-management" component={TestManagement} />
               <Route path="/recruiter/test-assignments" component={TestAssignments} />
               <Route path="/recruiter/question-builder/:templateId">

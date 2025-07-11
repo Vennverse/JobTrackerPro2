@@ -50,7 +50,7 @@ export const users = pgTable("users", {
   razorpayOrderId: varchar("razorpay_order_id"),
   paymentProvider: varchar("payment_provider"), // stripe, paypal, razorpay
   subscriptionStatus: varchar("subscription_status").default("free"), // free, active, canceled, past_due
-  planType: varchar("plan_type").default("free"), // free, premium
+  planType: varchar("plan_type").default("free"), // free, premium, enterprise
   subscriptionStartDate: timestamp("subscription_start_date"),
   subscriptionEndDate: timestamp("subscription_end_date"),
   createdAt: timestamp("created_at").defaultNow(),
