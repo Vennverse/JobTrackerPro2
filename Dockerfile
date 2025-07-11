@@ -1,14 +1,8 @@
-# Production Dockerfile for AutoJobr
-FROM node:20-alpine AS builder
+# Multi-stage build for AutoJobr
+FROM node:18-alpine AS builder
 
 # Set working directory
 WORKDIR /app
-
-# Install system dependencies
-RUN apk add --no-cache \
-    postgresql-client \
-    curl \
-    git
 
 # Copy package files
 COPY package*.json ./
@@ -23,43 +17,45 @@ COPY . .
 RUN npm run build
 
 # Production stage
-FROM node:20-alpine AS production
+FROM node:18-alpine AS production
 
-# Set working directory
+# Install dumb-init for proper signal handling
+RUN apk add --no-cache dumb-init
+
+# Create app directory
 WORKDIR /app
 
-# Install system dependencies
-RUN apk add --no-cache \
-    postgresql-client \
-    curl
+# Create non-root user
+RUN addgroup -g 1001 -S nodejs && \
+    adduser -S autojobr -u 1001
 
-# Create app user
-RUN addgroup -g 1001 -S nodejs
-RUN adduser -S nextjs -u 1001
+# Copy package files
+COPY package*.json ./
 
-# Copy built application
-COPY --from=builder --chown=nextjs:nodejs /app/dist ./dist
-COPY --from=builder --chown=nextjs:nodejs /app/client/dist ./client/dist
-COPY --from=builder --chown=nextjs:nodejs /app/node_modules ./node_modules
-COPY --from=builder --chown=nextjs:nodejs /app/package*.json ./
-COPY --from=builder --chown=nextjs:nodejs /app/drizzle.config.ts ./
+# Install production dependencies only
+RUN npm ci --only=production && \
+    npm cache clean --force
 
-# Create necessary directories
-RUN mkdir -p uploads/resumes && chown -R nextjs:nodejs uploads
+# Copy built application from builder stage
+COPY --from=builder --chown=autojobr:nodejs /app/dist ./dist
+COPY --from=builder --chown=autojobr:nodejs /app/server ./server
+COPY --from=builder --chown=autojobr:nodejs /app/shared ./shared
+COPY --from=builder --chown=autojobr:nodejs /app/client ./client
+
+# Create uploads directory
+RUN mkdir -p /app/uploads && \
+    chown -R autojobr:nodejs /app/uploads
 
 # Switch to non-root user
-USER nextjs
+USER autojobr
 
 # Expose port
 EXPOSE 5000
 
-# Set environment
-ENV NODE_ENV=production
-ENV PORT=5000
-
 # Health check
-HEALTHCHECK --interval=30s --timeout=3s --start-period=5s --retries=3 \
-  CMD curl -f http://localhost:5000/health || exit 1
+HEALTHCHECK --interval=30s --timeout=10s --start-period=10s --retries=3 \
+  CMD node -e "require('http').get('http://localhost:5000/api/health', (res) => { process.exit(res.statusCode === 200 ? 0 : 1) }).on('error', () => { process.exit(1) })"
 
-# Start production server
-CMD ["npm", "run", "start"]
+# Start the application with dumb-init
+ENTRYPOINT ["dumb-init", "--"]
+CMD ["node", "server/index.js"]
