@@ -58,9 +58,9 @@ interface Question {
 export default function QuestionBank() {
   const [activeTab, setActiveTab] = useState('overview');
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState('');
-  const [selectedDomain, setSelectedDomain] = useState('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState('all');
+  const [selectedDomain, setSelectedDomain] = useState('all');
+  const [selectedDifficulty, setSelectedDifficulty] = useState('all');
   const [showAddDialog, setShowAddDialog] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -98,9 +98,9 @@ export default function QuestionBank() {
     queryFn: async () => {
       const params = new URLSearchParams();
       if (searchTerm) params.append('q', searchTerm);
-      if (selectedCategory) params.append('category', selectedCategory);
-      if (selectedDomain) params.append('domain', selectedDomain);
-      if (selectedDifficulty) params.append('difficulty', selectedDifficulty);
+      if (selectedCategory && selectedCategory !== 'all') params.append('category', selectedCategory);
+      if (selectedDomain && selectedDomain !== 'all') params.append('domain', selectedDomain);
+      if (selectedDifficulty && selectedDifficulty !== 'all') params.append('difficulty', selectedDifficulty);
       params.append('limit', '50');
       
       const response = await apiRequest(`/api/question-bank/search?${params}`);
@@ -310,7 +310,7 @@ export default function QuestionBank() {
                   <SelectValue placeholder="Category" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   <SelectItem value="general_aptitude">General Aptitude</SelectItem>
                   <SelectItem value="english">English</SelectItem>
                   <SelectItem value="domain_specific">Domain Specific</SelectItem>
@@ -321,7 +321,7 @@ export default function QuestionBank() {
                   <SelectValue placeholder="Domain" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Domains</SelectItem>
+                  <SelectItem value="all">All Domains</SelectItem>
                   {domains.map(domain => (
                     <SelectItem key={domain} value={domain}>{domain}</SelectItem>
                   ))}
@@ -332,7 +332,7 @@ export default function QuestionBank() {
                   <SelectValue placeholder="Difficulty" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Difficulties</SelectItem>
+                  <SelectItem value="all">All Difficulties</SelectItem>
                   <SelectItem value="easy">Easy</SelectItem>
                   <SelectItem value="medium">Medium</SelectItem>
                   <SelectItem value="hard">Hard</SelectItem>

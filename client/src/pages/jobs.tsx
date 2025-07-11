@@ -493,7 +493,7 @@ export default function Jobs() {
                           <SelectValue placeholder="Location" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Any Location</SelectItem>
+                          <SelectItem value="all">Any Location</SelectItem>
                           <SelectItem value="remote">Remote</SelectItem>
                           <SelectItem value="san-francisco">San Francisco</SelectItem>
                           <SelectItem value="new-york">New York</SelectItem>
@@ -506,7 +506,7 @@ export default function Jobs() {
                           <SelectValue placeholder="Work Mode" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Any Mode</SelectItem>
+                          <SelectItem value="all">Any Mode</SelectItem>
                           <SelectItem value="remote">Remote</SelectItem>
                           <SelectItem value="hybrid">Hybrid</SelectItem>
                           <SelectItem value="on-site">On-site</SelectItem>
@@ -518,7 +518,7 @@ export default function Jobs() {
                           <SelectValue placeholder="Experience" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">Any Level</SelectItem>
+                          <SelectItem value="all">Any Level</SelectItem>
                           <SelectItem value="entry">Entry Level</SelectItem>
                           <SelectItem value="mid">Mid Level</SelectItem>
                           <SelectItem value="senior">Senior Level</SelectItem>
@@ -531,7 +531,7 @@ export default function Jobs() {
                           <SelectValue placeholder="Category" />
                         </SelectTrigger>
                         <SelectContent>
-                          <SelectItem value="">All Categories</SelectItem>
+                          <SelectItem value="all">All Categories</SelectItem>
                           <SelectItem value="tech">Technology</SelectItem>
                           <SelectItem value="design">Design</SelectItem>
                           <SelectItem value="marketing">Marketing</SelectItem>

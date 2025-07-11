@@ -124,7 +124,7 @@ export default function JobDiscoveryPage() {
                         <SelectValue placeholder="Category" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Categories</SelectItem>
+                        <SelectItem value="all">All Categories</SelectItem>
                         <SelectItem value="tech">Technology</SelectItem>
                         <SelectItem value="design">Design</SelectItem>
                         <SelectItem value="marketing">Marketing</SelectItem>
@@ -136,7 +136,7 @@ export default function JobDiscoveryPage() {
                         <SelectValue placeholder="Work Mode" />
                       </SelectTrigger>
                       <SelectContent>
-                        <SelectItem value="">All Modes</SelectItem>
+                        <SelectItem value="all">All Modes</SelectItem>
                         <SelectItem value="remote">Remote</SelectItem>
                         <SelectItem value="hybrid">Hybrid</SelectItem>
                         <SelectItem value="onsite">On-site</SelectItem>

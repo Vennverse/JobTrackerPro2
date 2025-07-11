@@ -94,9 +94,9 @@ export default function QuestionBankAdmin() {
   
   const [showAddForm, setShowAddForm] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
-  const [filterCategory, setFilterCategory] = useState("");
-  const [filterDomain, setFilterDomain] = useState("");
-  const [filterDifficulty, setFilterDifficulty] = useState("");
+  const [filterCategory, setFilterCategory] = useState("all");
+  const [filterDomain, setFilterDomain] = useState("all");
+  const [filterDifficulty, setFilterDifficulty] = useState("all");
   
   const [formData, setFormData] = useState<QuestionFormData>({
     type: 'multiple_choice',
@@ -354,7 +354,7 @@ export default function QuestionBankAdmin() {
                   <SelectValue placeholder="All Categories" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Categories</SelectItem>
+                  <SelectItem value="all">All Categories</SelectItem>
                   {categories.map(cat => (
                     <SelectItem key={cat.value} value={cat.value}>{cat.label}</SelectItem>
                   ))}
@@ -368,7 +368,7 @@ export default function QuestionBankAdmin() {
                   <SelectValue placeholder="All Difficulties" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All Difficulties</SelectItem>
+                  <SelectItem value="all">All Difficulties</SelectItem>
                   {difficulties.map(diff => (
                     <SelectItem key={diff.value} value={diff.value}>{diff.label}</SelectItem>
                   ))}
