@@ -5227,6 +5227,14 @@ Host: https://autojobr.com`;
         return res.status(400).json({ message: 'Position and location are required' });
       }
 
+      if (position.length < 2) {
+        return res.status(400).json({ message: 'Position must be at least 2 characters long' });
+      }
+
+      if (location.length < 2) {
+        return res.status(400).json({ message: 'Location must be at least 2 characters long' });
+      }
+
       // Import and use Google Jobs scraper
       const { googleJobsScraper } = await import('./googleJobsScraper');
       const jobs = await googleJobsScraper.searchJobs(position, location, parseInt(limit));

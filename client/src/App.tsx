@@ -7,7 +7,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { useAuth } from "@/hooks/use-auth";
 import NotFound from "@/pages/not-found";
 import AuthPage from "@/pages/auth-page";
-import Dashboard from "@/pages/dashboard";
+import Dashboard from "@/pages/modern-dashboard";
 import Profile from "@/pages/profile";
 import Applications from "@/pages/applications";
 import Jobs from "@/pages/jobs";
