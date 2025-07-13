@@ -40,6 +40,7 @@ import RecruiterFeatures from "@/pages/recruiter-features";
 import QuestionBank from "@/pages/question-bank";
 import QuestionBankAdmin from "@/pages/admin/question-bank";
 import RecruiterPremium from "@/pages/recruiter/premium";
+import JobSearch from "@/pages/job-search";
 
 function Router() {
   const { user, isAuthenticated, isLoading } = useAuth();
@@ -105,6 +106,7 @@ function Router() {
                   <Route path="/resumes" component={ResumesPage} />
                   <Route path="/applications" component={Applications} />
                   <Route path="/jobs" component={Jobs} />
+                  <Route path="/job-search" component={JobSearch} />
                   <Route path="/discover" component={JobDiscoveryPage} />
                   <Route path="/job-seeker/tests" component={JobSeekerTests} />
                   <Route path="/test/:id" component={TestTaking} />

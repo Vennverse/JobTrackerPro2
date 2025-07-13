@@ -54,7 +54,7 @@ export function Navbar() {
         { href: "/applications", label: "Applications", icon: FileText },
         { href: "/profile", label: "Profile", icon: User },
         { href: "/jobs", label: "Jobs", icon: Briefcase },
-        { href: "/discover", label: "Discover Jobs", icon: Search },
+        { href: "/job-search", label: "Job Search", icon: Search },
         { href: "/chat", label: "Messages", icon: MessageCircle },
         { href: "/subscription", label: "Subscription", icon: Crown },
       ];

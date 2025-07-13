@@ -5218,6 +5218,26 @@ Host: https://autojobr.com`;
     }
   });
 
+  // Job search route with Google Jobs integration
+  app.get('/api/jobs/search', async (req: any, res) => {
+    try {
+      const { position, location, limit = 10 } = req.query;
+      
+      if (!position || !location) {
+        return res.status(400).json({ message: 'Position and location are required' });
+      }
+
+      // Import and use Google Jobs scraper
+      const { googleJobsScraper } = await import('./googleJobsScraper');
+      const jobs = await googleJobsScraper.searchJobs(position, location, parseInt(limit));
+      
+      res.json({ jobs, total: jobs.length });
+    } catch (error) {
+      console.error('Error searching jobs:', error);
+      res.status(500).json({ message: 'Failed to search jobs' });
+    }
+  });
+
   // Get scraped jobs with filters
   app.get('/api/scraped-jobs', async (req: any, res) => {
     try {
@@ -5241,7 +5261,8 @@ Host: https://autojobr.com`;
       res.json(jobs);
     } catch (error) {
       console.error("Error fetching scraped jobs:", error);
-      res.status(500).json({ message: "Failed to fetch scraped jobs" });
+      // Return empty array instead of error for missing table
+      res.json([]);
     }
   });
 
