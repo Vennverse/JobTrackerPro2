@@ -1498,9 +1498,35 @@ Additional Information:
   app.post('/api/applications', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const applicationData = insertJobApplicationSchema.parse({ ...req.body, userId });
-      const application = await storage.addJobApplication(applicationData);
-      res.json(application);
+      const { jobTitle, company, location, jobUrl, status = 'applied', notes, matchScore, jobType, workMode, salaryRange } = req.body;
+
+      if (!jobTitle || !company) {
+        return res.status(400).json({ message: 'Job title and company are required' });
+      }
+
+      const applicationData = {
+        userId,
+        jobTitle,
+        company,
+        location: location || '',
+        jobUrl: jobUrl || '',
+        status,
+        notes: notes || '',
+        matchScore: matchScore || 0,
+        appliedDate: new Date(),
+        jobType: jobType || '',
+        workMode: workMode || '',
+        salaryRange: salaryRange || '',
+        source: 'web'
+      };
+
+      const application = await storage.createApplication(applicationData);
+      
+      // Clear applications cache
+      const cacheKey = `applications_${userId}`;
+      clearCache(cacheKey);
+      
+      res.json({ message: 'Application tracked successfully', application });
     } catch (error) {
       console.error("Error adding application:", error);
       res.status(500).json({ message: "Failed to add application" });
@@ -2749,6 +2775,78 @@ Additional Information:
     }
   });
 
+  // Extension-specific application tracking
+  app.post('/api/extension/applications', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { jobTitle, company, location, jobUrl, status = 'applied', notes, matchScore, jobType, workMode, salaryRange } = req.body;
+
+      if (!jobTitle || !company) {
+        return res.status(400).json({ message: 'Job title and company are required' });
+      }
+
+      const applicationData = {
+        userId,
+        jobTitle,
+        company,
+        location: location || '',
+        jobUrl: jobUrl || '',
+        status,
+        notes: notes || '',
+        matchScore: matchScore || 0,
+        appliedDate: new Date(),
+        jobType: jobType || '',
+        workMode: workMode || '',
+        salaryRange: salaryRange || '',
+        source: 'extension'
+      };
+
+      const application = await storage.createApplication(applicationData);
+      
+      // Clear applications cache
+      const cacheKey = `applications_${userId}`;
+      clearCache(cacheKey);
+      
+      res.json({ success: true, message: 'Application tracked successfully', application });
+    } catch (error) {
+      console.error('Error tracking extension application:', error);
+      res.status(500).json({ success: false, message: 'Failed to track application' });
+    }
+  });
+
+  // Get application statistics for extension
+  app.get('/api/applications/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const applications = await storage.getUserApplications(userId);
+      
+      const totalApplications = applications.length;
+      const responses = applications.filter(app => app.status !== 'applied').length;
+      const responseRate = totalApplications > 0 ? Math.round((responses / totalApplications) * 100) : 0;
+      
+      // Calculate weekly stats
+      const oneWeekAgo = new Date();
+      oneWeekAgo.setDate(oneWeekAgo.getDate() - 7);
+      const recentApplications = applications.filter(app => 
+        new Date(app.appliedDate) > oneWeekAgo
+      ).length;
+      
+      const stats = {
+        totalApplications,
+        responses,
+        responseRate,
+        recentApplications,
+        avgMatchScore: totalApplications > 0 ? 
+          Math.round(applications.reduce((sum, app) => sum + (app.matchScore || 0), 0) / totalApplications) : 0
+      };
+      
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching application stats:', error);
+      res.status(500).json({ message: 'Failed to fetch application stats' });
+    }
+  });
+
   // Create payment intent for premium targeting and other payments
   app.post('/api/create-payment-intent', async (req, res) => {
     try {
@@ -2782,9 +2880,17 @@ Additional Information:
         page?: string;
       };
 
-      if (!query || typeof query !== 'string' || query.length < 3) {
+      if (!query || typeof query !== 'string' || query.trim().length === 0) {
         return res.status(400).json({
-          message: "Query must be at least 3 characters long"
+          message: "Search query is required"
+        });
+      }
+
+      // For very short queries, provide helpful suggestions
+      if (query.trim().length < 2) {
+        return res.status(400).json({
+          message: "Search query should be at least 2 characters long",
+          suggestions: ["Try searching for 'developer', 'engineer', 'manager', 'analyst'"]
         });
       }
 
@@ -5218,8 +5324,8 @@ Host: https://autojobr.com`;
     }
   });
 
-  // Job search route with Google Jobs integration
-  app.get('/api/jobs/search', async (req: any, res) => {
+  // Job search route with Google Jobs integration  
+  app.get('/api/jobs/search-google', async (req: any, res) => {
     try {
       const { position, location, limit = 10 } = req.query;
       
@@ -5246,30 +5352,13 @@ Host: https://autojobr.com`;
     }
   });
 
-  // Get scraped jobs with filters
+  // Get scraped jobs with filters - Return empty array for now (table not implemented yet)
   app.get('/api/scraped-jobs', async (req: any, res) => {
     try {
-      const { category, subcategory, workMode, location, skills, limit = 50 } = req.query;
-      
-      let query = db.select().from(schema.scrapedJobs).where(eq(schema.scrapedJobs.isActive, true));
-      
-      // Apply filters
-      if (category) {
-        query = query.where(eq(schema.scrapedJobs.category, category as string));
-      }
-      if (subcategory) {
-        query = query.where(eq(schema.scrapedJobs.subcategory, subcategory as string));
-      }
-      if (workMode) {
-        query = query.where(eq(schema.scrapedJobs.workMode, workMode as string));
-      }
-      
-      const jobs = await query.limit(parseInt(limit as string)).orderBy(schema.scrapedJobs.createdAt);
-      
-      res.json(jobs);
+      // Return empty array until scraped_jobs table is properly implemented
+      res.json([]);
     } catch (error) {
       console.error("Error fetching scraped jobs:", error);
-      // Return empty array instead of error for missing table
       res.json([]);
     }
   });

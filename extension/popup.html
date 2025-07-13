@@ -1,459 +1,317 @@
 <!DOCTYPE html>
-<html lang="en">
+<html>
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>AutoJobr Assistant</title>
-  <style>
-    * {
-      margin: 0;
-      padding: 0;
-      box-sizing: border-box;
-    }
-
-    body {
-      width: 380px;
-      min-height: 500px;
-      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
-      background: #ffffff;
-      color: #1f2937;
-      line-height: 1.5;
-    }
-
-    .header {
-      background: linear-gradient(135deg, #3b82f6, #1d4ed8);
-      color: white;
-      padding: 20px;
-      text-align: center;
-    }
-
-    .header h1 {
-      font-size: 18px;
-      font-weight: 600;
-      margin-bottom: 4px;
-    }
-
-    .header p {
-      font-size: 14px;
-      opacity: 0.9;
-    }
-
-    .status-indicator {
-      display: inline-flex;
-      align-items: center;
-      gap: 6px;
-      background: rgba(255, 255, 255, 0.15);
-      padding: 6px 12px;
-      border-radius: 20px;
-      font-size: 12px;
-      margin-top: 12px;
-    }
-
-    .status-dot {
-      width: 6px;
-      height: 6px;
-      border-radius: 50%;
-      background: #10b981;
-    }
-
-    .content {
-      padding: 20px;
-    }
-
-    .toggle-section {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 16px;
-      margin-bottom: 20px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .toggle-item {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .toggle-item:last-child {
-      margin-bottom: 0;
-    }
-
-    .toggle-label {
-      font-size: 14px;
-      font-weight: 500;
-      color: #374151;
-    }
-
-    .toggle-switch {
-      position: relative;
-      width: 44px;
-      height: 24px;
-      background: #d1d5db;
-      border-radius: 12px;
-      cursor: pointer;
-      transition: background 0.2s;
-    }
-
-    .toggle-switch.active {
-      background: #3b82f6;
-    }
-
-    .toggle-switch::after {
-      content: '';
-      position: absolute;
-      top: 2px;
-      left: 2px;
-      width: 20px;
-      height: 20px;
-      background: white;
-      border-radius: 50%;
-      transition: transform 0.2s;
-    }
-
-    .toggle-switch.active::after {
-      transform: translateX(20px);
-    }
-
-    .profile-section {
-      margin-bottom: 20px;
-    }
-
-    .section-title {
-      font-size: 16px;
-      font-weight: 600;
-      color: #1f2937;
-      margin-bottom: 12px;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .profile-card {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .profile-info {
-      display: flex;
-      align-items: center;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .profile-avatar {
-      width: 40px;
-      height: 40px;
-      background: #3b82f6;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      color: white;
-      font-weight: 600;
-      font-size: 14px;
-    }
-
-    .profile-details h3 {
-      font-size: 14px;
-      font-weight: 600;
-      color: #1f2937;
-    }
-
-    .profile-details p {
-      font-size: 12px;
-      color: #6b7280;
-    }
-
-    .skills-list {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 6px;
-      margin-top: 8px;
-    }
-
-    .skill-tag {
-      background: #dbeafe;
-      color: #1e40af;
-      padding: 4px 8px;
-      border-radius: 12px;
-      font-size: 11px;
-      font-weight: 500;
-    }
-
-    .analysis-section {
-      margin-bottom: 20px;
-    }
-
-    .analysis-card {
-      background: #f8fafc;
-      border-radius: 12px;
-      padding: 16px;
-      border: 1px solid #e2e8f0;
-    }
-
-    .match-score {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 12px;
-    }
-
-    .match-score-label {
-      font-size: 14px;
-      color: #6b7280;
-    }
-
-    .match-score-value {
-      font-size: 18px;
-      font-weight: 700;
-    }
-
-    .match-score-value.excellent { color: #10b981; }
-    .match-score-value.good { color: #3b82f6; }
-    .match-score-value.fair { color: #f59e0b; }
-    .match-score-value.poor { color: #ef4444; }
-
-    .progress-bar {
-      width: 100%;
-      height: 8px;
-      background: #e5e7eb;
-      border-radius: 4px;
-      overflow: hidden;
-      margin-bottom: 12px;
-    }
-
-    .progress-fill {
-      height: 100%;
-      border-radius: 4px;
-      transition: width 0.3s ease;
-    }
-
-    .analysis-details {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 12px;
-      margin-bottom: 12px;
-    }
-
-    .analysis-item {
-      text-align: center;
-    }
-
-    .analysis-item-label {
-      font-size: 11px;
-      color: #6b7280;
-      margin-bottom: 2px;
-    }
-
-    .analysis-item-value {
-      font-size: 13px;
-      font-weight: 500;
-      color: #374151;
-    }
-
-    .btn {
-      width: 100%;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 14px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: all 0.2s;
-      border: none;
-      margin-bottom: 8px;
-    }
-
-    .btn:last-child {
-      margin-bottom: 0;
-    }
-
-    .btn-primary {
-      background: #3b82f6;
-      color: white;
-    }
-
-    .btn-primary:hover {
-      background: #2563eb;
-      transform: translateY(-1px);
-    }
-
-    .btn-secondary {
-      background: #f3f4f6;
-      color: #374151;
-      border: 1px solid #d1d5db;
-    }
-
-    .btn-secondary:hover {
-      background: #e5e7eb;
-    }
-
-    .btn:disabled {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-
-    .empty-state {
-      text-align: center;
-      padding: 20px;
-      color: #6b7280;
-    }
-
-    .empty-state-icon {
-      font-size: 32px;
-      margin-bottom: 8px;
-      opacity: 0.5;
-    }
-
-    .error-state {
-      background: #fef2f2;
-      color: #dc2626;
-      padding: 12px;
-      border-radius: 8px;
-      font-size: 13px;
-      margin-bottom: 12px;
-      border: 1px solid #fecaca;
-    }
-
-    .footer {
-      padding: 16px 20px;
-      border-top: 1px solid #e5e7eb;
-      text-align: center;
-    }
-
-    .footer-link {
-      color: #6b7280;
-      text-decoration: none;
-      font-size: 12px;
-    }
-
-    .footer-link:hover {
-      color: #3b82f6;
-    }
-
-    /* Dark mode support */
-    @media (prefers-color-scheme: dark) {
-      body {
-        background: #1f2937;
-        color: #f9fafb;
-      }
-
-      .toggle-section,
-      .profile-card,
-      .analysis-card {
-        background: #374151;
-        border-color: #4b5563;
-      }
-
-      .section-title,
-      .toggle-label,
-      .profile-details h3,
-      .analysis-item-value {
-        color: #f9fafb;
-      }
-
-      .profile-details p,
-      .match-score-label,
-      .analysis-item-label {
-        color: #d1d5db;
-      }
-
-      .btn-secondary {
-        background: #4b5563;
-        color: #f9fafb;
-        border-color: #6b7280;
-      }
-
-      .btn-secondary:hover {
-        background: #6b7280;
-      }
-
-      .footer {
-        border-color: #4b5563;
-      }
-    }
-
-    /* Loading states */
-    .loading {
-      display: inline-block;
-      width: 16px;
-      height: 16px;
-      border: 2px solid #e5e7eb;
-      border-radius: 50%;
-      border-top: 2px solid #3b82f6;
-      animation: spin 1s linear infinite;
-    }
-
-    @keyframes spin {
-      0% { transform: rotate(0deg); }
-      100% { transform: rotate(360deg); }
-    }
-  </style>
+    <meta charset="utf-8">
+    <style>
+        body {
+            width: 380px;
+            min-height: 500px;
+            padding: 0;
+            margin: 0;
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        
+        .header {
+            padding: 20px;
+            text-align: center;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+        
+        .logo {
+            font-size: 24px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .tagline {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .container {
+            padding: 20px;
+        }
+        
+        .section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 10px;
+            backdrop-filter: blur(5px);
+        }
+        
+        .section h3 {
+            margin: 0 0 10px 0;
+            font-size: 16px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .status {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+        
+        .status.connected {
+            color: #4ade80;
+        }
+        
+        .status.disconnected {
+            color: #f87171;
+        }
+        
+        .status-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: currentColor;
+        }
+        
+        .toggle-switch {
+            position: relative;
+            width: 50px;
+            height: 24px;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 12px;
+            cursor: pointer;
+            transition: background 0.3s;
+        }
+        
+        .toggle-switch.active {
+            background: #4ade80;
+        }
+        
+        .toggle-switch::before {
+            content: '';
+            position: absolute;
+            top: 2px;
+            left: 2px;
+            width: 20px;
+            height: 20px;
+            background: white;
+            border-radius: 50%;
+            transition: transform 0.3s;
+        }
+        
+        .toggle-switch.active::before {
+            transform: translateX(26px);
+        }
+        
+        .btn {
+            width: 100%;
+            padding: 12px;
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 8px;
+            color: white;
+            font-size: 14px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-bottom: 8px;
+        }
+        
+        .btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn.primary {
+            background: #4ade80;
+        }
+        
+        .btn.primary:hover {
+            background: #22c55e;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: rgba(255, 255, 255, 0.2);
+            border-radius: 3px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: #4ade80;
+            transition: width 0.3s;
+        }
+        
+        .stats {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        
+        .stat-card {
+            text-align: center;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+        }
+        
+        .stat-number {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            opacity: 0.8;
+        }
+        
+        .analysis-card {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 10px;
+        }
+        
+        .match-score {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .match-score.high {
+            color: #4ade80;
+        }
+        
+        .match-score.medium {
+            color: #fbbf24;
+        }
+        
+        .match-score.low {
+            color: #f87171;
+        }
+        
+        .skills-list {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 5px;
+            margin-top: 10px;
+        }
+        
+        .skill-tag {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 12px;
+        }
+        
+        .error-message {
+            color: #f87171;
+            font-size: 12px;
+            margin-top: 10px;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+        
+        .footer {
+            text-align: center;
+            padding: 15px;
+            font-size: 12px;
+            opacity: 0.7;
+        }
+        
+        .footer a {
+            color: white;
+            text-decoration: none;
+        }
+        
+        .footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
 </head>
 <body>
-  <div class="header">
-    <h1>AutoJobr Assistant</h1>
-    <p>Smart job application automation</p>
-    <div class="status-indicator">
-      <div class="status-dot"></div>
-      <span id="connection-status">Connected</span>
+    <div class="header">
+        <div class="logo">⚡ AutoJobr</div>
+        <div class="tagline">Smart Job Application Assistant</div>
     </div>
-  </div>
-
-  <div class="content">
-    <!-- Settings Section -->
-    <div class="toggle-section">
-      <div class="toggle-item">
-        <span class="toggle-label">Auto-fill Forms</span>
-        <div class="toggle-switch" id="autofill-toggle">
+    
+    <div class="container">
+        <!-- Connection Status -->
+        <div class="section">
+            <h3>🔗 Connection Status</h3>
+            <div id="connection-status" class="status disconnected">
+                <div class="status-dot"></div>
+                <span>Checking connection...</span>
+            </div>
         </div>
-      </div>
-    </div>
-
-    <!-- Profile Section -->
-    <div class="profile-section">
-      <h2 class="section-title">
-        👤 Your Profile
-      </h2>
-      <div id="profile-content">
-        <div class="loading"></div>
-      </div>
-    </div>
-
-    <!-- Job Analysis Section -->
-    <div class="analysis-section">
-      <h2 class="section-title">
-        🎯 Job Analysis
-      </h2>
-      <div id="analysis-content">
-        <div class="empty-state">
-          <div class="empty-state-icon">📋</div>
-          <p>Navigate to a job posting to see analysis</p>
+        
+        <!-- Autofill Settings -->
+        <div class="section">
+            <h3>🤖 Auto-Fill Settings</h3>
+            <div style="display: flex; justify-content: space-between; align-items: center;">
+                <span>Smart Form Filling</span>
+                <div id="autofill-toggle" class="toggle-switch"></div>
+            </div>
         </div>
-      </div>
+        
+        <!-- Profile Info -->
+        <div class="section" id="profile-section">
+            <h3>👤 Profile Status</h3>
+            <div id="profile-info" class="loading">Loading profile...</div>
+        </div>
+        
+        <!-- Job Analysis -->
+        <div class="section" id="analysis-section">
+            <h3>📊 Job Analysis</h3>
+            <div id="analysis-info" class="loading">Analyzing current page...</div>
+        </div>
+        
+        <!-- Quick Actions -->
+        <div class="section">
+            <h3>⚡ Quick Actions</h3>
+            <button id="fill-forms" class="btn primary">Fill Job Application Forms</button>
+            <button id="refresh-analysis" class="btn">Refresh Job Analysis</button>
+            <button id="generate-cover-letter" class="btn">Generate Cover Letter</button>
+            <button id="open-dashboard" class="btn">Open Dashboard</button>
+        </div>
+        
+        <!-- Application Stats -->
+        <div class="section" id="stats-section">
+            <h3>📈 Application Stats</h3>
+            <div class="stats">
+                <div class="stat-card">
+                    <div class="stat-number" id="total-applications">0</div>
+                    <div class="stat-label">Total Applied</div>
+                </div>
+                <div class="stat-card">
+                    <div class="stat-number" id="response-rate">0%</div>
+                    <div class="stat-label">Response Rate</div>
+                </div>
+            </div>
+        </div>
     </div>
-
-    <!-- Action Buttons -->
-    <div class="actions">
-      <button class="btn btn-primary" id="refresh-analysis">
-        <span id="refresh-text">Refresh Analysis</span>
-        <div class="loading" id="refresh-loading" style="display: none;"></div>
-      </button>
-      <button class="btn btn-secondary" id="generate-cover-letter">
-        Generate Cover Letter
-      </button>
-      <button class="btn btn-secondary" id="fill-forms">
-        Fill Forms Now
-      </button>
+    
+    <div class="footer">
+        <a href="#" id="settings-link">Settings</a> | 
+        <a href="#" id="dashboard-link">Dashboard</a> | 
+        <a href="#" id="help-link">Help</a>
     </div>
-  </div>
-
-  <div class="footer">
-    <a href="#" class="footer-link" id="open-dashboard">Open AutoJobr Dashboard</a>
-  </div>
-
-  <script src="popup.js"></script>
+    
+    <script src="popup.js"></script>
 </body>
 </html>

@@ -36,7 +36,7 @@ export default function JobSearch() {
   const searchJobsMutation = useMutation({
     mutationFn: async ({ position, location, limit = 10 }: { position: string; location: string; limit?: number }) => {
       const response = await apiRequest(
-        `/api/jobs/search?position=${encodeURIComponent(position)}&location=${encodeURIComponent(location)}&limit=${limit}`,
+        `/api/jobs/search?q=${encodeURIComponent(position)}&location=${encodeURIComponent(location)}&limit=${limit}`,
         "GET"
       );
       return response.json();

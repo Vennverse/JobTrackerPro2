@@ -38,12 +38,37 @@ class AutojobrPopup {
       const response = await this.sendMessage({ action: 'getUserProfile' });
       if (response && response.success) {
         this.userProfile = response.data;
+        this.updateProfileSection();
       } else {
         this.showProfileError('Please log in to AutoJobr web app first');
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
       this.showProfileError('Connection failed - check if you are logged in');
+    }
+  }
+
+  updateProfileSection() {
+    const profileInfo = document.getElementById('profile-info');
+    if (this.userProfile) {
+      profileInfo.innerHTML = `
+        <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
+          <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px;">
+            ${this.userProfile.firstName ? this.userProfile.firstName.charAt(0) : '?'}
+          </div>
+          <div>
+            <div style="font-weight: bold;">${this.userProfile.firstName || 'Unknown'} ${this.userProfile.lastName || 'User'}</div>
+            <div style="font-size: 12px; opacity: 0.8;">${this.userProfile.professionalTitle || 'Professional'}</div>
+          </div>
+        </div>
+        <div style="font-size: 12px; opacity: 0.8;">
+          📧 ${this.userProfile.email || 'No email'}<br>
+          📍 ${this.userProfile.location || 'No location'}<br>
+          💼 ${this.userProfile.yearsExperience || 0} years experience
+        </div>
+      `;
+    } else {
+      profileInfo.innerHTML = '<div class="error-message">Profile not loaded</div>';
     }
   }
   

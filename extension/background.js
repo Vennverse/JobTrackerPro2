@@ -54,6 +54,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     return true;
   }
   
+  if (request.action === 'getApplicationStats') {
+    getApplicationStats(sendResponse);
+    return true;
+  }
+  
   if (request.action === 'getUserProfile') {
     getUserProfile(sendResponse);
     return true;
@@ -311,7 +316,9 @@ async function handleApplicationTracking(applicationData, sendResponse) {
   try {
     const { apiUrl } = await chrome.storage.sync.get(['apiUrl']);
     
-    const response = await fetch(`${apiUrl}/api/applications`, {
+    const finalApiUrl = apiUrl || 'http://localhost:5000';
+    
+    const response = await fetch(`${finalApiUrl}/api/extension/applications`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json'
@@ -320,16 +327,15 @@ async function handleApplicationTracking(applicationData, sendResponse) {
       body: JSON.stringify({
         jobTitle: applicationData.jobTitle,
         company: applicationData.company,
-        jobUrl: applicationData.jobUrl,
+        jobUrl: applicationData.jobUrl || window.location.href,
         location: applicationData.location,
         jobType: applicationData.jobType,
         workMode: applicationData.workMode,
         salaryRange: applicationData.salaryRange,
-        status: 'applied',
-        jobDescription: applicationData.jobDescription,
-        requiredSkills: applicationData.requiredSkills,
-        matchScore: applicationData.matchScore,
-        source: 'chrome_extension'
+        status: applicationData.status || 'applied',
+        notes: applicationData.notes || '',
+        matchScore: applicationData.matchScore || 0,
+        source: 'extension'
       })
     });
     
@@ -337,7 +343,8 @@ async function handleApplicationTracking(applicationData, sendResponse) {
       const result = await response.json();
       sendResponse({ success: true, data: result });
     } else {
-      sendResponse({ success: false, error: 'Failed to track application' });
+      const errorData = await response.json();
+      sendResponse({ success: false, error: errorData.message || 'Failed to track application' });
     }
   } catch (error) {
     console.error('Error tracking application:', error);
@@ -365,6 +372,32 @@ async function updateSettings(settings, sendResponse) {
     await chrome.storage.sync.set(settings);
     sendResponse({ success: true });
   } catch (error) {
+    sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Get application statistics
+async function getApplicationStats(sendResponse) {
+  try {
+    const { apiUrl } = await chrome.storage.sync.get(['apiUrl']);
+    const finalApiUrl = apiUrl || 'http://localhost:5000';
+    
+    const response = await fetch(`${finalApiUrl}/api/applications/stats`, {
+      method: 'GET',
+      credentials: 'include',
+      headers: {
+        'Content-Type': 'application/json',
+      }
+    });
+    
+    if (response.ok) {
+      const stats = await response.json();
+      sendResponse({ success: true, data: stats });
+    } else {
+      sendResponse({ success: false, error: 'Failed to get application stats' });
+    }
+  } catch (error) {
+    console.error('Error getting application stats:', error);
     sendResponse({ success: false, error: error.message });
   }
 }
