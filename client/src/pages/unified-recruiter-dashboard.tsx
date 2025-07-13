@@ -547,7 +547,7 @@ export default function RecruiterDashboard() {
                           <div className="flex-1">
                             <div className="flex items-center gap-2 mb-2">
                               <h3 className="font-semibold">
-                                Candidate Application
+                                {application.applicantName || `${application.applicantFirstName || ''} ${application.applicantLastName || ''}`.trim() || 'Candidate'}
                               </h3>
                               <Badge variant="outline">
                                 {application.status}
@@ -562,6 +562,9 @@ export default function RecruiterDashboard() {
                                 </Badge>
                               )}
                             </div>
+                            <p className="text-sm text-gray-600 mb-2">
+                              <strong>Job:</strong> {application.jobPostingTitle || 'Job Title'} at {application.jobPostingCompany || 'Company'}
+                            </p>
                             <p className="text-sm text-gray-600 mb-2">
                               Applied:{" "}
                               {new Date(
@@ -1277,18 +1280,6 @@ export default function RecruiterDashboard() {
                                   Review
                                 </Button>
                               </DialogTrigger>
-                              
-                              {/* Message Button */}
-                              <Button
-                                variant="outline"
-                                size="sm"
-                                onClick={() => {
-                                  setLocation(`/chat?user=${application.candidateId}`);
-                                }}
-                              >
-                                <MessageCircle className="w-4 h-4 mr-1" />
-                                Message
-                              </Button>
                               <DialogContent>
                                 <DialogHeader>
                                   <DialogTitle>Review Application</DialogTitle>
@@ -1375,7 +1366,17 @@ export default function RecruiterDashboard() {
                               </DialogContent>
                             </Dialog>
 
-
+                            {/* Message Button */}
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => {
+                                setLocation(`/chat?user=${application.applicantId}`);
+                              }}
+                            >
+                              <MessageCircle className="w-4 h-4 mr-1" />
+                              Message
+                            </Button>
                           </div>
                         </div>
                       </div>
