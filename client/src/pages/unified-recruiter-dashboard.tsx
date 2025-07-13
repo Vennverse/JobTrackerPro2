@@ -137,8 +137,8 @@ export default function RecruiterDashboard() {
       notes?: string;
     }) => {
       return await apiRequest(
-        "PUT",
         `/api/recruiter/applications/${applicationId}`,
+        "PUT",
         {
           status,
           recruiterNotes: notes,
