@@ -7,6 +7,7 @@ import multer from "multer";
 import { db } from "./db";
 import { eq, desc, and, or, like, isNotNull, count, asc, isNull, sql } from "drizzle-orm";
 import * as schema from "@shared/schema";
+import { resumes } from "@shared/schema";
 
 // Simple in-memory cache for frequently accessed data
 const cache = new Map();
@@ -725,6 +726,40 @@ Additional Information:
     } catch (error) {
       console.error("Error fetching resumes:", error);
       res.status(500).json({ message: "Failed to fetch resumes" });
+    }
+  });
+
+  // Download resume file
+  app.get('/api/resumes/:id/download', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const resumeId = parseInt(req.params.id);
+      
+      // Get resume record
+      const [resume] = await db.select().from(resumes).where(
+        and(eq(resumes.id, resumeId), eq(resumes.userId, userId))
+      );
+      
+      if (!resume) {
+        return res.status(404).json({ message: "Resume not found" });
+      }
+      
+      // Retrieve file from storage
+      const fileBuffer = await fileStorage.retrieveResume(resume.filePath.split('/').pop().split('.')[0], userId);
+      
+      if (!fileBuffer) {
+        return res.status(404).json({ message: "Resume file not found" });
+      }
+      
+      // Set appropriate headers
+      res.setHeader('Content-Type', resume.mimeType);
+      res.setHeader('Content-Disposition', `attachment; filename="${resume.fileName}"`);
+      res.setHeader('Content-Length', fileBuffer.length);
+      
+      res.send(fileBuffer);
+    } catch (error) {
+      console.error("Error downloading resume:", error);
+      res.status(500).json({ message: "Failed to download resume" });
     }
   });
 
@@ -1674,19 +1709,26 @@ Additional Information:
         };
       }
       
-      // Save resume data to profile with file buffer for persistence
-      const resumeFileName = `resume_${userId}_${Date.now()}.pdf`;
-      const resumeDataBase64 = req.file.buffer.toString('base64');
-      
+      // Save resume to database with file path reference
+      const resumeRecord = await db.insert(resumes).values({
+        userId,
+        name: req.file.originalname,
+        fileName: req.file.originalname,
+        filePath: storedFile.path,
+        resumeText,
+        isActive: true,
+        atsScore,
+        analysisData: analysis,
+        recommendations,
+        fileSize: storedFile.size,
+        mimeType: req.file.mimetype,
+        lastAnalyzed: new Date(),
+      }).returning();
+
+      // Update user profile with basic info only
       await storage.upsertUserProfile({
         userId,
-        resumeText,
-        resumeFileName,
-        resumeData: resumeDataBase64, // Store base64 encoded file data
-        resumeMimeType: req.file.mimetype,
-        atsScore,
-        atsAnalysis: analysis,
-        atsRecommendations: recommendations,
+        summary: resumeText.substring(0, 500) + '...', // Brief summary
         lastResumeAnalysis: new Date(),
       });
 
@@ -1696,7 +1738,7 @@ Additional Information:
       res.json({
         success: true,
         analysis,
-        fileName: resumeFileName,
+        resume: resumeRecord[0],
         message: "Resume uploaded and analyzed successfully"
       });
     } catch (error) {

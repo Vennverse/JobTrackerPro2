@@ -116,19 +116,9 @@ export const userProfiles = pgTable("user_profiles", {
   majorFieldOfStudy: varchar("major_field_of_study"),
   graduationYear: integer("graduation_year"),
   
-  // Resume and Professional Summary
-  resumeUrl: varchar("resume_url"),
-  resumeText: text("resume_text"),
-  resumeFileName: varchar("resume_file_name"),
-  resumeData: text("resume_data"), // Base64 encoded file data for persistence
-  resumeMimeType: varchar("resume_mime_type"), // MIME type of uploaded file
+  // Professional Summary
   summary: text("summary"),
   yearsExperience: integer("years_experience"),
-  
-  // ATS Analysis Results
-  atsScore: integer("ats_score"),
-  atsAnalysis: jsonb("ats_analysis"),
-  atsRecommendations: text("ats_recommendations").array(),
   
   // Emergency Contact (sometimes required)
   emergencyContactName: varchar("emergency_contact_name"),
@@ -200,8 +190,7 @@ export const resumes = pgTable("resumes", {
   userId: varchar("user_id").references(() => users.id).notNull(),
   name: varchar("name").notNull(), // User-given name like "Software Engineer Resume"
   fileName: varchar("file_name").notNull(), // Original file name
-  fileUrl: varchar("file_url"), // Storage URL (could be S3, etc.)
-  fileData: text("file_data"), // Base64 encoded file content for demo
+  filePath: varchar("file_path").notNull(), // Local file system path
   resumeText: text("resume_text"), // Extracted text content for analysis
   isActive: boolean("is_active").default(false), // Which resume to use for applications
   

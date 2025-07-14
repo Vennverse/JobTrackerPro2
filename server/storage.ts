@@ -569,7 +569,8 @@ export class DatabaseStorage implements IStorage {
         mimeType: resume.mimeType,
         isActive: resume.isActive,
         analysis: resume.analysisData || null,
-        recommendations: resume.recommendations || []
+        recommendations: resume.recommendations || [],
+        filePath: resume.filePath // Add file path for new storage system
       }));
       console.log(`[DEBUG] Returning ${formattedResumes.length} formatted resumes for user ${userId}`);
       return formattedResumes;
