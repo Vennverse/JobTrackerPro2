@@ -6561,5 +6561,43 @@ Host: https://autojobr.com`;
     }
   });
 
+  // Get saved career AI analysis
+  app.get("/api/career-ai/saved", async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Get the most recent active analysis
+      const savedAnalysis = await db.query.careerAiAnalyses.findFirst({
+        where: and(
+          eq(schema.careerAiAnalyses.userId, userId),
+          eq(schema.careerAiAnalyses.isActive, true)
+        ),
+        orderBy: desc(schema.careerAiAnalyses.createdAt)
+      });
+
+      if (!savedAnalysis) {
+        return res.json({ hasAnalysis: false });
+      }
+
+      res.json({
+        hasAnalysis: true,
+        analysis: savedAnalysis.analysisData,
+        careerGoal: savedAnalysis.careerGoal,
+        location: savedAnalysis.location,
+        timeframe: savedAnalysis.timeframe,
+        completedTasks: savedAnalysis.completedTasks || [],
+        progressUpdate: savedAnalysis.progressUpdate,
+        createdAt: savedAnalysis.createdAt,
+        updatedAt: savedAnalysis.updatedAt
+      });
+    } catch (error) {
+      console.error("Error retrieving saved career analysis:", error);
+      res.status(500).json({ message: "Failed to retrieve saved analysis" });
+    }
+  });
+
   return httpServer;
 }

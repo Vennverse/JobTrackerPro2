@@ -79,6 +79,7 @@ export default function CareerAIAssistant() {
   const [careerPath, setCareerPath] = useState<CareerPath | null>(null);
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [progressUpdate, setProgressUpdate] = useState("");
+  const [savedAnalysis, setSavedAnalysis] = useState<any>(null);
 
   // Fetch user profile for AI analysis
   const { data: userProfile } = useQuery({
@@ -103,6 +104,41 @@ export default function CareerAIAssistant() {
     queryKey: ['/api/jobs/analyses'],
     enabled: !!user,
   });
+
+  // Load saved analysis on component mount
+  useEffect(() => {
+    if (user) {
+      fetchSavedAnalysis();
+    }
+  }, [user]);
+
+  const fetchSavedAnalysis = async () => {
+    try {
+      const response = await fetch('/api/career-ai/saved');
+      if (response.ok) {
+        const data = await response.json();
+        if (data.hasAnalysis) {
+          setSavedAnalysis(data);
+          setCareerGoal(data.careerGoal || "");
+          setLocation(data.location || "");
+          setTimeframe(data.timeframe || "");
+          setCompletedTasks(data.completedTasks || []);
+          setProgressUpdate(data.progressUpdate || "");
+          
+          // Set analysis results
+          if (data.analysis) {
+            setInsights(data.analysis.insights || []);
+            setCareerPath(data.analysis.careerPath || null);
+            setSkillGaps(data.analysis.skillGaps || []);
+            setNetworkingOpportunities(data.analysis.networkingOpportunities || []);
+            setMarketTiming(data.analysis.marketTiming || []);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching saved analysis:", error);
+    }
+  };
 
   // Generate comprehensive career analysis
   const generateCareerAnalysis = async () => {

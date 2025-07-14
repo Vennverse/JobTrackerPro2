@@ -1201,6 +1201,36 @@ export const testRetakePaymentsRelations = relations(testRetakePayments, ({ one 
   }),
 }));
 
+// Career AI Analysis storage for persistence
+export const careerAiAnalyses = pgTable("career_ai_analyses", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  careerGoal: varchar("career_goal").notNull(),
+  location: varchar("location"),
+  timeframe: varchar("timeframe"),
+  progressUpdate: text("progress_update"),
+  completedTasks: text("completed_tasks").array(),
+  analysisData: jsonb("analysis_data").notNull(), // Full AI response
+  insights: jsonb("insights"), // Structured insights array
+  careerPath: jsonb("career_path"), // Career path object
+  skillGaps: jsonb("skill_gaps"), // Skill gaps array
+  networkingOpportunities: jsonb("networking_opportunities"), // Networking data
+  marketTiming: jsonb("market_timing"), // Market timing insights
+  isActive: boolean("is_active").default(true),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("career_ai_analyses_user_idx").on(table.userId),
+  index("career_ai_analyses_active_idx").on(table.isActive),
+]);
+
+export const careerAiAnalysesRelations = relations(careerAiAnalyses, ({ one }) => ({
+  user: one(users, {
+    fields: [careerAiAnalyses.userId],
+    references: [users.id],
+  }),
+}));
+
 // Insert schemas
 export const insertUserProfileSchema = createInsertSchema(userProfiles).omit({
   id: true,
@@ -1328,6 +1358,12 @@ export const insertTestRetakePaymentSchema = createInsertSchema(testRetakePaymen
   updatedAt: true,
 });
 
+export const insertCareerAiAnalysisSchema = createInsertSchema(careerAiAnalyses).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
 export type DailyUsage = typeof dailyUsage.$inferSelect;
@@ -1351,3 +1387,7 @@ export type TestAssignment = typeof testAssignments.$inferSelect;
 export type InsertTestAssignment = z.infer<typeof insertTestAssignmentSchema>;
 export type TestRetakePayment = typeof testRetakePayments.$inferSelect;
 export type InsertTestRetakePayment = z.infer<typeof insertTestRetakePaymentSchema>;
+
+// Career AI Analysis types
+export type CareerAiAnalysis = typeof careerAiAnalyses.$inferSelect;
+export type InsertCareerAiAnalysis = z.infer<typeof insertCareerAiAnalysisSchema>;

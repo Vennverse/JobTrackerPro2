@@ -281,6 +281,56 @@ export default function ModernDashboard() {
                 </Card>
               </motion.div>
 
+              {/* Career AI Assistant */}
+              <motion.div variants={itemVariants}>
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-purple-50 via-pink-50 to-purple-100 dark:from-purple-900/20 dark:via-pink-900/20 dark:to-purple-900/20">
+                  <CardHeader className="bg-gradient-to-r from-purple-600 to-pink-600 text-white">
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="w-5 h-5" />
+                      Career AI Assistant
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-purple-600" />
+                        <span className="text-sm font-medium text-purple-800 dark:text-purple-200">
+                          Powered by llama-3.3-70b-versatile
+                        </span>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        Get personalized career guidance, skill gap analysis, and market insights tailored to your profile.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-center gap-1">
+                          <Target className="w-3 h-3 text-purple-600" />
+                          <span>Career Path Planning</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <BookOpen className="w-3 h-3 text-purple-600" />
+                          <span>Skill Gap Analysis</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-purple-600" />
+                          <span>Market Timing</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3 text-purple-600" />
+                          <span>Networking Opportunities</span>
+                        </div>
+                      </div>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                        onClick={() => navigate('/career-ai-assistant')}
+                      >
+                        <Zap className="w-4 h-4 mr-2" />
+                        Get Career Analysis
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
               {/* Recent Applications */}
               <motion.div variants={itemVariants}>
                 <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
