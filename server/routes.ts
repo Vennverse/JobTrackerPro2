@@ -6582,7 +6582,7 @@ Host: https://autojobr.com`;
   });
 
   // Get saved career AI analysis
-  app.get("/api/career-ai/saved", async (req: AuthenticatedRequest, res: Response) => {
+  app.get("/api/career-ai/saved", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
     try {
       const userId = req.user?.id;
       if (!userId) {
