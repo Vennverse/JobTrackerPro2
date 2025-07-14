@@ -58,7 +58,9 @@ AutoJobr is a comprehensive job application platform that connects job seekers w
 - **Security**: Client/server separation with proper authentication middleware
 
 ## User Preferences
-*No specific user preferences recorded yet*
+- **UI/UX Focus**: User prefers "BEST OF BEST" modern, beautiful UI/UX implementations
+- **Feature Simplification**: Requested removal of AI recommendations tab for cleaner job browsing experience
+- **Visual Quality**: Emphasis on premium, professional visual design and user experience
 
 ## Current Status
 The application is fully migrated and operational on Replit with all core features working correctly.

@@ -103,7 +103,9 @@ export default function Profile() {
       });
       queryClient.invalidateQueries({ queryKey: ["/api/profile"] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error("Profile update error:", error);
+      
       if (isUnauthorizedError(error)) {
         toast({
           title: "Unauthorized",
@@ -115,11 +117,28 @@ export default function Profile() {
         }, 500);
         return;
       }
+      
+      let errorMessage = "Failed to update profile";
+      
+      // Try to extract more specific error information
+      if (error.message) {
+        errorMessage = error.message;
+      } else if (error.response?.data?.message) {
+        errorMessage = error.response.data.message;
+      } else if (error.response?.data?.details) {
+        errorMessage = error.response.data.details;
+      }
+      
       toast({
-        title: "Error",
-        description: "Failed to update profile",
+        title: "Profile Update Error",
+        description: errorMessage,
         variant: "destructive",
       });
+      
+      // Log validation errors if available
+      if (error.response?.data?.validationErrors) {
+        console.log("Validation errors:", error.response.data.validationErrors);
+      }
     },
   });
 

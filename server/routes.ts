@@ -1018,13 +1018,19 @@ Additional Information:
     try {
       const userId = req.user.id;
       
+      console.log("Profile update request body:", JSON.stringify(req.body, null, 2));
+      
       // Convert date strings to Date objects if needed
       const bodyData = { ...req.body, userId };
       if (bodyData.lastResumeAnalysis && typeof bodyData.lastResumeAnalysis === 'string') {
         bodyData.lastResumeAnalysis = new Date(bodyData.lastResumeAnalysis);
       }
       
+      console.log("Processed body data:", JSON.stringify(bodyData, null, 2));
+      
       const profileData = insertUserProfileSchema.parse(bodyData);
+      console.log("Parsed profile data:", JSON.stringify(profileData, null, 2));
+      
       const profile = await storage.upsertUserProfile(profileData);
       
       // Invalidate profile cache
@@ -1033,13 +1039,15 @@ Additional Information:
       
       res.json(profile);
     } catch (error) {
-      console.error("Error updating profile:", error);
+      console.error("PROFILE UPDATE ERROR:", error);
       
       // Provide more specific error messages
       if (error.name === 'ZodError') {
+        console.error("Zod validation errors:", error.errors);
         return res.status(400).json({ 
           message: "Invalid profile data", 
-          details: error.errors?.map(e => e.message).join(', ') 
+          details: error.errors?.map(e => `${e.path.join('.')}: ${e.message}`).join(', '),
+          validationErrors: error.errors
         });
       }
       
@@ -1049,7 +1057,9 @@ Additional Information:
       
       res.status(500).json({ 
         message: "Failed to update profile", 
-        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined,
+        errorName: error.name,
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       });
     }
   });
