@@ -10,18 +10,16 @@ import { Crown, Check, X, Zap, Target, Brain, FileText } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 interface SubscriptionData {
-  subscription: {
-    planType: string;
-    subscriptionStatus: string;
-    subscriptionEndDate?: string;
-  };
-  usage: {
+  planType: string;
+  subscriptionStatus: string;
+  subscriptionEndDate?: string;
+  usage?: {
     jobAnalyses: number;
     resumeAnalyses: number;
     applications: number;
     autoFills: number;
   };
-  limits: {
+  limits?: {
     jobAnalyses: number;
     resumeAnalyses: number;
     applications: number;
@@ -264,9 +262,10 @@ export default function Subscription() {
     );
   }
 
-  const { subscription, usage, limits } = subscriptionData;
-  const isPremium = subscription.planType === 'premium';
-  const isActive = subscription.subscriptionStatus === 'active';
+  const isPremium = subscriptionData.planType === 'premium';
+  const isActive = subscriptionData.subscriptionStatus === 'active';
+  const usage = subscriptionData.usage || { jobAnalyses: 0, resumeAnalyses: 0, applications: 0, autoFills: 0 };
+  const limits = subscriptionData.limits;
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -320,7 +319,7 @@ export default function Subscription() {
               </CardTitle>
               <CardDescription>
                 {isPremium ? (
-                  isActive ? "Active until " + new Date(subscriptionData.subscription.subscriptionEndDate!).toLocaleDateString() : "Premium plan inactive"
+                  isActive ? "Active until " + (subscriptionData.subscriptionEndDate ? new Date(subscriptionData.subscriptionEndDate).toLocaleDateString() : "N/A") : "Premium plan inactive"
                 ) : (
                   "Limited daily usage with premium features available"
                 )}
