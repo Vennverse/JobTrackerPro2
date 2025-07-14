@@ -32,6 +32,8 @@ interface SubscriptionData {
 export default function Subscription() {
   const { toast } = useToast();
   const [pendingTargetingJob, setPendingTargetingJob] = useState<any>(null);
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'paypal' | 'razorpay'>('stripe');
+  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   // Check for pending targeting job from Premium Targeting page
   useEffect(() => {
@@ -46,38 +48,6 @@ export default function Subscription() {
     retry: 3,
     retryDelay: 1000,
   });
-
-  // Handle loading state
-  if (isLoading) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading subscription data...</p>
-        </div>
-      </div>
-    );
-  }
-
-  // Handle error state
-  if (error || !subscriptionData) {
-    return (
-      <div className="container mx-auto px-4 py-8">
-        <div className="text-center">
-          <h1 className="text-2xl font-bold text-red-600">Error Loading Subscription</h1>
-          <p className="mt-4 text-gray-600">Unable to load subscription data. Please try again.</p>
-          <Button 
-            onClick={() => window.location.reload()} 
-            className="mt-4"
-          >
-            Retry
-          </Button>
-        </div>
-      </div>
-    );
-  }
-
-  const { subscription, usage, limits } = subscriptionData;
 
   const upgradeMutation = useMutation({
     mutationFn: async (paymentData: any) => {
@@ -139,9 +109,6 @@ export default function Subscription() {
       });
     },
   });
-
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<'stripe' | 'paypal' | 'razorpay'>('stripe');
-  const [isProcessingPayment, setIsProcessingPayment] = useState(false);
 
   const handleUpgrade = async () => {
     setIsProcessingPayment(true);
@@ -267,24 +234,39 @@ export default function Subscription() {
     return "bg-green-500";
   };
 
+  // Handle loading state
   if (isLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
-        <div className="max-w-4xl mx-auto">
-          <div className="animate-pulse space-y-6">
-            <div className="h-8 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
-              <div className="h-64 bg-gray-200 dark:bg-gray-700 rounded"></div>
-            </div>
-          </div>
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading subscription data...</p>
         </div>
       </div>
     );
   }
 
-  const isPremium = subscriptionData?.subscription.planType === 'premium';
-  const isActive = subscriptionData?.subscription.subscriptionStatus === 'active';
+  // Handle error state
+  if (error || !subscriptionData) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">Error Loading Subscription</h1>
+          <p className="mt-4 text-gray-600">Unable to load subscription data. Please try again.</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { subscription, usage, limits } = subscriptionData;
+  const isPremium = subscription.planType === 'premium';
+  const isActive = subscription.subscriptionStatus === 'active';
 
   return (
     <div className="container mx-auto px-4 py-8">
