@@ -53,7 +53,8 @@ import {
   Phone,
   Globe,
   Send,
-  ExternalLink
+  ExternalLink,
+  Brain
 } from "lucide-react";
 
 export default function ModernDashboard() {
