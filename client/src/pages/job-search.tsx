@@ -164,15 +164,25 @@ export default function JobSearch() {
                     </div>
                   </div>
 
-                  {/* Google Jobs Iframe */}
-                  <div className="border rounded-lg overflow-hidden" style={{ height: '800px' }}>
-                    <iframe
-                      src={searchUrl}
-                      className="w-full h-full border-0"
-                      title="Google Jobs Search Results"
-                      sandbox="allow-same-origin allow-scripts allow-popups allow-forms"
-                      loading="lazy"
-                    />
+                  {/* Google Jobs Preview */}
+                  <div className="border rounded-lg overflow-hidden bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20" style={{ height: '400px' }}>
+                    <div className="flex flex-col items-center justify-center h-full text-center p-8">
+                      <div className="w-16 h-16 bg-blue-100 dark:bg-blue-800 rounded-full flex items-center justify-center mb-4">
+                        <ExternalLink className="w-8 h-8 text-blue-600 dark:text-blue-400" />
+                      </div>
+                      <h3 className="text-xl font-semibold mb-2">Ready to Search Google Jobs</h3>
+                      <p className="text-muted-foreground mb-6 max-w-md">
+                        Click below to open Google Jobs in a new tab with your search for "{position}" jobs in "{location}"
+                      </p>
+                      <Button 
+                        onClick={() => window.open(searchUrl, '_blank')}
+                        size="lg"
+                        className="bg-blue-600 hover:bg-blue-700 text-white"
+                      >
+                        <ExternalLink className="w-5 h-5 mr-2" />
+                        Open Google Jobs
+                      </Button>
+                    </div>
                   </div>
 
                   {/* Action Buttons */}
