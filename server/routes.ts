@@ -5183,39 +5183,7 @@ Host: https://autojobr.com`;
     }
   });
 
-  // Main job search route (frontend uses this) - Public access for job searching
-  app.get('/api/jobs/search', async (req: any, res) => {
-    try {
-      console.log('[JOB_SEARCH] Public job search route hit');
-      const { q, position, location, limit = 10 } = req.query;
-      
-      // Handle both 'q' and 'position' parameters for backwards compatibility
-      const searchPosition = q || position;
-      
-      if (!searchPosition || !location) {
-        return res.status(400).json({ message: 'Position and location are required' });
-      }
-
-      if (searchPosition.length < 2) {
-        return res.status(400).json({ message: 'Position must be at least 2 characters long' });
-      }
-
-      if (location.length < 2) {
-        return res.status(400).json({ message: 'Location must be at least 2 characters long' });
-      }
-
-      console.log(`[JOB_SEARCH] Searching for: ${searchPosition} in ${location}`);
-
-      // Import and use Google Jobs scraper
-      const { googleJobsScraper } = await import('./googleJobsScraper');
-      const jobs = await googleJobsScraper.searchJobs(searchPosition, location, parseInt(limit));
-      
-      res.json({ jobs, total: jobs.length });
-    } catch (error) {
-      console.error('Error searching jobs:', error);
-      res.status(500).json({ message: 'Failed to search jobs' });
-    }
-  });
+  // Note: External job search route removed per user request
 
   // Get scraped jobs with filters - Return empty array for now (table not implemented yet)
   app.get('/api/scraped-jobs', async (req: any, res) => {
