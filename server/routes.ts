@@ -505,10 +505,13 @@ Additional Information:
         console.warn("Could not fetch user profile for analysis:", error);
       }
       
+      // Get user for AI tier assessment
+      const user = await storage.getUser(userId);
+      
       // Analyze resume with Groq AI
       let analysis;
       try {
-        analysis = await groqService.analyzeResume(resumeText, userProfile);
+        analysis = await groqService.analyzeResume(resumeText, userProfile, user);
         
         // Ensure analysis has required properties
         if (!analysis || typeof analysis.atsScore === 'undefined') {
@@ -541,7 +544,6 @@ Additional Information:
       const existingResumes = await storage.getUserResumes(userId);
       
       // Check resume limits - Free users: 2 resumes, Premium: unlimited
-      const user = await storage.getUser(userId);
       if (user?.planType !== 'premium' && existingResumes.length >= 2) {
         return res.status(400).json({ 
           message: "Free plan allows maximum 2 resumes. Upgrade to Premium for unlimited resumes.",
@@ -1636,13 +1638,16 @@ Additional Information:
       // Get user profile for context
       const profile = await storage.getUserProfile(userId);
       
+      // Get user for AI tier assessment
+      const user = await storage.getUser(userId);
+      
       // Try to analyze resume with Groq AI, with fallback
       let analysis;
       let atsScore = 75; // Default score
       let recommendations = ['Resume uploaded successfully', 'AI analysis will be available shortly'];
       
       try {
-        analysis = await groqService.analyzeResume(resumeText, profile);
+        analysis = await groqService.analyzeResume(resumeText, profile, user);
         atsScore = analysis.atsScore;
         recommendations = analysis.recommendations;
       } catch (error) {
@@ -6427,6 +6432,12 @@ Host: https://autojobr.com`;
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      // Get user from database to check AI tier
+      const user = await storage.getUser(userId);
+      if (!user) {
+        return res.status(404).json({ message: "User not found" });
+      }
+
       const { careerGoal, timeframe, location, userProfile, userSkills, userApplications, jobAnalyses, completedTasks, progressUpdate } = req.body;
 
       if (!careerGoal) {
@@ -6516,7 +6527,7 @@ Host: https://autojobr.com`;
       `;
 
       const response = await groqService.client.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
+        model: groqService.getModel ? groqService.getModel(user) : "llama-3.1-8b-instant",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 4000,
         temperature: 0.7
@@ -6542,6 +6553,9 @@ Host: https://autojobr.com`;
         throw new Error("Failed to parse AI analysis");
       }
 
+      // Get AI access info for the user
+      const aiAccessInfo = groqService.getAIAccessInfo(user);
+      
       // Store the analysis for future reference
       await db.insert(schema.aiJobAnalyses).values({
         userId,
@@ -6554,7 +6568,13 @@ Host: https://autojobr.com`;
         createdAt: new Date()
       });
 
-      res.json(analysisData);
+      // Return analysis with AI tier information
+      res.json({
+        ...analysisData,
+        aiTier: aiAccessInfo.tier,
+        upgradeMessage: aiAccessInfo.message,
+        daysLeft: aiAccessInfo.daysLeft
+      });
     } catch (error) {
       console.error("Career AI analysis error:", error);
       res.status(500).json({ message: "Failed to generate career analysis" });
@@ -6569,6 +6589,10 @@ Host: https://autojobr.com`;
         return res.status(401).json({ message: "Not authenticated" });
       }
 
+      // Get user from database to check AI tier
+      const user = await storage.getUser(userId);
+      const aiAccessInfo = groqService.getAIAccessInfo(user);
+
       // Get the most recent active analysis
       const savedAnalysis = await db.query.careerAiAnalyses.findFirst({
         where: and(
@@ -6579,7 +6603,12 @@ Host: https://autojobr.com`;
       });
 
       if (!savedAnalysis) {
-        return res.json({ hasAnalysis: false });
+        return res.json({ 
+          hasAnalysis: false,
+          aiTier: aiAccessInfo.tier,
+          upgradeMessage: aiAccessInfo.message,
+          daysLeft: aiAccessInfo.daysLeft
+        });
       }
 
       res.json({
@@ -6591,7 +6620,10 @@ Host: https://autojobr.com`;
         completedTasks: savedAnalysis.completedTasks || [],
         progressUpdate: savedAnalysis.progressUpdate,
         createdAt: savedAnalysis.createdAt,
-        updatedAt: savedAnalysis.updatedAt
+        updatedAt: savedAnalysis.updatedAt,
+        aiTier: aiAccessInfo.tier,
+        upgradeMessage: aiAccessInfo.message,
+        daysLeft: aiAccessInfo.daysLeft
       });
     } catch (error) {
       console.error("Error retrieving saved career analysis:", error);

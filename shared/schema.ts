@@ -53,6 +53,11 @@ export const users = pgTable("users", {
   planType: varchar("plan_type").default("free"), // free, premium, enterprise
   subscriptionStartDate: timestamp("subscription_start_date"),
   subscriptionEndDate: timestamp("subscription_end_date"),
+  // AI Model Access Control
+  aiModelTier: varchar("ai_model_tier").default("premium"), // premium, basic
+  premiumTrialStartDate: timestamp("premium_trial_start_date").defaultNow(),
+  premiumTrialEndDate: timestamp("premium_trial_end_date").defaultNow(),
+  hasUsedPremiumTrial: boolean("has_used_premium_trial").default(false),
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });

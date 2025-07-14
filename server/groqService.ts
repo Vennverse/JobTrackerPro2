@@ -43,6 +43,12 @@ interface JobMatchAnalysis {
 
 class GroqService {
   public client: Groq;
+  
+  // AI Model Tiers
+  private readonly models = {
+    premium: "llama-3.3-70b-versatile", // Premium model for paying users and trial users
+    basic: "llama-3.1-8b-instant"      // Basic model for free users after trial
+  };
 
   constructor() {
     if (!process.env.GROQ_API_KEY) {
@@ -53,7 +59,69 @@ class GroqService {
     });
   }
 
-  async analyzeResume(resumeText: string, userProfile?: any): Promise<ResumeAnalysis> {
+  // Check if user has premium AI access
+  private hasAIAccess(user: any): { tier: 'premium' | 'basic', message?: string } {
+    if (!user) return { tier: 'basic' };
+    
+    // If user has active premium subscription, always use premium model
+    if (user.planType === 'premium' && user.subscriptionStatus === 'active') {
+      return { tier: 'premium' };
+    }
+    
+    // Check if user is within premium trial period
+    if (!user.hasUsedPremiumTrial) {
+      const now = new Date();
+      const trialStart = new Date(user.premiumTrialStartDate);
+      const trialEnd = new Date(trialStart.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+      
+      if (now < trialEnd) {
+        return { tier: 'premium' };
+      } else {
+        // Trial expired, return message
+        return { 
+          tier: 'basic', 
+          message: "Your 30-day premium AI model trial has ended. Upgrade to premium to access the best AI models with advanced analysis capabilities."
+        };
+      }
+    }
+    
+    // User has used trial or no trial available
+    return { tier: 'basic' };
+  }
+
+  // Get model based on user tier
+  private getModel(user: any): string {
+    const { tier } = this.hasAIAccess(user);
+    return this.models[tier];
+  }
+
+  // Public method to get model for external usage
+  public getModel(user: any): string {
+    const { tier } = this.hasAIAccess(user);
+    return this.models[tier];
+  }
+
+  // Get AI access information for user
+  public getAIAccessInfo(user: any): { tier: 'premium' | 'basic', message?: string, daysLeft?: number } {
+    const accessInfo = this.hasAIAccess(user);
+    
+    if (accessInfo.tier === 'premium' && !user?.hasUsedPremiumTrial) {
+      // Calculate days left in trial
+      const now = new Date();
+      const trialStart = new Date(user.premiumTrialStartDate);
+      const trialEnd = new Date(trialStart.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
+      const daysLeft = Math.ceil((trialEnd.getTime() - now.getTime()) / (24 * 60 * 60 * 1000));
+      
+      return {
+        ...accessInfo,
+        daysLeft: Math.max(0, daysLeft)
+      };
+    }
+    
+    return accessInfo;
+  }
+
+  async analyzeResume(resumeText: string, userProfile?: any, user?: any): Promise<ResumeAnalysis & { aiTier?: string, upgradeMessage?: string }> {
     // Add some randomization to prevent identical responses
     const analysisId = Math.random().toString(36).substring(7);
     
@@ -109,6 +177,7 @@ Return ONLY valid JSON:
 Focus on THIS specific resume content. Provide personalized, actionable advice that will genuinely improve ATS performance.`;
 
     try {
+      const accessInfo = this.hasAIAccess(user);
       const completion = await this.client.chat.completions.create({
         messages: [
           {
@@ -120,7 +189,7 @@ Focus on THIS specific resume content. Provide personalized, actionable advice t
             content: prompt
           }
         ],
-        model: "llama-3.3-70b-versatile",
+        model: this.getModel(user),
         temperature: 0.3,
         max_tokens: 2000,
       });
@@ -287,7 +356,11 @@ Focus on THIS specific resume content. Provide personalized, actionable advice t
           throw new Error(`Analysis missing required property: ${prop}`);
         }
       }
-      return analysis as ResumeAnalysis;
+      return {
+        ...analysis,
+        aiTier: accessInfo.tier,
+        upgradeMessage: accessInfo.message
+      } as ResumeAnalysis & { aiTier?: string, upgradeMessage?: string };
     } catch (error) {
       console.error("Error analyzing resume with Groq:", error);
       
@@ -295,6 +368,7 @@ Focus on THIS specific resume content. Provide personalized, actionable advice t
       const contentLength = resumeText.length;
       const dynamicScore = Math.max(35, Math.min(85, 35 + Math.floor(contentLength / 50)));
       
+      const fallbackAccessInfo = this.hasAIAccess(user);
       return {
         atsScore: dynamicScore,
         recommendations: [
@@ -317,7 +391,9 @@ Focus on THIS specific resume content. Provide personalized, actionable advice t
           strengthsFound: ["Resume structure present", "Professional experience included"],
           weaknesses: ["Could benefit from more specific details"],
           suggestions: ["Add quantifiable accomplishments", "Include relevant certifications", "Highlight key achievements"]
-        }
+        },
+        aiTier: fallbackAccessInfo.tier,
+        upgradeMessage: fallbackAccessInfo.message
       };
     }
   }
@@ -338,8 +414,9 @@ Focus on THIS specific resume content. Provide personalized, actionable advice t
       yearsExperience?: number;
       professionalTitle?: string;
       summary?: string;
-    }
-  ): Promise<JobMatchAnalysis> {
+    },
+    user?: any
+  ): Promise<JobMatchAnalysis & { aiTier?: string, upgradeMessage?: string }> {
     const userSkills = userProfile.skills.map(s => s.skillName).join(', ');
     const userExperience = userProfile.workExperience.map(w => 
       `${w.position} at ${w.company}${w.description ? ': ' + w.description.substring(0, 200) : ''}`
@@ -406,6 +483,7 @@ Consider:
 `;
 
     try {
+      const accessInfo = this.hasAIAccess(user);
       const completion = await this.client.chat.completions.create({
         messages: [
           {
@@ -417,7 +495,7 @@ Consider:
             content: prompt + "\n\nRemember: Respond with ONLY the JSON object, nothing else."
           }
         ],
-        model: "llama-3.3-70b-versatile",
+        model: this.getModel(user),
         temperature: 0.2,
         max_tokens: 2500,
       });
@@ -440,11 +518,16 @@ Consider:
       
       try {
         const analysis = JSON.parse(cleanContent);
-        return analysis as JobMatchAnalysis;
+        return {
+          ...analysis,
+          aiTier: accessInfo.tier,
+          upgradeMessage: accessInfo.message
+        } as JobMatchAnalysis & { aiTier?: string, upgradeMessage?: string };
       } catch (parseError) {
         console.error("Failed to parse JSON response:", cleanContent);
         
         // Fallback: Create a basic analysis structure
+        const fallbackAccessInfo = this.hasAIAccess(user);
         return {
           matchScore: 50,
           matchingSkills: [],
@@ -463,8 +546,10 @@ Consider:
           cultureFit: "Good",
           applicationRecommendation: "Consider applying after reviewing job requirements in detail",
           tailoringAdvice: "Focus on highlighting relevant experience and skills",
-          interviewPrepTips: "Research the company and prepare examples of relevant work"
-        } as JobMatchAnalysis;
+          interviewPrepTips: "Research the company and prepare examples of relevant work",
+          aiTier: fallbackAccessInfo.tier,
+          upgradeMessage: fallbackAccessInfo.message
+        } as JobMatchAnalysis & { aiTier?: string, upgradeMessage?: string };
       }
     } catch (error) {
       console.error("Error analyzing job match with Groq:", error);

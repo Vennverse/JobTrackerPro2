@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { motion } from "framer-motion";
-import { useAuth } from "@/hooks/useAuth";
+import { useAuth } from "@/hooks/use-auth";
 import { useToast } from "@/hooks/use-toast";
 import { isUnauthorizedError } from "@/lib/authUtils";
 import { apiRequest } from "@/lib/queryClient";
@@ -80,6 +80,9 @@ export default function CareerAIAssistant() {
   const [completedTasks, setCompletedTasks] = useState<string[]>([]);
   const [progressUpdate, setProgressUpdate] = useState("");
   const [savedAnalysis, setSavedAnalysis] = useState<any>(null);
+  const [aiTier, setAiTier] = useState<'premium' | 'basic'>('basic');
+  const [upgradeMessage, setUpgradeMessage] = useState<string>("");
+  const [daysLeft, setDaysLeft] = useState<number>(0);
 
   // Fetch user profile for AI analysis
   const { data: userProfile } = useQuery({
@@ -117,6 +120,11 @@ export default function CareerAIAssistant() {
       const response = await fetch('/api/career-ai/saved');
       if (response.ok) {
         const data = await response.json();
+        // Set AI tier information
+        setAiTier(data.aiTier || 'basic');
+        setUpgradeMessage(data.upgradeMessage || "");
+        setDaysLeft(data.daysLeft || 0);
+        
         if (data.hasAnalysis) {
           setSavedAnalysis(data);
           setCareerGoal(data.careerGoal || "");
@@ -174,14 +182,32 @@ export default function CareerAIAssistant() {
 
       if (response.ok) {
         const result = await response.json();
+        
+        // Set AI tier information
+        setAiTier(result.aiTier || 'basic');
+        setUpgradeMessage(result.upgradeMessage || "");
+        setDaysLeft(result.daysLeft || 0);
+        
         setInsights(result.insights);
         setSkillGaps(result.skillGaps);
         setCareerPath(result.careerPath);
         
-        toast({
-          title: "Analysis Complete",
-          description: "Your personalized career insights are ready",
-        });
+        // Clear progress update after successful analysis
+        setProgressUpdate("");
+        
+        // Show upgrade message if trial expired
+        if (result.upgradeMessage) {
+          toast({
+            title: "Premium AI Model Trial Ended",
+            description: result.upgradeMessage,
+            variant: "destructive",
+          });
+        } else {
+          toast({
+            title: "Analysis Complete",
+            description: "Your personalized career insights are ready",
+          });
+        }
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || "Analysis failed");
@@ -245,6 +271,57 @@ export default function CareerAIAssistant() {
               Get personalized career guidance powered by AI. Analyze your career path, identify skill gaps, 
               optimize timing for moves, and discover networking opportunities.
             </p>
+            
+            {/* AI Tier Status Banner */}
+            <div className="max-w-2xl mx-auto">
+              {aiTier === 'premium' && daysLeft > 0 && (
+                <div className="bg-gradient-to-r from-green-50 to-blue-50 dark:from-green-950/20 dark:to-blue-950/20 border border-green-200 dark:border-green-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5 text-green-600" />
+                    <span className="font-medium text-green-800 dark:text-green-200">
+                      Premium AI Model Trial Active
+                    </span>
+                  </div>
+                  <p className="text-sm text-green-700 dark:text-green-300 mt-1">
+                    {daysLeft} days left of premium AI model access with advanced analysis capabilities
+                  </p>
+                </div>
+              )}
+              
+              {upgradeMessage && (
+                <div className="bg-gradient-to-r from-yellow-50 to-orange-50 dark:from-yellow-950/20 dark:to-orange-950/20 border border-yellow-200 dark:border-yellow-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <Trophy className="h-5 w-5 text-yellow-600" />
+                    <span className="font-medium text-yellow-800 dark:text-yellow-200">
+                      Premium AI Model Trial Ended
+                    </span>
+                  </div>
+                  <p className="text-sm text-yellow-700 dark:text-yellow-300 mt-1">
+                    {upgradeMessage}
+                  </p>
+                  <Button 
+                    size="sm" 
+                    className="mt-2 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                  >
+                    Upgrade to Premium
+                  </Button>
+                </div>
+              )}
+              
+              {aiTier === 'basic' && !upgradeMessage && (
+                <div className="bg-gradient-to-r from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border border-blue-200 dark:border-blue-800 rounded-lg p-4">
+                  <div className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-blue-600" />
+                    <span className="font-medium text-blue-800 dark:text-blue-200">
+                      Basic AI Model (llama-3.1-8b-instant)
+                    </span>
+                  </div>
+                  <p className="text-sm text-blue-700 dark:text-blue-300 mt-1">
+                    Using standard AI model. Upgrade to premium for advanced analysis with llama-3.3-70b-versatile
+                  </p>
+                </div>
+              )}
+            </div>
           </div>
 
           {/* Personal AI Career Assistant Card */}
@@ -257,7 +334,7 @@ export default function CareerAIAssistant() {
                 Personal AI Career Assistant
               </CardTitle>
               <p className="text-sm text-muted-foreground">
-                Powered by Groq AI (llama-3.3-70b-versatile) • Get personalized career guidance with location-specific insights
+                Powered by Groq AI ({aiTier === 'premium' ? 'llama-3.3-70b-versatile' : 'llama-3.1-8b-instant'}) • Get personalized career guidance with location-specific insights
               </p>
             </CardHeader>
             <CardContent className="space-y-4">
