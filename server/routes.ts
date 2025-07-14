@@ -6556,16 +6556,28 @@ Host: https://autojobr.com`;
       // Get AI access info for the user
       const aiAccessInfo = groqService.getAIAccessInfo(user);
       
-      // Store the analysis for future reference
-      await db.insert(schema.aiJobAnalyses).values({
+      // First, deactivate any existing active analysis for this user
+      await db.update(schema.careerAiAnalyses)
+        .set({ isActive: false })
+        .where(eq(schema.careerAiAnalyses.userId, userId));
+
+      // Store the analysis in the correct table for persistence
+      await db.insert(schema.careerAiAnalyses).values({
         userId,
-        jobTitle: careerGoal,
-        company: "Career Planning",
-        jobUrl: "https://autojobr.com/career-planning",
-        matchScore: analysisData.careerPath?.successProbability || 0,
-        analysis: JSON.stringify(analysisData),
-        recommendations: analysisData.insights?.map(i => i.title).join('; ') || '',
-        createdAt: new Date()
+        careerGoal,
+        location: location || null,
+        timeframe: timeframe || null,
+        progressUpdate: progressUpdate || null,
+        completedTasks: completedTasks || [],
+        analysisData: analysisData,
+        insights: analysisData.insights || null,
+        careerPath: analysisData.careerPath || null,
+        skillGaps: analysisData.skillGaps || null,
+        networkingOpportunities: analysisData.networkingOpportunities || null,
+        marketTiming: analysisData.marketTiming || null,
+        isActive: true,
+        createdAt: new Date(),
+        updatedAt: new Date()
       });
 
       // Return analysis with AI tier information
@@ -6628,6 +6640,35 @@ Host: https://autojobr.com`;
     } catch (error) {
       console.error("Error retrieving saved career analysis:", error);
       res.status(500).json({ message: "Failed to retrieve saved analysis" });
+    }
+  });
+
+  // Update career AI analysis progress
+  app.post("/api/career-ai/update-progress", isAuthenticated, async (req: AuthenticatedRequest, res: Response) => {
+    try {
+      const userId = req.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { completedTasks, progressUpdate } = req.body;
+
+      // Update the most recent active analysis
+      await db.update(schema.careerAiAnalyses)
+        .set({ 
+          completedTasks: completedTasks || [],
+          progressUpdate: progressUpdate || null,
+          updatedAt: new Date()
+        })
+        .where(and(
+          eq(schema.careerAiAnalyses.userId, userId),
+          eq(schema.careerAiAnalyses.isActive, true)
+        ));
+
+      res.json({ message: "Progress updated successfully" });
+    } catch (error) {
+      console.error("Error updating career AI progress:", error);
+      res.status(500).json({ message: "Failed to update progress" });
     }
   });
 

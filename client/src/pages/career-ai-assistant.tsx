@@ -227,6 +227,50 @@ export default function CareerAIAssistant() {
     }
   };
 
+  // Update progress when tasks are completed
+  const updateProgress = async (newCompletedTasks: string[], newProgressUpdate: string = "") => {
+    try {
+      const response = await fetch('/api/career-ai/update-progress', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          completedTasks: newCompletedTasks,
+          progressUpdate: newProgressUpdate
+        }),
+      });
+
+      if (response.ok) {
+        setCompletedTasks(newCompletedTasks);
+        setProgressUpdate(newProgressUpdate);
+        
+        toast({
+          title: "Progress Updated",
+          description: "Your career progress has been saved",
+        });
+      } else {
+        throw new Error("Failed to update progress");
+      }
+    } catch (error: any) {
+      console.error("Error updating progress:", error);
+      toast({
+        title: "Update Failed",
+        description: error.message || "Please try again",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Handle task completion
+  const handleTaskCompletion = (taskId: string, completed: boolean) => {
+    const newCompletedTasks = completed 
+      ? [...completedTasks, taskId]
+      : completedTasks.filter(id => id !== taskId);
+    
+    updateProgress(newCompletedTasks, progressUpdate);
+  };
+
   const getInsightIcon = (type: string) => {
     switch (type) {
       case 'path': return <Map className="h-5 w-5" />;
