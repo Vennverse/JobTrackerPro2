@@ -1034,7 +1034,23 @@ Additional Information:
       res.json(profile);
     } catch (error) {
       console.error("Error updating profile:", error);
-      res.status(500).json({ message: "Failed to update profile" });
+      
+      // Provide more specific error messages
+      if (error.name === 'ZodError') {
+        return res.status(400).json({ 
+          message: "Invalid profile data", 
+          details: error.errors?.map(e => e.message).join(', ') 
+        });
+      }
+      
+      if (error.message?.includes('duplicate key')) {
+        return res.status(409).json({ message: "Profile already exists" });
+      }
+      
+      res.status(500).json({ 
+        message: "Failed to update profile", 
+        details: process.env.NODE_ENV === 'development' ? error.message : undefined 
+      });
     }
   });
 

@@ -597,8 +597,12 @@ Guidelines:
         model: "llama-3.3-70b-versatile",
         messages: [
           {
+            role: "system",
+            content: "You are an expert job recommendation system. You MUST respond with valid JSON only. Do not include any text before or after the JSON array. Respond with ONLY the JSON array of job recommendations."
+          },
+          {
             role: "user",
-            content: prompt,
+            content: prompt + "\n\nIMPORTANT: Respond with ONLY the JSON array, no additional text or explanation."
           },
         ],
         temperature: 0.3,
@@ -610,12 +614,22 @@ Guidelines:
         throw new Error("No response from Groq API");
       }
 
-      // Parse the JSON response
-      const recommendations = JSON.parse(content);
+      // Parse the JSON response with better error handling
+      let recommendations;
+      try {
+        // Try to extract JSON from the response
+        const jsonMatch = content.match(/\[[\s\S]*\]/);
+        const jsonContent = jsonMatch ? jsonMatch[0] : content;
+        recommendations = JSON.parse(jsonContent);
+      } catch (parseError) {
+        console.error("Failed to parse Groq response as JSON:", content.substring(0, 200));
+        throw new Error("Invalid JSON response from Groq API");
+      }
       
       // Validate the structure
       if (!Array.isArray(recommendations)) {
-        throw new Error("Invalid response format");
+        console.error("Response is not an array:", recommendations);
+        throw new Error("Invalid response format - expected array");
       }
 
       // Add timestamps and ensure correct format
