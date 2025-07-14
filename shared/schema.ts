@@ -1011,6 +1011,156 @@ export const testRetakePayments = pgTable("test_retake_payments", {
   index("test_retake_payments_status_idx").on(table.paymentStatus),
 ]);
 
+// Ranking Test System - Users can take paid tests for ranking
+export const rankingTests = pgTable("ranking_tests", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  testTemplateId: integer("test_template_id").references(() => testTemplates.id),
+  
+  // Test details
+  testTitle: varchar("test_title").notNull(),
+  category: varchar("category").notNull(), // "technical", "behavioral", "general"
+  domain: varchar("domain").notNull(), // "general", "technical", "finance", "marketing", etc.
+  difficultyLevel: varchar("difficulty_level").notNull(),
+  
+  // Performance metrics
+  totalQuestions: integer("total_questions").notNull(),
+  correctAnswers: integer("correct_answers").notNull(),
+  totalScore: integer("total_score").notNull(),
+  maxScore: integer("max_score").notNull(),
+  percentageScore: integer("percentage_score").notNull(),
+  timeSpent: integer("time_spent").notNull(), // in seconds
+  
+  // Ranking data
+  rank: integer("rank"), // Global rank at time of completion
+  weeklyRank: integer("weekly_rank"), // Rank within the week
+  monthlyRank: integer("monthly_rank"), // Rank within the month
+  categoryRank: integer("category_rank"), // Rank within category
+  
+  // Test session data
+  answers: jsonb("answers").notNull(), // detailed answers
+  questions: jsonb("questions").notNull(), // questions asked
+  antiCheatViolations: integer("anti_cheat_violations").default(0),
+  
+  // Status
+  status: varchar("status").default("completed"), // completed, disqualified
+  isSharedToRecruiters: boolean("is_shared_to_recruiters").default(false),
+  
+  // Payment
+  paymentId: varchar("payment_id"),
+  paymentProvider: varchar("payment_provider"), // stripe, paypal, razorpay
+  paymentStatus: varchar("payment_status").default("pending"), // pending, completed, failed
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("ranking_tests_user_idx").on(table.userId),
+  index("ranking_tests_category_idx").on(table.category),
+  index("ranking_tests_domain_idx").on(table.domain),
+  index("ranking_tests_rank_idx").on(table.rank),
+  index("ranking_tests_weekly_rank_idx").on(table.weeklyRank),
+  index("ranking_tests_monthly_rank_idx").on(table.monthlyRank),
+  index("ranking_tests_created_at_idx").on(table.createdAt),
+]);
+
+// Weekly ranking leaderboard
+export const weeklyRankings = pgTable("weekly_rankings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  testId: integer("test_id").references(() => rankingTests.id).notNull(),
+  
+  // Week info
+  weekStart: date("week_start").notNull(),
+  weekEnd: date("week_end").notNull(),
+  
+  // Ranking data
+  rank: integer("rank").notNull(),
+  category: varchar("category").notNull(),
+  domain: varchar("domain").notNull(),
+  totalScore: integer("total_score").notNull(),
+  percentageScore: integer("percentage_score").notNull(),
+  
+  // Reward status
+  isTopPerformer: boolean("is_top_performer").default(false), // Top 10
+  resumeSharedToRecruiters: boolean("resume_shared_to_recruiters").default(false),
+  shareCount: integer("share_count").default(0),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("weekly_rankings_user_idx").on(table.userId),
+  index("weekly_rankings_week_idx").on(table.weekStart),
+  index("weekly_rankings_rank_idx").on(table.rank),
+  index("weekly_rankings_category_idx").on(table.category),
+  index("weekly_rankings_top_performer_idx").on(table.isTopPerformer),
+]);
+
+// Monthly ranking leaderboard
+export const monthlyRankings = pgTable("monthly_rankings", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  
+  // Month info
+  month: integer("month").notNull(), // 1-12
+  year: integer("year").notNull(),
+  
+  // Ranking data
+  rank: integer("rank").notNull(),
+  category: varchar("category").notNull(),
+  domain: varchar("domain").notNull(),
+  totalTests: integer("total_tests").default(0),
+  averageScore: integer("average_score").notNull(),
+  bestScore: integer("best_score").notNull(),
+  
+  // Profile sharing
+  profileSharedCount: integer("profile_shared_count").default(0), // Times shared this month
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("monthly_rankings_user_idx").on(table.userId),
+  index("monthly_rankings_month_year_idx").on(table.month, table.year),
+  index("monthly_rankings_rank_idx").on(table.rank),
+  index("monthly_rankings_category_idx").on(table.category),
+]);
+
+// Recruiter access to rankings
+export const recruiterRankingAccess = pgTable("recruiter_ranking_access", {
+  id: serial("id").primaryKey(),
+  recruiterId: varchar("recruiter_id").references(() => users.id).notNull(),
+  candidateId: varchar("candidate_id").references(() => users.id).notNull(),
+  
+  // Access details
+  accessType: varchar("access_type").notNull(), // "weekly_top", "monthly_share", "direct_access"
+  rankingType: varchar("ranking_type").notNull(), // "weekly", "monthly", "category"
+  category: varchar("category").notNull(),
+  domain: varchar("domain").notNull(),
+  
+  // Candidate performance
+  candidateRank: integer("candidate_rank").notNull(),
+  candidateScore: integer("candidate_score").notNull(),
+  testDetails: jsonb("test_details").notNull(),
+  
+  // Recruiter interaction
+  viewed: boolean("viewed").default(false),
+  contacted: boolean("contacted").default(false),
+  interviewScheduled: boolean("interview_scheduled").default(false),
+  notes: text("notes"),
+  
+  // Timing
+  sharedAt: timestamp("shared_at").defaultNow(),
+  viewedAt: timestamp("viewed_at"),
+  contactedAt: timestamp("contacted_at"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("recruiter_ranking_access_recruiter_idx").on(table.recruiterId),
+  index("recruiter_ranking_access_candidate_idx").on(table.candidateId),
+  index("recruiter_ranking_access_type_idx").on(table.accessType),
+  index("recruiter_ranking_access_viewed_idx").on(table.viewed),
+]);
+
 // Relations
 export const usersRelations = relations(users, ({ one, many }) => ({
   profile: one(userProfiles, {
@@ -1358,6 +1508,31 @@ export const insertCareerAiAnalysisSchema = createInsertSchema(careerAiAnalyses)
   updatedAt: true,
 });
 
+// Ranking system schemas
+export const insertRankingTestSchema = createInsertSchema(rankingTests).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertWeeklyRankingSchema = createInsertSchema(weeklyRankings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMonthlyRankingSchema = createInsertSchema(monthlyRankings).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertRecruiterRankingAccessSchema = createInsertSchema(recruiterRankingAccess).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Types
 export type InsertDailyUsage = z.infer<typeof insertDailyUsageSchema>;
 export type DailyUsage = typeof dailyUsage.$inferSelect;
@@ -1385,3 +1560,13 @@ export type InsertTestRetakePayment = z.infer<typeof insertTestRetakePaymentSche
 // Career AI Analysis types
 export type CareerAiAnalysis = typeof careerAiAnalyses.$inferSelect;
 export type InsertCareerAiAnalysis = z.infer<typeof insertCareerAiAnalysisSchema>;
+
+// Ranking system types
+export type RankingTest = typeof rankingTests.$inferSelect;
+export type InsertRankingTest = z.infer<typeof insertRankingTestSchema>;
+export type WeeklyRanking = typeof weeklyRankings.$inferSelect;
+export type InsertWeeklyRanking = z.infer<typeof insertWeeklyRankingSchema>;
+export type MonthlyRanking = typeof monthlyRankings.$inferSelect;
+export type InsertMonthlyRanking = z.infer<typeof insertMonthlyRankingSchema>;
+export type RecruiterRankingAccess = typeof recruiterRankingAccess.$inferSelect;
+export type InsertRecruiterRankingAccess = z.infer<typeof insertRecruiterRankingAccessSchema>;

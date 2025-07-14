@@ -577,7 +577,11 @@ export function getQuestionsByCategory(
 ): QuestionBankItem[] {
   return questionBank
     .filter(q => q.category === category)
-    .filter(q => tags.length === 0 || tags.some(tag => q.tags.includes(tag)))
+    .filter(q => {
+      if (tags.length === 0) return true;
+      const questionTags = Array.isArray(q.tags) ? q.tags : (q.tags ? [q.tags] : []);
+      return tags.some(tag => questionTags.includes(tag));
+    })
     .filter(q => difficulty.includes(q.difficulty))
     .sort(() => Math.random() - 0.5) // Shuffle
     .slice(0, limit);

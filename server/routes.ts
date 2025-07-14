@@ -52,6 +52,7 @@ import {
   companyEmailVerifications
 } from "@shared/schema";
 import { z } from "zod";
+import { rankingTestService } from "./rankingTestService";
 
 // Middleware to check usage limits
 const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applications' | 'autoFills') => {
@@ -2827,6 +2828,308 @@ Additional Information:
     } catch (error) {
       console.error('Error fetching application stats:', error);
       res.status(500).json({ message: 'Failed to fetch application stats' });
+    }
+  });
+
+  // =====================================
+  // RANKING TEST SYSTEM ROUTES
+  // =====================================
+
+  // Get available test categories and domains
+  app.get('/api/ranking-tests/categories', isAuthenticated, async (req: any, res) => {
+    try {
+      const categories = await rankingTestService.getAvailableTests();
+      res.json(categories);
+    } catch (error) {
+      console.error('Error fetching test categories:', error);
+      res.status(500).json({ message: 'Failed to fetch test categories' });
+    }
+  });
+
+  // Create a new ranking test
+  app.post('/api/ranking-tests/create', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { category, domain, difficultyLevel } = req.body;
+      
+      const test = await rankingTestService.createRankingTest(userId, category, domain, difficultyLevel);
+      res.json(test);
+    } catch (error) {
+      console.error('Error creating ranking test:', error);
+      res.status(500).json({ message: 'Failed to create ranking test' });
+    }
+  });
+
+  // Submit a ranking test
+  app.post('/api/ranking-tests/:testId/submit', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const testId = parseInt(req.params.testId);
+      const { answers, timeSpent } = req.body;
+      
+      // Verify the test belongs to the user
+      const userTests = await rankingTestService.getUserTestHistory(userId);
+      const userTest = userTests.find(t => t.id === testId);
+      
+      if (!userTest) {
+        return res.status(404).json({ message: 'Test not found' });
+      }
+      
+      const completedTest = await rankingTestService.submitRankingTest(testId, answers, timeSpent);
+      res.json(completedTest);
+    } catch (error) {
+      console.error('Error submitting ranking test:', error);
+      res.status(500).json({ message: 'Failed to submit ranking test' });
+    }
+  });
+
+  // Get user's test history
+  app.get('/api/ranking-tests/history', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const tests = await rankingTestService.getUserTestHistory(userId);
+      res.json(tests);
+    } catch (error) {
+      console.error('Error fetching test history:', error);
+      res.status(500).json({ message: 'Failed to fetch test history' });
+    }
+  });
+
+  // Get leaderboard
+  app.get('/api/ranking-tests/leaderboard', isAuthenticated, async (req: any, res) => {
+    try {
+      const { category, domain, type = 'all-time', limit = 10 } = req.query;
+      
+      if (!category || !domain) {
+        return res.status(400).json({ message: 'Category and domain are required' });
+      }
+      
+      const leaderboard = await rankingTestService.getLeaderboard(
+        category as string, 
+        domain as string, 
+        type as 'weekly' | 'monthly' | 'all-time',
+        parseInt(limit as string)
+      );
+      
+      res.json(leaderboard);
+    } catch (error) {
+      console.error('Error fetching leaderboard:', error);
+      res.status(500).json({ message: 'Failed to fetch leaderboard' });
+    }
+  });
+
+  // Get recruiter's ranking access (for recruiters)
+  app.get('/api/ranking-tests/recruiter-access', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const { viewed } = req.query;
+      const viewedFilter = viewed === 'true' ? true : viewed === 'false' ? false : undefined;
+      
+      const rankings = await rankingTestService.getRecruiterRankingAccess(userId, viewedFilter);
+      res.json(rankings);
+    } catch (error) {
+      console.error('Error fetching recruiter ranking access:', error);
+      res.status(500).json({ message: 'Failed to fetch ranking access' });
+    }
+  });
+
+  // Mark ranking as viewed (for recruiters)
+  app.post('/api/ranking-tests/recruiter-access/:accessId/viewed', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const accessId = parseInt(req.params.accessId);
+      await rankingTestService.markRankingAsViewed(accessId);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking ranking as viewed:', error);
+      res.status(500).json({ message: 'Failed to mark ranking as viewed' });
+    }
+  });
+
+  // Mark candidate as contacted (for recruiters)
+  app.post('/api/ranking-tests/recruiter-access/:accessId/contacted', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const accessId = parseInt(req.params.accessId);
+      const { notes } = req.body;
+      
+      await rankingTestService.markCandidateAsContacted(accessId, notes);
+      res.json({ success: true });
+    } catch (error) {
+      console.error('Error marking candidate as contacted:', error);
+      res.status(500).json({ message: 'Failed to mark candidate as contacted' });
+    }
+  });
+
+  // Payment for ranking test
+  app.post('/api/ranking-tests/:testId/payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const testId = parseInt(req.params.testId);
+      const { paymentProvider = 'stripe' } = req.body;
+      
+      // Verify the test belongs to the user
+      const userTests = await rankingTestService.getUserTestHistory(userId);
+      const userTest = userTests.find(t => t.id === testId);
+      
+      if (!userTest) {
+        return res.status(404).json({ message: 'Test not found' });
+      }
+      
+      if (userTest.paymentStatus === 'completed') {
+        return res.status(400).json({ message: 'Test already paid for' });
+      }
+      
+      if (paymentProvider === 'stripe') {
+        const stripe = require('stripe')(process.env.STRIPE_SECRET_KEY);
+        const paymentIntent = await stripe.paymentIntents.create({
+          amount: 100, // $1 in cents
+          currency: 'usd',
+          metadata: {
+            userId,
+            testId: testId.toString(),
+            type: 'ranking_test'
+          }
+        });
+        
+        res.json({
+          clientSecret: paymentIntent.client_secret,
+          paymentIntentId: paymentIntent.id
+        });
+      } else if (paymentProvider === 'paypal') {
+        // Get PayPal access token
+        const authResponse = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64')}`,
+            'Content-Type': 'application/x-www-form-urlencoded',
+          },
+          body: 'grant_type=client_credentials'
+        });
+
+        const authData = await authResponse.json();
+        const accessToken = authData.access_token;
+
+        // Create PayPal order
+        const orderResponse = await fetch('https://api-m.sandbox.paypal.com/v2/checkout/orders', {
+          method: 'POST',
+          headers: {
+            'Authorization': `Bearer ${accessToken}`,
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            intent: 'CAPTURE',
+            purchase_units: [{
+              amount: {
+                currency_code: 'USD',
+                value: '1.00'
+              },
+              description: `AutoJobr Ranking Test - Test ID: ${testId}`,
+              custom_id: `ranking_test_${testId}_${userId}`
+            }],
+            application_context: {
+              return_url: `${req.get('origin')}/ranking-tests?payment=success&testId=${testId}`,
+              cancel_url: `${req.get('origin')}/ranking-tests?payment=cancelled&testId=${testId}`,
+              user_action: 'PAY_NOW'
+            }
+          })
+        });
+
+        const orderData = await orderResponse.json();
+        
+        if (orderData.id) {
+          const approvalUrl = orderData.links.find((link: any) => link.rel === 'approve')?.href;
+          res.json({ 
+            orderId: orderData.id, 
+            approvalUrl,
+            paymentProvider: 'paypal'
+          });
+        } else {
+          throw new Error('Failed to create PayPal order');
+        }
+      } else {
+        res.status(400).json({ message: 'Unsupported payment provider' });
+      }
+    } catch (error) {
+      console.error('Error creating payment for ranking test:', error);
+      res.status(500).json({ message: 'Failed to create payment' });
+    }
+  });
+
+  // PayPal payment capture for ranking tests
+  app.post('/api/ranking-tests/:testId/paypal/capture', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const testId = parseInt(req.params.testId);
+      const { orderId } = req.body;
+      
+      // Verify the test belongs to the user
+      const userTests = await rankingTestService.getUserTestHistory(userId);
+      const userTest = userTests.find(t => t.id === testId);
+      
+      if (!userTest) {
+        return res.status(404).json({ message: 'Test not found' });
+      }
+      
+      // Get PayPal access token
+      const authResponse = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64')}`,
+          'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: 'grant_type=client_credentials'
+      });
+
+      const authData = await authResponse.json();
+      const accessToken = authData.access_token;
+
+      // Capture PayPal order
+      const captureResponse = await fetch(`https://api-m.sandbox.paypal.com/v2/checkout/orders/${orderId}/capture`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${accessToken}`,
+          'Content-Type': 'application/json',
+        }
+      });
+
+      const captureData = await captureResponse.json();
+      
+      if (captureData.status === 'COMPLETED') {
+        // Update test payment status
+        await db.update(schema.rankingTests)
+          .set({
+            paymentStatus: 'completed',
+            paymentId: orderId,
+            paymentProvider: 'paypal'
+          })
+          .where(eq(schema.rankingTests.id, testId));
+        
+        res.json({ success: true, captureData });
+      } else {
+        res.status(400).json({ message: 'Payment capture failed' });
+      }
+    } catch (error) {
+      console.error('Error capturing PayPal payment:', error);
+      res.status(500).json({ message: 'Failed to capture PayPal payment' });
     }
   });
 

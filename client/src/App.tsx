@@ -41,6 +41,7 @@ import QuestionBank from "@/pages/question-bank";
 import QuestionBankAdmin from "@/pages/admin/question-bank";
 import RecruiterPremium from "@/pages/recruiter/premium";
 import CareerAIAssistant from "@/pages/career-ai-assistant";
+import RankingTests from "@/pages/ranking-tests";
 
 
 function Router() {
@@ -110,6 +111,7 @@ function Router() {
 
                   <Route path="/discover" component={JobDiscoveryPage} />
                   <Route path="/job-seeker/tests" component={JobSeekerTests} />
+                  <Route path="/ranking-tests" component={RankingTests} />
                   <Route path="/test/:id" component={TestTaking} />
                   <Route path="/test/:id/retake-payment">
                     {(params) => <TestRetakePayment />}
