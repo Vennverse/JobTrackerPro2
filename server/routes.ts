@@ -6539,6 +6539,7 @@ Host: https://autojobr.com`;
         userId,
         jobTitle: careerGoal,
         company: "Career Planning",
+        jobUrl: "https://autojobr.com/career-planning",
         matchScore: analysisData.careerPath?.successProbability || 0,
         analysis: JSON.stringify(analysisData),
         recommendations: analysisData.insights?.map(i => i.title).join('; ') || '',
