@@ -6516,12 +6516,21 @@ Host: https://autojobr.com`;
 
       const analysisText = response.choices[0].message.content;
       
+      // Clean the response by removing markdown code blocks if present
+      let cleanedText = analysisText;
+      if (cleanedText.includes('```json')) {
+        cleanedText = cleanedText.replace(/```json\s*/, '').replace(/```\s*$/, '');
+      } else if (cleanedText.includes('```')) {
+        cleanedText = cleanedText.replace(/```\s*/, '').replace(/```\s*$/, '');
+      }
+      
       // Parse JSON response
       let analysisData;
       try {
-        analysisData = JSON.parse(analysisText);
+        analysisData = JSON.parse(cleanedText);
       } catch (parseError) {
         console.error("Failed to parse AI response:", analysisText);
+        console.error("Cleaned text:", cleanedText);
         throw new Error("Failed to parse AI analysis");
       }
 
