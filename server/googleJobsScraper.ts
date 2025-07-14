@@ -64,7 +64,9 @@ export class GoogleJobsScraper {
     const companies = [
       'Google', 'Microsoft', 'Amazon', 'Apple', 'Meta', 'Netflix', 'Tesla', 'Uber', 'Airbnb', 'Spotify',
       'LinkedIn', 'Twitter', 'Slack', 'Zoom', 'Dropbox', 'Stripe', 'Square', 'PayPal', 'Adobe', 'Salesforce',
-      'Oracle', 'IBM', 'Intel', 'NVIDIA', 'AMD', 'Qualcomm', 'Cisco', 'VMware', 'RedHat', 'MongoDB'
+      'Oracle', 'IBM', 'Intel', 'NVIDIA', 'AMD', 'Qualcomm', 'Cisco', 'VMware', 'RedHat', 'MongoDB',
+      'Atlassian', 'Shopify', 'Twilio', 'Datadog', 'Snowflake', 'Palantir', 'Coinbase', 'Robinhood', 'Discord',
+      'Figma', 'Notion', 'Canva', 'Elastic', 'HashiCorp', 'Cloudflare', 'Vercel', 'Supabase', 'PlanetScale'
     ];
     
     const workModes = ['Remote', 'On-site', 'Hybrid'];

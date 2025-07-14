@@ -2871,176 +2871,7 @@ Additional Information:
   });
 
   const httpServer = createServer(app);
-  // External job search using Adzuna API
-  app.get("/api/jobs/search", isAuthenticated, async (req, res) => {
-    try {
-      const { q: query, location = "us", page = "1" } = req.query as {
-        q?: string;
-        location?: string;
-        page?: string;
-      };
-
-      if (!query || typeof query !== 'string' || query.trim().length === 0) {
-        return res.status(400).json({
-          message: "Search query is required"
-        });
-      }
-
-      // For very short queries, provide helpful suggestions
-      if (query.trim().length < 2) {
-        return res.status(400).json({
-          message: "Search query should be at least 2 characters long",
-          suggestions: ["Try searching for 'developer', 'engineer', 'manager', 'analyst'"]
-        });
-      }
-
-      // Adzuna API endpoint
-      const appId = process.env.ADZUNA_APP_ID || "demo"; // Free tier available
-      const appKey = process.env.ADZUNA_APP_KEY || "demo";
-      const baseUrl = "https://api.adzuna.com/v1/api/jobs";
-      
-      const params = new URLSearchParams({
-        app_id: appId,
-        app_key: appKey,
-        results_per_page: "20",
-        what: query,
-        where: location,
-        content_type: "application/json",
-        page: page
-      });
-
-      const adzunaUrl = `${baseUrl}/${location}/search/1?${params}`;
-      
-      console.log("Requesting Adzuna API:", adzunaUrl);
-      
-      const response = await fetch(adzunaUrl, {
-        headers: {
-          'User-Agent': 'AutoJobr/1.0'
-        }
-      });
-
-      console.log("Adzuna API response status:", response.status);
-
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.log("Adzuna API error response:", errorText.substring(0, 500));
-        
-        // Try alternative job APIs or create realistic demo data with real URLs
-        const demoJobs = {
-          count: 5,
-          results: [
-            {
-              id: "demo-1",
-              title: `${query} Developer`,
-              company: { display_name: "Tech Corp" },
-              location: { display_name: location },
-              description: `We are looking for a skilled ${query} developer to join our team. Experience with modern technologies required.`,
-              salary_min: 80000,
-              salary_max: 120000,
-              created: new Date().toISOString(),
-              redirect_url: "https://jobs.techcorp.com/positions/software-developer",
-              contract_type: "permanent",
-              category: { label: "IT Jobs" }
-            },
-            {
-              id: "demo-2",
-              title: `Senior ${query} Engineer`,
-              company: { display_name: "Innovation Labs" },
-              location: { display_name: location },
-              description: `Senior position for ${query} with 5+ years experience. Remote work available.`,
-              salary_min: 100000,
-              salary_max: 150000,
-              created: new Date().toISOString(),
-              redirect_url: "https://careers.innovationlabs.com/senior-engineer",
-              contract_type: "permanent",
-              category: { label: "Engineering" }
-            },
-            {
-              id: "demo-3",
-              title: `${query} Specialist`,
-              company: { display_name: "Global Solutions Inc" },
-              location: { display_name: location },
-              description: `Join our team as a ${query} specialist. Competitive salary and benefits.`,
-              salary_min: 75000,
-              salary_max: 110000,
-              created: new Date().toISOString(),
-              redirect_url: "https://globalsolutions.com/careers/specialist",
-              contract_type: "permanent",
-              category: { label: "Technology" }
-            },
-            {
-              id: "demo-4",
-              title: `Junior ${query} Position`,
-              company: { display_name: "StartupHub" },
-              location: { display_name: location },
-              description: `Entry-level ${query} role perfect for new graduates. Great learning opportunities.`,
-              salary_min: 60000,
-              salary_max: 80000,
-              created: new Date().toISOString(),
-              redirect_url: "https://startuphub.io/jobs/junior-developer",
-              contract_type: "permanent",
-              category: { label: "Entry Level" }
-            },
-            {
-              id: "demo-5",
-              title: `Lead ${query} Developer`,
-              company: { display_name: "Enterprise Tech" },
-              location: { display_name: location },
-              description: `Leadership role for experienced ${query} professional. Lead a team of developers.`,
-              salary_min: 120000,
-              salary_max: 160000,
-              created: new Date().toISOString(),
-              redirect_url: "https://enterprisetech.com/careers/lead-developer",
-              contract_type: "permanent",
-              category: { label: "Leadership" }
-            }
-          ]
-        };
-
-        return res.json({
-          count: demoJobs.count,
-          results: demoJobs.results.map(job => ({
-            id: job.id,
-            title: job.title,
-            company: job.company.display_name,
-            location: job.location.display_name,
-            description: job.description,
-            salary_min: job.salary_min,
-            salary_max: job.salary_max,
-            created: job.created,
-            url: job.redirect_url,
-            contract_type: job.contract_type,
-            category: job.category.label
-          }))
-        });
-      }
-
-      const data = await response.json();
-      
-      // Transform Adzuna response to our format
-      const transformedJobs = {
-        count: data.count || 0,
-        results: (data.results || []).map((job: any) => ({
-          id: job.id,
-          title: job.title,
-          company: job.company?.display_name || "Unknown Company",
-          location: job.location?.display_name || "Unknown Location",
-          description: job.description || "No description available",
-          salary_min: job.salary_min,
-          salary_max: job.salary_max,
-          created: job.created,
-          url: job.redirect_url,
-          contract_type: job.contract_type,
-          category: job.category?.label
-        }))
-      };
-
-      res.json(transformedJobs);
-    } catch (error) {
-      console.error("Job search error:", error);
-      res.status(500).json({ message: "Error searching for jobs" });
-    }
-  });
+  // Note: Job search route moved to bottom of file to be public (no authentication required)
 
   // Job analysis endpoint
   app.post("/api/jobs/analyze", isAuthenticated, async (req, res) => {
@@ -5344,6 +5175,40 @@ Host: https://autojobr.com`;
       // Import and use Google Jobs scraper
       const { googleJobsScraper } = await import('./googleJobsScraper');
       const jobs = await googleJobsScraper.searchJobs(position, location, parseInt(limit));
+      
+      res.json({ jobs, total: jobs.length });
+    } catch (error) {
+      console.error('Error searching jobs:', error);
+      res.status(500).json({ message: 'Failed to search jobs' });
+    }
+  });
+
+  // Main job search route (frontend uses this) - Public access for job searching
+  app.get('/api/jobs/search', async (req: any, res) => {
+    try {
+      console.log('[JOB_SEARCH] Public job search route hit');
+      const { q, position, location, limit = 10 } = req.query;
+      
+      // Handle both 'q' and 'position' parameters for backwards compatibility
+      const searchPosition = q || position;
+      
+      if (!searchPosition || !location) {
+        return res.status(400).json({ message: 'Position and location are required' });
+      }
+
+      if (searchPosition.length < 2) {
+        return res.status(400).json({ message: 'Position must be at least 2 characters long' });
+      }
+
+      if (location.length < 2) {
+        return res.status(400).json({ message: 'Location must be at least 2 characters long' });
+      }
+
+      console.log(`[JOB_SEARCH] Searching for: ${searchPosition} in ${location}`);
+
+      // Import and use Google Jobs scraper
+      const { googleJobsScraper } = await import('./googleJobsScraper');
+      const jobs = await googleJobsScraper.searchJobs(searchPosition, location, parseInt(limit));
       
       res.json({ jobs, total: jobs.length });
     } catch (error) {
