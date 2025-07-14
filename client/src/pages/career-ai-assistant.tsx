@@ -72,6 +72,7 @@ export default function CareerAIAssistant() {
   const [activeTab, setActiveTab] = useState("overview");
   const [careerGoal, setCareerGoal] = useState("");
   const [timeframe, setTimeframe] = useState("2-years");
+  const [location, setLocation] = useState("");
   const [isGenerating, setIsGenerating] = useState(false);
   const [insights, setInsights] = useState<CareerInsight[]>([]);
   const [skillGaps, setSkillGaps] = useState<SkillGap[]>([]);
@@ -123,6 +124,7 @@ export default function CareerAIAssistant() {
         body: JSON.stringify({
           careerGoal,
           timeframe,
+          location,
           userProfile,
           userSkills: userSkills || [],
           userApplications: userApplications || [],
@@ -205,53 +207,87 @@ export default function CareerAIAssistant() {
             </p>
           </div>
 
-          {/* Career Goal Input */}
-          <Card>
+          {/* Personal AI Career Assistant Card */}
+          <Card className="bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-950/20 dark:to-purple-950/20 border-2 border-blue-200 dark:border-blue-800">
             <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Target className="h-5 w-5" />
-                Set Your Career Goal
+              <CardTitle className="flex items-center gap-2 text-xl">
+                <div className="p-2 bg-blue-100 dark:bg-blue-900/50 rounded-full">
+                  <Brain className="h-6 w-6 text-blue-600 dark:text-blue-400" />
+                </div>
+                Personal AI Career Assistant
               </CardTitle>
+              <p className="text-sm text-muted-foreground">
+                Powered by Groq AI (llama-3.3-70b-versatile) • Get personalized career guidance with location-specific insights
+              </p>
             </CardHeader>
             <CardContent className="space-y-4">
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                <div className="md:col-span-2">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Career Goal *
+                  </label>
                   <Input
-                    placeholder="e.g., Become a Senior Data Scientist at a Fortune 500 company"
+                    placeholder="e.g., Senior Data Scientist at Google"
                     value={careerGoal}
                     onChange={(e) => setCareerGoal(e.target.value)}
                     className="text-lg"
                   />
                 </div>
-                <Select value={timeframe} onValueChange={setTimeframe}>
-                  <SelectTrigger>
-                    <SelectValue placeholder="Timeframe" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="1-year">1 Year</SelectItem>
-                    <SelectItem value="2-years">2 Years</SelectItem>
-                    <SelectItem value="3-years">3 Years</SelectItem>
-                    <SelectItem value="5-years">5 Years</SelectItem>
-                  </SelectContent>
-                </Select>
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Location (Optional)
+                  </label>
+                  <Input
+                    placeholder="e.g., San Francisco, CA"
+                    value={location}
+                    onChange={(e) => setLocation(e.target.value)}
+                    className="text-lg"
+                  />
+                </div>
               </div>
-              <Button 
-                onClick={generateCareerAnalysis} 
-                disabled={isGenerating || !careerGoal}
-                className="w-full h-12 text-lg"
-              >
-                {isGenerating ? (
-                  <>
-                    <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
-                    Analyzing Your Career Path...
-                  </>
-                ) : (
-                  <>
-                    <Sparkles className="h-5 w-5 mr-2" />
-                    Generate AI Career Analysis
-                  </>
-                )}
-              </Button>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="text-sm font-medium text-muted-foreground mb-2 block">
+                    Timeframe
+                  </label>
+                  <Select value={timeframe} onValueChange={setTimeframe}>
+                    <SelectTrigger className="text-lg">
+                      <SelectValue placeholder="Select timeframe" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="1-year">1 Year</SelectItem>
+                      <SelectItem value="2-years">2 Years</SelectItem>
+                      <SelectItem value="3-years">3 Years</SelectItem>
+                      <SelectItem value="5-years">5 Years</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <div className="flex items-end">
+                  <Button 
+                    onClick={generateCareerAnalysis} 
+                    disabled={isGenerating || !careerGoal}
+                    className="w-full h-12 text-lg bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700"
+                  >
+                    {isGenerating ? (
+                      <>
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                        Analyzing Your Career Path...
+                      </>
+                    ) : (
+                      <>
+                        <Sparkles className="h-5 w-5 mr-2" />
+                        Generate AI Career Analysis
+                      </>
+                    )}
+                  </Button>
+                </div>
+              </div>
+              {location && (
+                <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
+                  <Map className="h-4 w-4" />
+                  <span>Location-specific insights will include market data, salary ranges, and opportunities in {location}</span>
+                </div>
+              )}
             </CardContent>
           </Card>
 

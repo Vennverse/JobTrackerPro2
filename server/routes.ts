@@ -6427,7 +6427,7 @@ Host: https://autojobr.com`;
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const { careerGoal, timeframe, userProfile, userSkills, userApplications, jobAnalyses } = req.body;
+      const { careerGoal, timeframe, location, userProfile, userSkills, userApplications, jobAnalyses } = req.body;
 
       if (!careerGoal) {
         return res.status(400).json({ message: "Career goal is required" });
@@ -6439,12 +6439,13 @@ Host: https://autojobr.com`;
 
         CAREER GOAL: ${careerGoal}
         TIMEFRAME: ${timeframe}
+        ${location ? `TARGET LOCATION: ${location}` : ''}
 
         CURRENT PROFILE:
         - Name: ${userProfile?.fullName || 'Professional'}
         - Current Title: ${userProfile?.professionalTitle || 'Not specified'}
         - Experience: ${userProfile?.yearsExperience || 0} years
-        - Location: ${userProfile?.city || 'Not specified'}, ${userProfile?.state || ''} ${userProfile?.country || ''}
+        - Current Location: ${userProfile?.city || 'Not specified'}, ${userProfile?.state || ''} ${userProfile?.country || ''}
         - Education: ${userProfile?.highestDegree || 'Not specified'} in ${userProfile?.majorFieldOfStudy || 'Not specified'}
         - Summary: ${userProfile?.summary || 'Not provided'}
 
@@ -6501,8 +6502,10 @@ Host: https://autojobr.com`;
         3. MARKET TIMING: Current market conditions and optimal timing for moves
         4. NETWORKING OPPORTUNITIES: Industry connections and relationship building
         5. BEHAVIORAL ANALYTICS: Pattern analysis from application and job search history
+        ${location ? `6. LOCATION-SPECIFIC INSIGHTS: Provide market data, salary ranges, cost of living, major employers, and opportunities specific to ${location}` : ''}
 
         Provide actionable, specific recommendations based on current market trends, industry standards, and the user's background. Include salary ranges, realistic timelines, and market demand insights.
+        ${location ? `\n\nIMPORTANT: Include location-specific data for ${location} including:\n- Average salary ranges for the target role\n- Cost of living considerations\n- Major employers and companies in the area\n- Local job market conditions\n- Networking events and communities\n- Relocation considerations if applicable` : ''}
 
         Return ONLY the JSON object, no additional text.
       `;
