@@ -120,7 +120,7 @@ Focus on THIS specific resume content. Provide personalized, actionable advice t
             content: prompt
           }
         ],
-        model: "llama3-70b-8192",
+        model: "llama-3.3-70b-versatile",
         temperature: 0.3,
         max_tokens: 2000,
       });
@@ -417,7 +417,7 @@ Consider:
             content: prompt + "\n\nRemember: Respond with ONLY the JSON object, nothing else."
           }
         ],
-        model: "llama3-70b-8192",
+        model: "llama-3.3-70b-versatile",
         temperature: 0.2,
         max_tokens: 2500,
       });
@@ -594,7 +594,7 @@ Guidelines:
 `;
 
       const completion = await this.client.chat.completions.create({
-        model: "llama-3.1-70b-versatile",
+        model: "llama-3.3-70b-versatile",
         messages: [
           {
             role: "user",

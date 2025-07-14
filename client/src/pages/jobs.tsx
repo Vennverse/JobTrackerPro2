@@ -113,7 +113,7 @@ export default function Jobs() {
   // Scraped jobs functionality removed per user request
 
   // Fetch AI-powered job recommendations
-  const { data: recommendedJobs = [], isLoading: recommendedLoading } = useQuery({
+  const recommendedJobsQuery = useQuery({
     queryKey: ["/api/jobs/recommendations"],
     queryFn: async () => {
       const response = await fetch(`/api/jobs/recommendations`, {
@@ -125,6 +125,8 @@ export default function Jobs() {
     enabled: isAuthenticated,
     staleTime: 60000,
   });
+  
+  const { data: recommendedJobs = [], isLoading: recommendedLoading } = recommendedJobsQuery;
 
   // Check applied jobs
   const { data: applications = [] } = useQuery({
