@@ -12,6 +12,87 @@
   // Initialize extension on page load
   initializeExtension();
   
+  // Message listener for communication with popup
+  chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
+    if (request.action === 'extractJobData') {
+      const jobData = extractJobData();
+      sendResponse(jobData);
+      return true;
+    }
+    
+    if (request.action === 'getJobData') {
+      sendResponse(currentJobData);
+      return true;
+    }
+    
+    if (request.action === 'fillCoverLetter') {
+      const filled = fillCoverLetterOnPage(request.data.coverLetter);
+      sendResponse({ filled });
+      return true;
+    }
+    
+    if (request.action === 'analyzeCurrentJob') {
+      analyzeJobDescription();
+      sendResponse({ success: true });
+      return true;
+    }
+  });
+  
+  // Function to fill cover letter on the current page
+  function fillCoverLetterOnPage(coverLetter) {
+    const coverLetterSelectors = [
+      // Workday
+      'textarea[data-automation-id*="coverLetter"]',
+      'textarea[data-automation-id*="cover-letter"]',
+      'textarea[aria-label*="Cover Letter" i]',
+      '[data-automation-id*="coverLetter"] textarea',
+      
+      // LinkedIn
+      'textarea[id*="cover-letter"]',
+      'textarea[name*="coverLetter"]',
+      
+      // Greenhouse
+      'textarea[name*="cover_letter"]',
+      'textarea[id*="cover_letter"]',
+      
+      // Generic selectors
+      'textarea[placeholder*="cover letter" i]',
+      'textarea[placeholder*="why are you interested" i]',
+      'textarea[placeholder*="tell us about yourself" i]',
+      'textarea[aria-label*="motivation" i]',
+      'textarea[name*="motivation"]',
+      'textarea[name*="letter"]',
+      'textarea[name*="why"]',
+      'textarea[id*="motivation"]'
+    ];
+    
+    const field = coverLetterSelectors
+      .map(selector => document.querySelector(selector))
+      .find(field => field && field.offsetParent !== null);
+    
+    if (field) {
+      field.focus();
+      field.value = coverLetter;
+      
+      // Trigger events for better compatibility
+      const events = ['focus', 'input', 'change', 'blur'];
+      events.forEach(eventType => {
+        field.dispatchEvent(new Event(eventType, { bubbles: true }));
+      });
+      
+      // Highlight the field
+      const originalBorder = field.style.border;
+      field.style.border = '2px solid #10b981';
+      setTimeout(() => {
+        field.style.border = originalBorder;
+      }, 3000);
+      
+      return true;
+    }
+    
+    return false;
+  }
+  
   async function initializeExtension() {
     // Get user profile and settings
     await loadUserProfile();
@@ -48,9 +129,76 @@
         
         const contexts = {
           workday: {
-            patterns: ['myworkdayjobs', 'workday.com', 'wd1.myworkdayjobs', 'wd3.myworkdayjobs', 'wd5.myworkdayjobs'],
+            patterns: ['myworkdayjobs', 'workday.com', 'wd1.myworkdayjobs', 'wd3.myworkdayjobs', 'wd5.myworkdayjobs', 'wd2.myworkdayjobs', 'wd4.myworkdayjobs', '.myworkdayjobs.com'],
             type: 'workday',
-            framework: 'react'
+            framework: 'react',
+            selectors: {
+              firstName: [
+                'input[data-automation-id*="firstName"]',
+                'input[data-automation-id*="first-name"]',
+                'input[data-automation-id*="firstNameInput"]',
+                'input[id*="firstName"]',
+                'input[name*="firstName"]',
+                'input[aria-label*="First Name" i]',
+                '[data-automation-id*="firstName"] input',
+                '[data-automation-id*="legalNameSection"] input[data-automation-id="textInputComponent"]:first-of-type'
+              ],
+              lastName: [
+                'input[data-automation-id*="lastName"]',
+                'input[data-automation-id*="last-name"]',
+                'input[data-automation-id*="lastNameInput"]',
+                'input[id*="lastName"]',
+                'input[name*="lastName"]',
+                'input[aria-label*="Last Name" i]',
+                '[data-automation-id*="lastName"] input',
+                '[data-automation-id*="legalNameSection"] input[data-automation-id="textInputComponent"]:last-of-type'
+              ],
+              email: [
+                'input[data-automation-id*="email"]',
+                'input[data-automation-id*="emailAddress"]',
+                'input[type="email"]',
+                'input[aria-label*="Email" i]',
+                '[data-automation-id*="email"] input'
+              ],
+              phone: [
+                'input[data-automation-id*="phone"]',
+                'input[data-automation-id*="phoneNumber"]',
+                'input[type="tel"]',
+                'input[aria-label*="Phone" i]',
+                '[data-automation-id*="phone"] input'
+              ],
+              address: [
+                'input[data-automation-id*="address"]',
+                'input[data-automation-id*="street"]',
+                'input[aria-label*="Address" i]',
+                '[data-automation-id*="addressSection"] input[data-automation-id="textInputComponent"]:first-of-type'
+              ],
+              city: [
+                'input[data-automation-id*="city"]',
+                'input[aria-label*="City" i]',
+                '[data-automation-id*="cityStatePostalCode"] input:first-of-type'
+              ],
+              state: [
+                'input[data-automation-id*="state"]',
+                'select[data-automation-id*="state"]',
+                'input[aria-label*="State" i]',
+                '[data-automation-id*="cityStatePostalCode"] select'
+              ],
+              zipCode: [
+                'input[data-automation-id*="postal"]',
+                'input[data-automation-id*="zip"]',
+                'input[aria-label*="Zip" i]',
+                'input[aria-label*="Postal" i]',
+                '[data-automation-id*="cityStatePostalCode"] input:last-of-type'
+              ],
+              coverLetter: [
+                'textarea[data-automation-id*="coverLetter"]',
+                'textarea[data-automation-id*="cover-letter"]',
+                'textarea[aria-label*="Cover Letter" i]',
+                'textarea[placeholder*="cover letter" i]',
+                '[data-automation-id*="coverLetter"] textarea'
+              ]
+            }
           },
           linkedin: {
             patterns: ['linkedin.com'],
@@ -1274,6 +1422,11 @@
           console.log('Job analysis completed:', response.data);
           showAnalysisResults(response.data);
           showNotification(`Job match: ${response.data.matchScore}%`, 'success');
+          
+          // Auto-detect and fill cover letter if field is found
+          setTimeout(() => {
+            detectAndFillCoverLetter(jobData);
+          }, 2000);
         } else {
           console.error('Analysis failed:', response?.error);
           showNotification(response?.error || 'Failed to analyze job', 'error');
@@ -1284,6 +1437,119 @@
       console.error('Error analyzing job description:', error);
       showNotification('Error analyzing job', 'error');
     }
+  }
+  
+  // Detect cover letter fields and auto-generate content
+  function detectAndFillCoverLetter(jobData) {
+    if (!userProfile || !jobData) return;
+    
+    // Enhanced cover letter selectors for all major platforms
+    const coverLetterSelectors = [
+      // Workday
+      'textarea[data-automation-id*="coverLetter"]',
+      'textarea[data-automation-id*="cover-letter"]',
+      'textarea[aria-label*="Cover Letter" i]',
+      '[data-automation-id*="coverLetter"] textarea',
+      
+      // LinkedIn
+      'textarea[id*="cover-letter"]',
+      'textarea[name*="coverLetter"]',
+      
+      // Greenhouse
+      'textarea[name*="cover_letter"]',
+      'textarea[id*="cover_letter"]',
+      
+      // Generic selectors
+      'textarea[placeholder*="cover letter" i]',
+      'textarea[placeholder*="why are you interested" i]',
+      'textarea[placeholder*="tell us about yourself" i]',
+      'textarea[aria-label*="motivation" i]',
+      'textarea[name*="motivation"]',
+      'textarea[name*="letter"]',
+      'textarea[name*="why"]',
+      'textarea[id*="motivation"]'
+    ];
+    
+    const coverLetterField = coverLetterSelectors
+      .map(selector => document.querySelector(selector))
+      .find(field => field && field.offsetParent !== null && !field.value.trim());
+    
+    if (coverLetterField) {
+      generateAndFillCoverLetter(coverLetterField, jobData);
+    }
+  }
+  
+  // Generate and fill cover letter automatically
+  function generateAndFillCoverLetter(field, jobData) {
+    showNotification('Generating cover letter...', 'info');
+    
+    chrome.runtime.sendMessage({
+      action: 'generateCoverLetter',
+      data: {
+        companyName: jobData.company,
+        jobTitle: jobData.title,
+        jobDescription: jobData.description
+      }
+    }, (response) => {
+      if (response && response.success) {
+        // Fill the cover letter field
+        field.focus();
+        
+        // Clear existing content first
+        field.value = '';
+        
+        // Use proper input simulation for better compatibility
+        if (field.setRangeText) {
+          field.setRangeText(response.coverLetter);
+        } else {
+          field.value = response.coverLetter;
+        }
+        
+        // Trigger comprehensive events to ensure form recognition
+        const events = ['focus', 'input', 'change', 'blur', 'keyup'];
+        events.forEach(eventType => {
+          const event = new Event(eventType, { 
+            bubbles: true, 
+            cancelable: true 
+          });
+          field.dispatchEvent(event);
+        });
+        
+        // React/Angular specific event triggering
+        if (window.React || field.getAttribute('data-automation-id')) {
+          // For React components
+          const nativeInputValueSetter = Object.getOwnPropertyDescriptor(
+            window.HTMLTextAreaElement.prototype, 
+            'value'
+          ).set;
+          nativeInputValueSetter.call(field, response.coverLetter);
+          
+          const inputEvent = new Event('input', { bubbles: true });
+          field.dispatchEvent(inputEvent);
+        }
+        
+        // Show success notification
+        showNotification('Cover letter auto-generated and filled!', 'success');
+        
+        // Highlight the field briefly
+        const originalStyle = {
+          border: field.style.border,
+          boxShadow: field.style.boxShadow
+        };
+        
+        field.style.border = '2px solid #10b981';
+        field.style.boxShadow = '0 0 0 3px rgba(16, 185, 129, 0.1)';
+        
+        setTimeout(() => {
+          field.style.border = originalStyle.border;
+          field.style.boxShadow = originalStyle.boxShadow;
+        }, 4000);
+        
+      } else {
+        showNotification(response?.error || 'Failed to generate cover letter', 'error');
+        console.log('Cover letter generation failed:', response?.error);
+      }
+    });
   }
   
   // Extract job data from the current page

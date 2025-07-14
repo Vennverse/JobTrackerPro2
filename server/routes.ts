@@ -2945,6 +2945,71 @@ Additional Information:
     }
   });
 
+  // Extension dashboard data endpoint
+  app.get("/api/extension/dashboard", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      // Get comprehensive dashboard data for extension
+      const [applications, analyses, coverLetters, autoFillUsage] = await Promise.all([
+        db.select().from(schema.jobApplications).where(eq(schema.jobApplications.userId, userId)),
+        db.select().from(schema.aiJobAnalyses).where(eq(schema.aiJobAnalyses.userId, userId)),
+        db.select({ createdAt: schema.jobApplications.createdAt })
+          .from(schema.jobApplications)
+          .where(and(
+            eq(schema.jobApplications.userId, userId),
+            isNotNull(schema.jobApplications.coverLetter)
+          )),
+        db.select()
+          .from(schema.subscriptions)
+          .where(eq(schema.subscriptions.userId, userId))
+          .limit(1)
+      ]);
+
+      // Calculate today's auto-fill usage
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      
+      const todayUsage = analyses.filter(analysis => 
+        new Date(analysis.createdAt) >= today
+      ).length;
+
+      const dashboardData = {
+        totalApplications: applications.length,
+        coverLettersGenerated: coverLetters.length,
+        autoFillsToday: todayUsage,
+        recentApplications: applications
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 5)
+          .map(app => ({
+            id: app.id,
+            jobTitle: app.jobTitle,
+            company: app.company,
+            status: app.status,
+            appliedAt: app.createdAt
+          })),
+        recentAnalyses: analyses
+          .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+          .slice(0, 3)
+          .map(analysis => ({
+            jobTitle: analysis.jobTitle,
+            company: analysis.company,
+            matchScore: analysis.matchScore,
+            analyzedAt: analysis.createdAt
+          })),
+        subscription: autoFillUsage[0] || null
+      };
+
+      res.json(dashboardData);
+    } catch (error) {
+      console.error("Error fetching extension dashboard data:", error);
+      res.status(500).json({ message: "Failed to fetch dashboard data" });
+    }
+  });
+
   // Test route to manually make demo user a verified recruiter
   app.get('/api/test-make-recruiter', async (req, res) => {
     try {

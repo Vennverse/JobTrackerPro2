@@ -73,6 +73,16 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
     updateSettings(request.data, sendResponse);
     return true;
   }
+  
+  if (request.action === 'generateCoverLetter') {
+    generateCoverLetter(request.data, sendResponse);
+    return true;
+  }
+  
+  if (request.action === 'autoFillTracking') {
+    handleAutoFillTracking(request.data, sendResponse);
+    return true;
+  }
 });
 
 // Get user profile from web app API
@@ -399,6 +409,48 @@ async function getApplicationStats(sendResponse) {
   } catch (error) {
     console.error('Error getting application stats:', error);
     sendResponse({ success: false, error: error.message });
+  }
+}
+
+// Generate cover letter using the website's API
+async function generateCoverLetter(data, sendResponse) {
+  try {
+    const { apiUrl } = await chrome.storage.sync.get(['apiUrl']);
+    const finalApiUrl = apiUrl || 'http://localhost:5000';
+    
+    const response = await fetch(`${finalApiUrl}/api/cover-letter/generate`, {
+      method: 'POST',
+      credentials: 'include',
+      mode: 'cors',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        companyName: data.companyName,
+        jobTitle: data.jobTitle,
+        jobDescription: data.jobDescription || ''
+      })
+    });
+    
+    if (response.ok) {
+      const result = await response.json();
+      sendResponse({ 
+        success: true, 
+        coverLetter: result.coverLetter 
+      });
+    } else {
+      const errorData = await response.json();
+      sendResponse({ 
+        success: false, 
+        error: errorData.message || 'Failed to generate cover letter' 
+      });
+    }
+  } catch (error) {
+    console.error('Error generating cover letter:', error);
+    sendResponse({ 
+      success: false, 
+      error: 'Connection failed. Please ensure you are logged in to AutoJobr.' 
+    });
   }
 }
 
