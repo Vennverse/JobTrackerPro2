@@ -39,7 +39,10 @@ import {
   ChevronRight,
   Layers,
   BarChart3,
-  CheckCircle
+  CheckCircle,
+  User,
+  FileText,
+  Settings
 } from "lucide-react";
 
 interface JobPosting {
@@ -581,11 +584,35 @@ export default function Jobs() {
                       <JobCard key={`rec-${job.id}`} job={job} source="platform" />
                     ))
                   ) : (
-                    <Card>
+                    <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20 border-amber-200 dark:border-amber-800">
                       <CardContent className="p-12 text-center">
-                        <Brain className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold mb-2">Building Your Recommendations</h3>
-                        <p className="text-muted-foreground">Complete your profile to get personalized job matches</p>
+                        <div className="w-20 h-20 bg-amber-100 dark:bg-amber-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                          <Sparkles className="w-10 h-10 text-amber-600 dark:text-amber-400" />
+                        </div>
+                        <h3 className="text-2xl font-semibold mb-3 text-amber-900 dark:text-amber-100">Generate AI-Powered Recommendations</h3>
+                        <p className="text-amber-700 dark:text-amber-300 mb-6 max-w-md mx-auto">
+                          Complete your profile to get personalized job recommendations powered by AI. Our system analyzes your skills, experience, and preferences to find the best matches.
+                        </p>
+                        <div className="flex flex-col sm:flex-row gap-3 justify-center">
+                          <Button 
+                            onClick={() => window.location.href = '/profile'}
+                            className="bg-amber-600 hover:bg-amber-700 text-white"
+                          >
+                            <User className="w-4 h-4 mr-2" />
+                            Complete Profile
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            onClick={() => {
+                              // Clear cache and refetch recommendations
+                              recommendedJobsQuery.refetch();
+                            }}
+                            className="border-amber-300 text-amber-700 hover:bg-amber-50"
+                          >
+                            <Sparkles className="w-4 h-4 mr-2" />
+                            Generate Recommendations
+                          </Button>
+                        </div>
                       </CardContent>
                     </Card>
                   )}

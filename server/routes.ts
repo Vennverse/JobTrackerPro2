@@ -18,15 +18,15 @@ const ONLINE_THRESHOLD = 5 * 60 * 1000; // 5 minutes - user is considered online
 
 const getCached = (key: string) => {
   const item = cache.get(key);
-  if (item && Date.now() - item.timestamp < CACHE_TTL) {
+  if (item && Date.now() - item.timestamp < (item.ttl || CACHE_TTL)) {
     return item.data;
   }
   cache.delete(key);
   return null;
 };
 
-const setCache = (key: string, data: any) => {
-  cache.set(key, { data, timestamp: Date.now() });
+const setCache = (key: string, data: any, ttl?: number) => {
+  cache.set(key, { data, timestamp: Date.now(), ttl: ttl || CACHE_TTL });
 };
 // Dynamic import for pdf-parse to avoid startup issues
 import { storage } from "./storage";
@@ -417,143 +417,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Enhanced job recommendations with AI-powered matching
+  // AI-powered job recommendations using GROQ API
   app.get('/api/jobs/recommendations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const cacheKey = `recommendations_${userId}`;
+      const monthlyCacheKey = `monthly_recommendations_${userId}`;
       
-      // Check cache first
-      const cached = getCached(cacheKey);
-      if (cached) {
-        return res.json(cached);
+      // Check monthly cache first (refresh only once per month)
+      const monthlyCache = getCached(monthlyCacheKey);
+      if (monthlyCache) {
+        console.log("Serving monthly cached recommendations for user:", userId);
+        return res.json(monthlyCache);
       }
       
-      // Get user profile to personalize recommendations
+      // Get user profile for AI analysis
       const profile = await storage.getUserProfile(userId);
-      const searchTerm = profile?.professionalTitle || "software engineer";
-      const location = "us";
-      
-      // Try to get real jobs from Adzuna API first
-      try {
-        const adzunaResponse = await fetch(
-          `https://api.adzuna.com/v1/api/jobs/${location}/search/1?` +
-          `app_id=${process.env.ADZUNA_API_ID}&` +
-          `app_key=${process.env.ADZUNA_API_KEY}&` +
-          `results_per_page=6&` +
-          `what=${encodeURIComponent(searchTerm)}&` +
-          `sort_by=salary`
-        );
-
-        if (adzunaResponse.ok) {
-          const adzunaData = await adzunaResponse.json();
-          
-          if (adzunaData.results && adzunaData.results.length > 0) {
-            const realJobs = adzunaData.results.slice(0, 6).map((job: any, index: number) => ({
-              id: `adzuna-${job.id || index}`,
-              title: job.title || "Software Engineer",
-              company: job.company?.display_name || "Company",
-              location: job.location?.display_name || "Remote",
-              description: job.description ? job.description.substring(0, 200) + "..." : "Great opportunity to work with modern technologies...",
-              requirements: job.category ? [job.category.label] : ["Experience required"],
-              matchScore: Math.floor(Math.random() * 20) + 75, // 75-95%
-              salaryRange: job.salary_min && job.salary_max ? 
-                `$${Math.round(job.salary_min / 1000)}k - $${Math.round(job.salary_max / 1000)}k` : 
-                "Competitive",
-              workMode: job.description?.toLowerCase().includes('remote') ? "Remote" : "On-site",
-              postedDate: new Date(job.created),
-              applicationUrl: job.redirect_url,
-              benefits: ["Competitive package", "Growth opportunities"],
-              isBookmarked: false
-            }));
-            
-            // Cache the result
-            setCache(cacheKey, realJobs);
-            return res.json(realJobs);
-          }
-        }
-      } catch (adzunaError) {
-        console.log("Adzuna API error, falling back to demo data:", adzunaError);
+      if (!profile) {
+        return res.json({ message: "Please complete your profile to get personalized recommendations" });
       }
       
-      // Fallback to demo data for demo user
-      if (userId === 'demo-user-id') {
-        const profile = await storage.getUserProfile(userId);
-        const mockJobs = [
-          {
-            id: 1,
-            title: "Senior Software Engineer",
-            company: "TechCorp Inc",
-            location: "San Francisco, CA",
-            description: "We're looking for a Senior Software Engineer to join our team...",
-            requirements: ["5+ years experience", "React", "Node.js", "TypeScript"],
-            matchScore: 94,
-            salaryRange: "$120k - $160k",
-            workMode: "Remote",
-            postedDate: new Date(Date.now() - 2 * 24 * 60 * 60 * 1000),
-            applicationUrl: "https://techcorp.com/careers/senior-engineer",
-            benefits: ["Health insurance", "Stock options", "Flexible PTO"],
-            isBookmarked: false
-          },
-          {
-            id: 2,
-            title: "Full Stack Developer",
-            company: "StartupXYZ",
-            location: "Austin, TX",
-            description: "Join our fast-growing startup as a Full Stack Developer...",
-            requirements: ["3+ years experience", "React", "Python", "AWS"],
-            matchScore: 87,
-            salaryRange: "$90k - $130k",
-            workMode: "Hybrid",
-            postedDate: new Date(Date.now() - 5 * 24 * 60 * 60 * 1000),
-            applicationUrl: "https://startupxyz.com/jobs/fullstack",
-            benefits: ["Equity", "Health insurance", "Learning budget"],
-            isBookmarked: true
-          },
-          {
-            id: 3,
-            title: "Frontend Developer",
-            company: "Digital Agency Pro",
-            location: "New York, NY",
-            description: "Looking for a creative Frontend Developer to build amazing UIs...",
-            requirements: ["React", "TypeScript", "CSS", "Design systems"],
-            matchScore: 82,
-            salaryRange: "$80k - $110k",
-            workMode: "Remote",
-            postedDate: new Date(Date.now() - 1 * 24 * 60 * 60 * 1000),
-            applicationUrl: "https://digitalagencypro.com/careers/frontend",
-            benefits: ["Remote work", "Professional development", "Health benefits"],
-            isBookmarked: false
-          },
-          {
-            id: 4,
-            title: "Software Developer",
-            company: "Enterprise Solutions Ltd",
-            location: "Chicago, IL",
-            description: "Join our enterprise team building scalable solutions...",
-            requirements: ["2+ years experience", "Java", "Spring", "Microservices"],
-            matchScore: 75,
-            salaryRange: "$70k - $95k",
-            workMode: "On-site",
-            postedDate: new Date(Date.now() - 7 * 24 * 60 * 60 * 1000),
-            applicationUrl: "https://enterprisesolutions.com/jobs/dev",
-            benefits: ["401k", "Health insurance", "Paid training"],
-            isBookmarked: false
-          }
-        ];
-        
-        // Cache the result
-        setCache(cacheKey, mockJobs);
-        return res.json(mockJobs);
-      }
+      console.log("Generating AI recommendations for user:", userId);
       
-      // In real implementation, use AI to match jobs
-      const emptyResult = [];
-      setCache(cacheKey, emptyResult);
-      res.json(emptyResult);
+      // Use GROQ API to generate personalized job recommendations
+      const recommendations = await groqService.generateJobRecommendations(profile);
+      
+      // Cache for 30 days (monthly refresh)
+      const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
+      setCache(monthlyCacheKey, recommendations, thirtyDaysInMs);
+      
+      res.json(recommendations);
     } catch (error) {
-      console.error("Error fetching job recommendations:", error);
-      res.status(500).json({ message: "Failed to fetch job recommendations" });
+      console.error("Error fetching AI job recommendations:", error);
+      res.status(500).json({ message: "Failed to fetch job recommendations. Please try again later." });
     }
   });
 
@@ -5155,7 +5051,7 @@ Host: https://autojobr.com`;
     }
   });
 
-  // Job search route with Google Jobs integration  
+  // External job search endpoint - requires API keys to be configured
   app.get('/api/jobs/search-google', async (req: any, res) => {
     try {
       const { position, location, limit = 10 } = req.query;
@@ -5172,11 +5068,8 @@ Host: https://autojobr.com`;
         return res.status(400).json({ message: 'Location must be at least 2 characters long' });
       }
 
-      // Import and use Google Jobs scraper
-      const { googleJobsScraper } = await import('./googleJobsScraper');
-      const jobs = await googleJobsScraper.searchJobs(position, location, parseInt(limit));
-      
-      res.json({ jobs, total: jobs.length });
+      // No external job search API configured - return empty results
+      res.json({ jobs: [], total: 0, message: 'External job search requires API configuration' });
     } catch (error) {
       console.error('Error searching jobs:', error);
       res.status(500).json({ message: 'Failed to search jobs' });

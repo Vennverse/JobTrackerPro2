@@ -533,6 +533,106 @@ Be precise and only extract information that is explicitly stated in the job pos
       throw new Error("Failed to extract job details");
     }
   }
+
+  async generateJobRecommendations(userProfile: any): Promise<any[]> {
+    try {
+      const userSkills = userProfile.skills || [];
+      const userExperience = userProfile.workExperience || [];
+      const userEducation = userProfile.education || [];
+      
+      const prompt = `
+You are an expert career advisor and job market analyst. Based on the user's profile, generate 5-6 personalized job recommendations that would be excellent matches for their background.
+
+USER PROFILE:
+- Name: ${userProfile.name || 'Professional'}
+- Professional Title: ${userProfile.professionalTitle || 'Not specified'}
+- Years of Experience: ${userProfile.yearsExperience || 'Not specified'}
+- Location: ${userProfile.location || 'Remote'}
+- Summary: ${userProfile.summary || 'Not provided'}
+
+Skills: ${userSkills.map((s: any) => `${s.skillName} (${s.proficiencyLevel || 'N/A'})`).join(', ')}
+
+Work Experience:
+${userExperience.map((w: any) => `${w.position} at ${w.company}${w.description ? ': ' + w.description.substring(0, 200) : ''}`).join('\n')}
+
+Education:
+${userEducation.map((e: any) => `${e.degree} in ${e.fieldOfStudy || 'N/A'} from ${e.institution}`).join('\n')}
+
+Target Industries: ${userProfile.targetIndustries?.join(', ') || 'Not specified'}
+Salary Range: ${userProfile.salaryMin && userProfile.salaryMax ? `$${userProfile.salaryMin}k - $${userProfile.salaryMax}k` : 'Not specified'}
+
+Generate 5-6 realistic job recommendations that would be excellent matches for this profile. For each job, provide:
+
+Return a JSON array of job objects with this exact structure:
+[
+  {
+    "id": "ai-rec-1",
+    "title": "Job Title",
+    "company": "Company Name",
+    "location": "City, State or Remote",
+    "description": "Detailed job description that matches user's background (150-200 words)",
+    "requirements": ["Requirement 1", "Requirement 2", "Requirement 3"],
+    "matchScore": 85,
+    "salaryRange": "$80k - $120k",
+    "workMode": "Remote/Hybrid/On-site",
+    "postedDate": "2024-12-15T10:00:00Z",
+    "applicationUrl": "https://company.com/careers/job-id",
+    "benefits": ["Benefit 1", "Benefit 2", "Benefit 3"],
+    "isBookmarked": false
+  }
+]
+
+Guidelines:
+- Match scores should be 75-95% based on how well the job fits the user's profile
+- Use realistic company names and job titles for the user's industry
+- Include specific technical skills and requirements that match the user's background
+- Salary ranges should be appropriate for the user's experience level and location
+- Job descriptions should be detailed and relevant to the user's career goals
+- Include a mix of remote, hybrid, and on-site positions if appropriate
+- Use current dates (within last 30 days)
+- Application URLs should be realistic company career pages
+`;
+
+      const completion = await this.client.chat.completions.create({
+        model: "llama-3.1-70b-versatile",
+        messages: [
+          {
+            role: "user",
+            content: prompt,
+          },
+        ],
+        temperature: 0.3,
+        max_tokens: 3000,
+      });
+
+      const content = completion.choices[0]?.message?.content;
+      if (!content) {
+        throw new Error("No response from Groq API");
+      }
+
+      // Parse the JSON response
+      const recommendations = JSON.parse(content);
+      
+      // Validate the structure
+      if (!Array.isArray(recommendations)) {
+        throw new Error("Invalid response format");
+      }
+
+      // Add timestamps and ensure correct format
+      const processedRecommendations = recommendations.map((job: any, index: number) => ({
+        ...job,
+        id: `ai-rec-${Date.now()}-${index}`,
+        postedDate: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000), // Random date within last 30 days
+      }));
+
+      return processedRecommendations;
+    } catch (error) {
+      console.error("Error generating job recommendations with Groq:", error);
+      
+      // Return empty array instead of fallback data
+      return [];
+    }
+  }
 }
 
 export const groqService = new GroqService();
