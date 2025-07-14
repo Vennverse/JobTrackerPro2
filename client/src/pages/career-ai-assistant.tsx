@@ -77,6 +77,8 @@ export default function CareerAIAssistant() {
   const [insights, setInsights] = useState<CareerInsight[]>([]);
   const [skillGaps, setSkillGaps] = useState<SkillGap[]>([]);
   const [careerPath, setCareerPath] = useState<CareerPath | null>(null);
+  const [completedTasks, setCompletedTasks] = useState<string[]>([]);
+  const [progressUpdate, setProgressUpdate] = useState("");
 
   // Fetch user profile for AI analysis
   const { data: userProfile } = useQuery({
@@ -128,7 +130,9 @@ export default function CareerAIAssistant() {
           userProfile,
           userSkills: userSkills || [],
           userApplications: userApplications || [],
-          jobAnalyses: jobAnalyses || []
+          jobAnalyses: jobAnalyses || [],
+          completedTasks,
+          progressUpdate
         }),
       });
 
@@ -286,6 +290,40 @@ export default function CareerAIAssistant() {
                 <div className="flex items-center gap-2 text-sm text-muted-foreground bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg">
                   <Map className="h-4 w-4" />
                   <span>Location-specific insights will include market data, salary ranges, and opportunities in {location}</span>
+                </div>
+              )}
+              
+              {/* Progress Update Section */}
+              {insights.length > 0 && (
+                <div className="space-y-3">
+                  <div className="border-t pt-4">
+                    <h4 className="font-medium text-gray-900 dark:text-white mb-3">Update Your Progress</h4>
+                    <div className="space-y-3">
+                      <Textarea
+                        placeholder="What have you accomplished since your last analysis? (e.g., 'Completed Python course', 'Applied to 5 senior roles', 'Attended networking event')"
+                        value={progressUpdate}
+                        onChange={(e) => setProgressUpdate(e.target.value)}
+                        className="min-h-[80px]"
+                      />
+                      <Button
+                        onClick={generateCareerAnalysis}
+                        disabled={isGenerating || !careerGoal}
+                        className="w-full bg-gradient-to-r from-green-600 to-blue-600 hover:from-green-700 hover:to-blue-700"
+                      >
+                        {isGenerating ? (
+                          <>
+                            <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-white mr-2" />
+                            Getting Updated Recommendations...
+                          </>
+                        ) : (
+                          <>
+                            <TrendingUp className="h-5 w-5 mr-2" />
+                            Get Updated Career Analysis
+                          </>
+                        )}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               )}
             </CardContent>

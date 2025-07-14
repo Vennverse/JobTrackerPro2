@@ -6427,7 +6427,7 @@ Host: https://autojobr.com`;
         return res.status(401).json({ message: "Not authenticated" });
       }
 
-      const { careerGoal, timeframe, location, userProfile, userSkills, userApplications, jobAnalyses } = req.body;
+      const { careerGoal, timeframe, location, userProfile, userSkills, userApplications, jobAnalyses, completedTasks, progressUpdate } = req.body;
 
       if (!careerGoal) {
         return res.status(400).json({ message: "Career goal is required" });
@@ -6456,6 +6456,9 @@ Host: https://autojobr.com`;
 
         JOB ANALYSIS HISTORY: ${jobAnalyses?.length || 0} job analyses completed
         Average match score: ${jobAnalyses?.reduce((acc, analysis) => acc + (analysis.matchScore || 0), 0) / (jobAnalyses?.length || 1) || 'N/A'}%
+
+        ${completedTasks?.length > 0 ? `COMPLETED TASKS: ${completedTasks.join(', ')}` : ''}
+        ${progressUpdate ? `RECENT PROGRESS UPDATE: ${progressUpdate}` : ''}
 
         Please provide a detailed analysis in the following JSON format:
         {
@@ -6506,6 +6509,8 @@ Host: https://autojobr.com`;
 
         Provide actionable, specific recommendations based on current market trends, industry standards, and the user's background. Include salary ranges, realistic timelines, and market demand insights.
         ${location ? `\n\nIMPORTANT: Include location-specific data for ${location} including:\n- Average salary ranges for the target role\n- Cost of living considerations\n- Major employers and companies in the area\n- Local job market conditions\n- Networking events and communities\n- Relocation considerations if applicable` : ''}
+
+        ${completedTasks?.length > 0 || progressUpdate ? `\n\nPROGRESS TRACKING: The user has made progress since their last analysis. Consider their completed tasks and recent updates when providing new recommendations. Focus on:\n- Acknowledging their progress and accomplishments\n- Adjusting recommendations based on completed tasks\n- Providing next logical steps in their career journey\n- Updating skill gap analysis based on new learning\n- Refreshing market timing recommendations` : ''}
 
         Return ONLY the JSON object, no additional text.
       `;

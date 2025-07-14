@@ -672,6 +672,64 @@ export default function Dashboard() {
               </Card>
             </motion.div>
 
+            {/* Career AI Assistant */}
+            <motion.div
+              variants={cardHoverVariants}
+              initial="rest"
+              whileHover="hover"
+            >
+              <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-500 to-pink-600 text-white">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Sparkles className="h-5 w-5" />
+                    AI Career Assistant
+                  </CardTitle>
+                  <p className="text-sm text-purple-100">
+                    Get personalized career guidance with location-specific insights
+                  </p>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span>AI Model:</span>
+                    <span className="font-medium text-purple-100">
+                      llama-3.3-70b-versatile
+                    </span>
+                  </div>
+                  
+                  <div className="space-y-3">
+                    <div className="text-sm font-medium">Career Planning Features:</div>
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                      <div className="flex items-center gap-1">
+                        <Target className="h-3 w-3" />
+                        <span>Path Planning</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <BookOpen className="h-3 w-3" />
+                        <span>Skill Analysis</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <TrendingUp className="h-3 w-3" />
+                        <span>Market Timing</span>
+                      </div>
+                      <div className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        <span>Networking</span>
+                      </div>
+                    </div>
+                  </div>
+
+                  <Button
+                    variant="secondary"
+                    className="w-full bg-white/20 hover:bg-white/30 text-white border-0"
+                    onClick={() => window.location.href = "/career-ai-assistant"}
+                  >
+                    <Sparkles className="h-4 w-4 mr-2" />
+                    Get Career Insights
+                  </Button>
+                </CardContent>
+              </Card>
+            </motion.div>
+
             {/* Recent Activity */}
             <motion.div
               variants={cardHoverVariants}
