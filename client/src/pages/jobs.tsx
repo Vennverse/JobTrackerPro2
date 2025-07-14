@@ -107,21 +107,7 @@ export default function Jobs() {
     enabled: isAuthenticated
   });
 
-  // Fetch scraped jobs from external sources
-  const { data: scrapedJobs = [], isLoading: scrapedJobsLoading } = useQuery({
-    queryKey: ["/api/scraped-jobs", filterPreferences],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      Object.entries(filterPreferences).forEach(([key, value]) => {
-        if (value && typeof value === 'string') params.append(key, value);
-      });
-      
-      const response = await fetch(`/api/scraped-jobs?${params}`);
-      if (!response.ok) throw new Error('Failed to fetch scraped jobs');
-      return response.json();
-    },
-    staleTime: 30000,
-  });
+  // Scraped jobs functionality removed per user request
 
   // Fetch AI-powered job recommendations
   const { data: recommendedJobs = [], isLoading: recommendedLoading } = useQuery({
@@ -566,10 +552,7 @@ export default function Jobs() {
                 <Building2 className="w-4 h-4" />
                 Platform Jobs
               </TabsTrigger>
-              <TabsTrigger value="external" className="flex items-center gap-2">
-                <Globe className="w-4 h-4" />
-                External Jobs
-              </TabsTrigger>
+
             </TabsList>
 
             {/* AI Recommendations Tab */}
@@ -662,51 +645,7 @@ export default function Jobs() {
               </div>
             </TabsContent>
 
-            {/* External Jobs Tab */}
-            <TabsContent value="external">
-              <div className="space-y-6">
-                <div className="flex items-center justify-between">
-                  <div>
-                    <h2 className="text-2xl font-bold">External Opportunities</h2>
-                    <p className="text-muted-foreground">
-                      {scrapedJobsLoading ? "Loading..." : `${scrapedJobs?.length || 0} jobs from LinkedIn, Indeed, and more`}
-                    </p>
-                  </div>
-                  <Badge className="bg-gradient-to-r from-green-100 to-blue-100 text-green-800 dark:from-green-900/20 dark:to-blue-900/20">
-                    <Activity className="w-3 h-3 mr-1" />
-                    Live Updates
-                  </Badge>
-                </div>
-
-                <div className="grid gap-4">
-                  {scrapedJobsLoading ? (
-                    Array.from({ length: 5 }).map((_, i) => (
-                      <Card key={i} className="animate-pulse">
-                        <CardContent className="p-6">
-                          <div className="space-y-3">
-                            <Skeleton className="h-6 w-3/4" />
-                            <Skeleton className="h-4 w-1/2" />
-                            <Skeleton className="h-20 w-full" />
-                          </div>
-                        </CardContent>
-                      </Card>
-                    ))
-                  ) : scrapedJobs && scrapedJobs.length > 0 ? (
-                    scrapedJobs.map((job: any) => (
-                      <JobCard key={`scraped-${job.id}`} job={job} source="scraped" />
-                    ))
-                  ) : (
-                    <Card>
-                      <CardContent className="p-12 text-center">
-                        <Globe className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
-                        <h3 className="text-xl font-semibold mb-2">No External Jobs Found</h3>
-                        <p className="text-muted-foreground">Our scrapers are working to find new opportunities</p>
-                      </CardContent>
-                    </Card>
-                  )}
-                </div>
-              </div>
-            </TabsContent>
+            {/* External Jobs Tab removed per user request */}
           </Tabs>
         </motion.div>
       </div>
