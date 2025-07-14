@@ -40,6 +40,7 @@ import RecruiterFeatures from "@/pages/recruiter-features";
 import QuestionBank from "@/pages/question-bank";
 import QuestionBankAdmin from "@/pages/admin/question-bank";
 import RecruiterPremium from "@/pages/recruiter/premium";
+import CareerAIAssistant from "@/pages/career-ai-assistant";
 
 
 function Router() {
@@ -114,6 +115,7 @@ function Router() {
                     {(params) => <TestRetakePayment />}
                   </Route>
                   <Route path="/jobs/:id" component={ViewJob} />
+                  <Route path="/career-ai-assistant" component={CareerAIAssistant} />
                   <Route path="/subscription" component={Subscription} />
                   <Route path="/chat" component={MessagingPage} />
                 </>

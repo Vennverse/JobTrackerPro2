@@ -6419,5 +6419,129 @@ Host: https://autojobr.com`;
     }
   });
 
+  // Career AI Assistant endpoint
+  app.post("/api/career-ai/analyze", isAuthenticated, async (req, res) => {
+    try {
+      const userId = req.session?.user?.id;
+      if (!userId) {
+        return res.status(401).json({ message: "Not authenticated" });
+      }
+
+      const { careerGoal, timeframe, userProfile, userSkills, userApplications, jobAnalyses } = req.body;
+
+      if (!careerGoal) {
+        return res.status(400).json({ message: "Career goal is required" });
+      }
+
+      // Build comprehensive prompt for Groq AI
+      const prompt = `
+        As a senior career advisor and data analyst, provide a comprehensive career analysis for the following professional:
+
+        CAREER GOAL: ${careerGoal}
+        TIMEFRAME: ${timeframe}
+
+        CURRENT PROFILE:
+        - Name: ${userProfile?.fullName || 'Professional'}
+        - Current Title: ${userProfile?.professionalTitle || 'Not specified'}
+        - Experience: ${userProfile?.yearsExperience || 0} years
+        - Location: ${userProfile?.city || 'Not specified'}, ${userProfile?.state || ''} ${userProfile?.country || ''}
+        - Education: ${userProfile?.highestDegree || 'Not specified'} in ${userProfile?.majorFieldOfStudy || 'Not specified'}
+        - Summary: ${userProfile?.summary || 'Not provided'}
+
+        CURRENT SKILLS: ${userSkills?.map(s => s.skillName).join(', ') || 'No skills listed'}
+
+        APPLICATION HISTORY: ${userApplications?.length || 0} applications submitted
+        Recent applications: ${userApplications?.slice(0, 5).map(app => `${app.jobTitle} at ${app.company} (${app.status})`).join('; ') || 'None'}
+
+        JOB ANALYSIS HISTORY: ${jobAnalyses?.length || 0} job analyses completed
+        Average match score: ${jobAnalyses?.reduce((acc, analysis) => acc + (analysis.matchScore || 0), 0) / (jobAnalyses?.length || 1) || 'N/A'}%
+
+        Please provide a detailed analysis in the following JSON format:
+        {
+          "insights": [
+            {
+              "type": "path|skill|timing|network|analytics",
+              "title": "Insight title",
+              "content": "Detailed analysis content",
+              "priority": "high|medium|low",
+              "timeframe": "When to act",
+              "actionItems": ["Specific action 1", "Specific action 2", "Specific action 3"]
+            }
+          ],
+          "skillGaps": [
+            {
+              "skill": "Skill name",
+              "currentLevel": 1-10,
+              "targetLevel": 1-10,
+              "importance": 1-10,
+              "learningResources": ["Resource 1", "Resource 2", "Resource 3"],
+              "timeToAcquire": "3-6 months"
+            }
+          ],
+          "careerPath": {
+            "currentRole": "Current position",
+            "targetRole": "Goal position",
+            "steps": [
+              {
+                "position": "Step position",
+                "timeline": "6-12 months",
+                "requiredSkills": ["Skill 1", "Skill 2"],
+                "averageSalary": "$XX,XXX - $XX,XXX",
+                "marketDemand": "High|Medium|Low"
+              }
+            ],
+            "totalTimeframe": "2-3 years",
+            "successProbability": 85
+          }
+        }
+
+        Focus on:
+        1. CAREER PATH PLANNING: Realistic step-by-step progression to reach the goal
+        2. SKILL GAP ANALYSIS: Identify missing skills and prioritize learning
+        3. MARKET TIMING: Current market conditions and optimal timing for moves
+        4. NETWORKING OPPORTUNITIES: Industry connections and relationship building
+        5. BEHAVIORAL ANALYTICS: Pattern analysis from application and job search history
+
+        Provide actionable, specific recommendations based on current market trends, industry standards, and the user's background. Include salary ranges, realistic timelines, and market demand insights.
+
+        Return ONLY the JSON object, no additional text.
+      `;
+
+      const response = await groqService.client.chat.completions.create({
+        model: "llama-3.3-70b-versatile",
+        messages: [{ role: "user", content: prompt }],
+        max_tokens: 4000,
+        temperature: 0.7
+      });
+
+      const analysisText = response.choices[0].message.content;
+      
+      // Parse JSON response
+      let analysisData;
+      try {
+        analysisData = JSON.parse(analysisText);
+      } catch (parseError) {
+        console.error("Failed to parse AI response:", analysisText);
+        throw new Error("Failed to parse AI analysis");
+      }
+
+      // Store the analysis for future reference
+      await db.insert(schema.aiJobAnalyses).values({
+        userId,
+        jobTitle: careerGoal,
+        company: "Career Planning",
+        matchScore: analysisData.careerPath?.successProbability || 0,
+        analysis: JSON.stringify(analysisData),
+        recommendations: analysisData.insights?.map(i => i.title).join('; ') || '',
+        createdAt: new Date()
+      });
+
+      res.json(analysisData);
+    } catch (error) {
+      console.error("Career AI analysis error:", error);
+      res.status(500).json({ message: "Failed to generate career analysis" });
+    }
+  });
+
   return httpServer;
 }
