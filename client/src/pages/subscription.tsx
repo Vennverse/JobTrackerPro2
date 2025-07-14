@@ -41,9 +41,43 @@ export default function Subscription() {
     }
   }, []);
 
-  const { data: subscriptionData, isLoading } = useQuery<SubscriptionData>({
+  const { data: subscriptionData, isLoading, error } = useQuery<SubscriptionData>({
     queryKey: ['/api/subscription/status'],
+    retry: 3,
+    retryDelay: 1000,
   });
+
+  // Handle loading state
+  if (isLoading) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-32 w-32 border-b-2 border-gray-900 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading subscription data...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Handle error state
+  if (error || !subscriptionData) {
+    return (
+      <div className="container mx-auto px-4 py-8">
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-red-600">Error Loading Subscription</h1>
+          <p className="mt-4 text-gray-600">Unable to load subscription data. Please try again.</p>
+          <Button 
+            onClick={() => window.location.reload()} 
+            className="mt-4"
+          >
+            Retry
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  const { subscription, usage, limits } = subscriptionData;
 
   const upgradeMutation = useMutation({
     mutationFn: async (paymentData: any) => {

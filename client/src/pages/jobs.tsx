@@ -154,6 +154,7 @@ export default function Jobs() {
         description: "Your application has been sent to the recruiter!"
       });
       queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+      queryClient.invalidateQueries({ queryKey: ["/api/jobs/postings"] });
     },
     onError: (error) => {
       toast({
