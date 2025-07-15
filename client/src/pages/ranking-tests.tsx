@@ -340,27 +340,27 @@ export default function RankingTests() {
       {/* Payment Modal */}
       {showPayment && currentTest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-          <div className="bg-white rounded-lg p-6 max-w-md w-full">
-            <h3 className="text-lg font-semibold mb-4">Complete Payment to Start Test</h3>
-            <p className="text-gray-600 mb-4">
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md w-full">
+            <h3 className="text-lg font-semibold mb-4 text-gray-900 dark:text-white">Complete Payment to Start Test</h3>
+            <p className="text-gray-600 dark:text-gray-300 mb-4">
               Test: {currentTest.testTitle}
             </p>
-            <p className="text-2xl font-bold text-blue-600 mb-4">$1.00</p>
+            <p className="text-2xl font-bold text-blue-600 dark:text-blue-400 mb-4">$1.00</p>
             
             {/* Payment Provider Selection */}
             <div className="mb-4">
-              <Label className="text-sm font-medium mb-2 block">Select Payment Method</Label>
+              <Label className="text-sm font-medium mb-2 block text-gray-900 dark:text-white">Select Payment Method</Label>
               <RadioGroup value={paymentProvider} onValueChange={(value: 'stripe' | 'paypal') => setPaymentProvider(value)}>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="stripe" id="stripe" />
-                  <Label htmlFor="stripe" className="flex items-center gap-2">
+                  <Label htmlFor="stripe" className="flex items-center gap-2 text-gray-900 dark:text-white">
                     <CreditCard className="w-4 h-4" />
-                    Credit Card (Stripe)
+                    Cards, Apple Pay, Google Pay (Stripe)
                   </Label>
                 </div>
                 <div className="flex items-center space-x-2">
                   <RadioGroupItem value="paypal" id="paypal" />
-                  <Label htmlFor="paypal" className="flex items-center gap-2">
+                  <Label htmlFor="paypal" className="flex items-center gap-2 text-gray-900 dark:text-white">
                     <svg className="w-4 h-4" viewBox="0 0 24 24" fill="currentColor">
                       <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.106zm14.146-14.42a3.35 3.35 0 0 0-.607-.541c-.013.076-.026.175-.041.254-.93 4.778-4.005 7.201-9.138 7.201h-2.19a.696.696 0 0 0-.682.816l-.73 4.607a.384.384 0 0 0 .38.44h2.287a.56.56 0 0 0 .556-.48l.23-1.458.024-.127a.56.56 0 0 1 .555-.48h.35c3.581 0 6.389-1.455 7.208-5.662.343-1.762.166-3.238-.65-4.394a3.27 3.27 0 0 0-.552-.576z"/>
                     </svg>
@@ -459,8 +459,26 @@ function StripePaymentForm({ testId, onSuccess, onCancel }: { testId: number; on
 
   return (
     <form onSubmit={handleSubmit} className="space-y-4">
-      <div className="border rounded-lg p-4">
-        <CardElement />
+      <div className="border rounded-lg p-4 bg-gray-50 dark:bg-gray-700">
+        <CardElement 
+          options={{
+            style: {
+              base: {
+                fontSize: '16px',
+                color: '#424770',
+                '::placeholder': {
+                  color: '#aab7c4',
+                },
+              },
+              invalid: {
+                color: '#9e2146',
+              },
+            },
+          }}
+        />
+      </div>
+      <div className="text-xs text-gray-500 dark:text-gray-400">
+        Supports all major credit cards, Apple Pay, Google Pay, Stripe Link, and bank accounts
       </div>
       <div className="flex gap-2">
         <Button 
@@ -500,9 +518,17 @@ function PayPalPaymentForm({ testId, onSuccess, onCancel }: { testId: number; on
       // Redirect to PayPal for approval
       window.location.href = approvalUrl;
     } catch (error: any) {
+      let errorMessage = "Failed to create PayPal order";
+      
+      if (error.message && error.message.includes('not configured')) {
+        errorMessage = "PayPal is not configured yet. Please use Stripe or contact support.";
+      } else if (error.message) {
+        errorMessage = error.message;
+      }
+      
       toast({
         title: "Payment Error",
-        description: error.message || "Failed to create PayPal order",
+        description: errorMessage,
         variant: "destructive",
       });
       setProcessing(false);
@@ -512,8 +538,8 @@ function PayPalPaymentForm({ testId, onSuccess, onCancel }: { testId: number; on
   return (
     <div className="space-y-4">
       <div className="text-center">
-        <p className="text-sm text-gray-600 mb-4">
-          You will be redirected to PayPal to complete your payment
+        <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+          You will be redirected to PayPal to complete your payment securely
         </p>
       </div>
       <div className="flex gap-2">

@@ -3003,6 +3003,7 @@ Additional Information:
         const paymentIntent = await stripe.paymentIntents.create({
           amount: 100, // $1 in cents
           currency: 'usd',
+          payment_method_types: ['card', 'link', 'us_bank_account'], // Enable cards, Stripe Link, and US bank accounts
           metadata: {
             userId,
             testId: testId.toString(),
@@ -3015,6 +3016,11 @@ Additional Information:
           paymentIntentId: paymentIntent.id
         });
       } else if (paymentProvider === 'paypal') {
+        // Check if PayPal credentials are configured
+        if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+          return res.status(400).json({ message: 'PayPal payment is not configured yet. Please use Stripe or contact support to add PayPal credentials.' });
+        }
+
         // Get PayPal access token
         const authResponse = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
           method: 'POST',
@@ -3024,6 +3030,12 @@ Additional Information:
           },
           body: 'grant_type=client_credentials'
         });
+
+        if (!authResponse.ok) {
+          const errorData = await authResponse.text();
+          console.error('PayPal auth error:', errorData);
+          return res.status(400).json({ message: 'PayPal authentication failed. Please use Stripe instead.' });
+        }
 
         const authData = await authResponse.json();
         const accessToken = authData.access_token;
@@ -3063,6 +3075,7 @@ Additional Information:
             paymentProvider: 'paypal'
           });
         } else {
+          console.error('PayPal order creation failed:', orderData);
           throw new Error('Failed to create PayPal order');
         }
       } else {
