@@ -570,14 +570,14 @@ export default function Applications() {
                       <div className="flex items-center justify-between mb-2">
                         <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pipeline Progress</span>
                         <span className="text-sm text-gray-500 dark:text-gray-400">
-                          {Math.round((filteredApplications.filter(app => app.status !== "applied" && app.status !== "rejected").length / Math.max(filteredApplications.length, 1)) * 100)}% progressed
+                          {filteredApplications.length === 0 ? 0 : Math.round((filteredApplications.filter(app => app.status === "interview" || app.status === "interviewed" || app.status === "offered").length / filteredApplications.length) * 100)}% success rate
                         </span>
                       </div>
                       <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
                         <div 
                           className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
                           style={{ 
-                            width: `${Math.round((filteredApplications.filter(app => app.status !== "applied" && app.status !== "rejected").length / Math.max(filteredApplications.length, 1)) * 100)}%` 
+                            width: `${filteredApplications.length === 0 ? 0 : Math.round((filteredApplications.filter(app => app.status === "interview" || app.status === "interviewed" || app.status === "offered").length / filteredApplications.length) * 100)}%` 
                           }}
                         />
                       </div>

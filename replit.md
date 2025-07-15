@@ -70,6 +70,8 @@ The application is fully migrated and operational on Replit with all core featur
 - ✅ **Source Indicators**: Visual badges with icons distinguish platform vs extension applications in both card and table views
 - ✅ **Enhanced Sync**: "Sync All" button refreshes both applications and stats data from platform and extension
 - ✅ **Smart Filtering**: Source filter dropdown allows filtering by "All Sources", "Platform", or "Extension"
+- ✅ **Pipeline Progress Fix**: Fixed misleading 100% progress display to show actual success rate calculation
+- ✅ **Landing Page Redesign**: Complete modern redesign highlighting Personal Career AI Assistant, ranking tests, and all premium features
 - ✅ **Payment System**: Stripe supports all payment methods, PayPal integration ready for API keys
 - ✅ **UI Improvements**: Enhanced application cards with source badges, improved visual hierarchy and user experience
 
