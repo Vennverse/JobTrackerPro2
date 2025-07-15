@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import { mockInterviewService } from './mockInterviewService';
 import { storage } from './storage';
-import { isAuthenticated } from './replitAuth';
+import { isAuthenticated } from './auth';
 import { paymentService } from './paymentService';
 import { z } from 'zod';
 
@@ -27,7 +27,7 @@ const submitAnswerSchema = z.object({
 // Get user's interview stats
 router.get('/stats', isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const stats = await storage.getUserInterviewStats(userId);
     const freeInterviewsRemaining = await mockInterviewService.checkFreeInterviewsRemaining(userId);
     
@@ -44,7 +44,7 @@ router.get('/stats', isAuthenticated, async (req: any, res) => {
 // Get user's interview history
 router.get('/history', isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const interviews = await storage.getMockInterviews(userId);
     res.json(interviews);
   } catch (error) {
@@ -56,7 +56,7 @@ router.get('/history', isAuthenticated, async (req: any, res) => {
 // Start a new interview
 router.post('/start', isAuthenticated, async (req: any, res) => {
   try {
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     const config = startInterviewSchema.parse(req.body);
     
     // Check if user has free interviews remaining
@@ -82,7 +82,7 @@ router.post('/start', isAuthenticated, async (req: any, res) => {
 router.get('/session/:sessionId', isAuthenticated, async (req: any, res) => {
   try {
     const { sessionId } = req.params;
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     
     const interviewData = await mockInterviewService.getInterviewWithQuestions(sessionId);
     
@@ -114,7 +114,7 @@ router.post('/answer', isAuthenticated, async (req: any, res) => {
     }
     
     const interview = await storage.getMockInterview(question.interviewId);
-    if (!interview || interview.userId !== req.user.claims.sub) {
+    if (!interview || interview.userId !== req.user.id) {
       return res.status(403).json({ error: 'Unauthorized access' });
     }
     
@@ -136,7 +136,7 @@ router.post('/answer', isAuthenticated, async (req: any, res) => {
 router.post('/complete/:sessionId', isAuthenticated, async (req: any, res) => {
   try {
     const { sessionId } = req.params;
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     
     // Verify user owns this interview
     const interviewData = await mockInterviewService.getInterviewWithQuestions(sessionId);
@@ -156,7 +156,7 @@ router.post('/complete/:sessionId', isAuthenticated, async (req: any, res) => {
 router.get('/results/:sessionId', isAuthenticated, async (req: any, res) => {
   try {
     const { sessionId } = req.params;
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     
     const interviewData = await mockInterviewService.getInterviewWithQuestions(sessionId);
     
@@ -184,7 +184,7 @@ router.get('/results/:sessionId', isAuthenticated, async (req: any, res) => {
 router.post('/payment', isAuthenticated, async (req: any, res) => {
   try {
     const { amount, currency, method, item } = req.body;
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     
     // Validate payment amount for mock interviews
     if (amount !== 2.00) {
@@ -225,8 +225,8 @@ router.post('/payment', isAuthenticated, async (req: any, res) => {
         amount: order.amount,
         currency: order.currency,
         keyId: process.env.RAZORPAY_KEY_ID,
-        email: req.user.claims.email || '',
-        phone: req.user.claims.phone || ''
+        email: req.user.email || '',
+        phone: req.user.phone || ''
       });
     } else if (method === 'paypal') {
       // Create PayPal order
@@ -258,7 +258,7 @@ router.post('/payment', isAuthenticated, async (req: any, res) => {
 router.post('/payment/success', isAuthenticated, async (req: any, res) => {
   try {
     const { paymentId, method } = req.body;
-    const userId = req.user.claims.sub;
+    const userId = req.user.id;
     
     // Verify payment based on method
     let isPaymentValid = false;
