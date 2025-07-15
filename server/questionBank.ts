@@ -1,646 +1,378 @@
-// Comprehensive Question Bank for AutoJobr
-// This file contains pre-built questions organized by category and difficulty
-
-interface QuestionBankItem {
+interface InterviewQuestion {
   id: string;
-  type: 'multiple_choice' | 'multiple_select' | 'true_false' | 'short_answer' | 'long_answer' | 'coding' | 'scenario' | 'case_study';
-  category: 'general_aptitude' | 'english' | 'domain_specific';
-  domain: 'general' | 'technical' | 'finance' | 'marketing' | 'accounting' | 'hr' | 'sales';
-  subCategory: string;
-  difficulty: 'easy' | 'medium' | 'hard' | 'extreme';
   question: string;
-  options?: string[];
-  correctAnswer?: string | number | number[];
-  explanation?: string;
-  points: number;
-  timeLimit: number; // in minutes
-  tags: string[];
-  keywords: string[];
-  testCases?: string; // For coding questions
-  boilerplate?: string; // For coding questions
-  language?: string; // For coding questions
+  type: 'coding' | 'behavioral' | 'system_design';
+  difficulty: 'easy' | 'medium' | 'hard';
+  category: string;
+  hints: string[];
+  testCases?: Array<{
+    input: any;
+    expected: any;
+    description: string;
+  }>;
+  sampleAnswer?: string;
+  boilerplate?: string;
+  timeLimit?: number; // in minutes
+  companies?: string[];
 }
 
-export const questionBank: QuestionBankItem[] = [
-  // GENERAL APTITUDE QUESTIONS (50%)
-  
-  // Mathematics - Easy to Medium
+export const QUESTION_BANK: InterviewQuestion[] = [
+  // ==================== CODING QUESTIONS - EASY ====================
   {
-    id: 'apt_math_001',
-    type: 'multiple_choice',
-    category: 'general_aptitude',
-    domain: 'general',
-    subCategory: 'Mathematics',
-    difficulty: 'medium',
-    question: 'If a train travels 360 km in 4 hours, what is its average speed in km/h?',
-    options: ['80', '90', '100', '110'],
-    correctAnswer: 1,
-    explanation: 'Speed = Distance / Time = 360 / 4 = 90 km/h',
-    points: 5,
-    timeLimit: 2,
-    tags: ['aptitude', 'math', 'speed'],
-    keywords: ['speed', 'distance', 'time']
-  },
-  
-  {
-    id: 'apt_math_002',
-    type: 'multiple_choice',
-    category: 'general_aptitude',
-    domain: 'general',
-    subCategory: 'Mathematics',
-    difficulty: 'hard',
-    question: 'A container has a mixture of milk and water in the ratio 4:1. If 10 liters of the mixture is removed and replaced with 10 liters of water, the new ratio becomes 2:3. What was the original volume of the container?',
-    options: ['25 liters', '30 liters', '40 liters', '50 liters'],
-    correctAnswer: 3,
-    explanation: 'Let original volume be V. Initial milk = 4V/5, water = V/5. After replacement: milk = 4V/5 - 8 = 2(V+10)/5, solving gives V = 50.',
-    points: 10,
-    timeLimit: 5,
-    tags: ['aptitude', 'math', 'mixture', 'ratio'],
-    keywords: ['mixture', 'ratio', 'proportion']
-  },
-
-  // Logical Reasoning - Extreme Difficulty
-  {
-    id: 'apt_logic_001',
-    type: 'multiple_choice',
-    category: 'general_aptitude',
-    domain: 'general',
-    subCategory: 'Logical Reasoning',
-    difficulty: 'extreme',
-    question: 'In a room of 100 people, 70 speak English, 80 speak Spanish, and 60 speak French. What is the minimum number of people who speak all three languages?',
-    options: ['10', '20', '30', '40'],
-    correctAnswer: 0,
-    explanation: 'Using inclusion-exclusion principle: |E∩S∩F| ≥ |E| + |S| + |F| - 2|Total| = 70 + 80 + 60 - 2(100) = 10',
-    points: 15,
-    timeLimit: 8,
-    tags: ['aptitude', 'logic', 'sets', 'extreme'],
-    keywords: ['sets', 'inclusion-exclusion', 'logic']
-  },
-
-  // Data Interpretation
-  {
-    id: 'apt_data_001',
-    type: 'multiple_choice',
-    category: 'general_aptitude',
-    domain: 'general',
-    subCategory: 'Data Interpretation',
-    difficulty: 'medium',
-    question: 'A company\'s revenue grew from $100,000 in Year 1 to $150,000 in Year 2. What was the percentage increase?',
-    options: ['40%', '50%', '60%', '66.67%'],
-    correctAnswer: 1,
-    explanation: 'Percentage increase = ((150,000 - 100,000) / 100,000) × 100 = 50%',
-    points: 5,
-    timeLimit: 3,
-    tags: ['aptitude', 'data', 'percentage'],
-    keywords: ['percentage', 'growth', 'data']
-  },
-
-  // ENGLISH QUESTIONS (20%)
-  
-  // Grammar
-  {
-    id: 'eng_gram_001',
-    type: 'multiple_choice',
-    category: 'english',
-    domain: 'general',
-    subCategory: 'Grammar',
-    difficulty: 'medium',
-    question: 'Choose the correct sentence:',
-    options: [
-      'Neither the manager nor the employees was present.',
-      'Neither the manager nor the employees were present.',
-      'Neither the manager or the employees were present.',
-      'Neither the manager and the employees were present.'
-    ],
-    correctAnswer: 1,
-    explanation: 'With "neither...nor", the verb agrees with the subject closer to it. "employees" is plural, so "were" is correct.',
-    points: 5,
-    timeLimit: 2,
-    tags: ['english', 'grammar', 'subject-verb'],
-    keywords: ['grammar', 'subject-verb agreement', 'neither-nor']
-  },
-
-  // Vocabulary - Hard
-  {
-    id: 'eng_vocab_001',
-    type: 'multiple_choice',
-    category: 'english',
-    domain: 'general',
-    subCategory: 'Vocabulary',
-    difficulty: 'hard',
-    question: 'What does "perspicacious" mean?',
-    options: ['Stubborn', 'Having keen insight', 'Talkative', 'Mysterious'],
-    correctAnswer: 1,
-    explanation: 'Perspicacious means having a ready insight into and understanding of things.',
-    points: 8,
-    timeLimit: 2,
-    tags: ['english', 'vocabulary', 'advanced'],
-    keywords: ['vocabulary', 'insight', 'understanding']
-  },
-
-  // Reading Comprehension
-  {
-    id: 'eng_comp_001',
-    type: 'multiple_choice',
-    category: 'english',
-    domain: 'general',
-    subCategory: 'Reading Comprehension',
-    difficulty: 'medium',
-    question: 'Passage: "The rapid advancement of artificial intelligence has transformed industries worldwide. However, this technological revolution brings both opportunities and challenges. While AI can automate routine tasks and improve efficiency, it also raises concerns about job displacement and ethical implications."\n\nWhat is the main theme of this passage?',
-    options: [
-      'AI is only beneficial for industries',
-      'AI advancement has both positive and negative impacts',
-      'AI will replace all human jobs',
-      'AI development should be stopped'
-    ],
-    correctAnswer: 1,
-    explanation: 'The passage discusses both opportunities (automation, efficiency) and challenges (job displacement, ethical concerns) of AI.',
-    points: 6,
-    timeLimit: 4,
-    tags: ['english', 'comprehension', 'analysis'],
-    keywords: ['comprehension', 'analysis', 'artificial intelligence']
-  },
-
-  // DOMAIN-SPECIFIC QUESTIONS (30%)
-  
-  // TECHNICAL/DEVELOPER QUESTIONS
-  
-  // DSA - Leetcode Style - Hard
-  {
-    id: 'tech_dsa_001',
+    id: 'c001',
+    question: 'Write a function to find the maximum number in an array.',
     type: 'coding',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'Data Structures & Algorithms',
-    difficulty: 'hard',
-    question: `Given an array of integers, find the maximum sum of a subarray with the constraint that no two elements in the subarray are adjacent.
-
-Example:
-Input: [2, 4, 6, 2, 5]
-Output: 13 (2 + 6 + 5)
-
-Write a function that returns the maximum sum.`,
-    testCases: JSON.stringify([
-      {
-        input: [2, 4, 6, 2, 5],
-        expected: 13,
-        description: "Basic case with mixed numbers"
-      },
-      {
-        input: [1, 2, 3],
-        expected: 4,
-        description: "Small array"
-      },
-      {
-        input: [5, 1, 3, 9],
-        expected: 14,
-        description: "Another test case"
-      }
-    ]),
-    boilerplate: `function solution(nums) {
-  // Your code here
-  // Return the maximum sum
-}`,
-    language: 'javascript',
-    points: 20,
-    timeLimit: 30,
-    tags: ['developer', 'dsa', 'dynamic-programming'],
-    keywords: ['array', 'dynamic programming', 'maximum sum']
-  },
-
-  // System Design MCQ - Extreme
-  {
-    id: 'tech_sys_001',
-    type: 'multiple_choice',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'System Design',
-    difficulty: 'extreme',
-    question: 'You are designing a distributed system that needs to handle 1 million concurrent users with strict consistency requirements. Which combination of technologies would be most appropriate?',
-    options: [
-      'MongoDB with eventual consistency + Redis caching',
-      'PostgreSQL with read replicas + Redis Cluster + Load balancer',
-      'Cassandra with strong consistency + Memcached',
-      'DynamoDB with global secondary indexes + ElastiCache'
-    ],
-    correctAnswer: 1,
-    explanation: 'PostgreSQL with read replicas provides ACID guarantees for strict consistency, Redis Cluster offers distributed caching, and load balancers distribute the high concurrent load effectively.',
-    points: 25,
-    timeLimit: 10,
-    tags: ['developer', 'system-design', 'scalability'],
-    keywords: ['system design', 'scalability', 'consistency', 'distributed']
-  },
-
-  // Debugging - Hard
-  {
-    id: 'tech_debug_001',
-    type: 'multiple_choice',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'Debugging',
-    difficulty: 'hard',
-    question: `What is the output of the following JavaScript code?
-
-\`\`\`javascript
-function test() {
-  var a = 1;
-  if (true) {
-    var a = 2;
-    console.log(a);
-  }
-  console.log(a);
-}
-test();
-\`\`\``,
-    options: ['1, 1', '2, 2', '1, 2', '2, 1'],
-    correctAnswer: 1,
-    explanation: 'Due to var hoisting and function scope (not block scope), both console.log statements refer to the same variable "a" which is set to 2.',
-    points: 15,
-    timeLimit: 5,
-    tags: ['developer', 'debugging', 'javascript'],
-    keywords: ['javascript', 'hoisting', 'scope', 'debugging']
-  },
-
-  // FINANCE QUESTIONS
-  
-  // Financial Ratios - Hard
-  {
-    id: 'fin_ratio_001',
-    type: 'multiple_choice',
-    category: 'domain_specific',
-    domain: 'finance',
-    subCategory: 'Financial Ratios',
-    difficulty: 'hard',
-    question: 'A company has Current Assets of $500,000, Inventory of $200,000, Prepaid Expenses of $50,000, and Current Liabilities of $300,000. What is the Quick Ratio?',
-    options: ['0.83', '1.00', '1.17', '1.67'],
-    correctAnswer: 0,
-    explanation: 'Quick Ratio = (Current Assets - Inventory - Prepaid Expenses) / Current Liabilities = (500,000 - 200,000 - 50,000) / 300,000 = 0.83',
-    points: 15,
-    timeLimit: 5,
-    tags: ['finance', 'ratios', 'liquidity'],
-    keywords: ['quick ratio', 'liquidity', 'financial analysis']
-  },
-
-  // Valuation - Extreme
-  {
-    id: 'fin_val_001',
-    type: 'multiple_choice',
-    category: 'domain_specific',
-    domain: 'finance',
-    subCategory: 'Valuation',
-    difficulty: 'extreme',
-    question: 'A company expects FCF of $10M next year, growing at 25% for 3 years, then 5% forever. WACC is 12%. What is the enterprise value?',
-    options: ['$180.2M', '$195.8M', '$210.4M', '$225.6M'],
-    correctAnswer: 1,
-    explanation: 'DCF calculation: PV of high-growth FCFs + PV of terminal value. FCF Years 1-3: $10M, $12.5M, $15.625M. Terminal value = 15.625×1.05/(0.12-0.05) = $234.375M. Total EV ≈ $195.8M',
-    points: 30,
-    timeLimit: 15,
-    tags: ['finance', 'valuation', 'dcf'],
-    keywords: ['DCF', 'valuation', 'terminal value', 'WACC']
-  },
-
-  // MARKETING QUESTIONS
-  
-  // Digital Marketing - Hard
-  {
-    id: 'mkt_dig_001',
-    type: 'multiple_choice',
-    category: 'domain_specific',
-    domain: 'marketing',
-    subCategory: 'Digital Marketing',
-    difficulty: 'hard',
-    question: 'Your Google Ads campaign has a CTR of 3.2%, CPC of $1.50, and conversion rate of 8%. If you want to achieve a target CPA of $15, what should be your maximum CPC bid?',
-    options: ['$1.20', '$1.35', '$1.50', '$1.65'],
-    correctAnswer: 0,
-    explanation: 'CPA = CPC / Conversion Rate. Target CPA = $15, Conversion Rate = 8%. Max CPC = $15 × 0.08 = $1.20',
-    points: 15,
-    timeLimit: 8,
-    tags: ['marketing', 'digital', 'google-ads'],
-    keywords: ['CPC', 'CPA', 'conversion rate', 'google ads']
-  },
-
-  // SEO - Medium
-  {
-    id: 'mkt_seo_001',
-    type: 'multiple_choice',
-    category: 'domain_specific',
-    domain: 'marketing',
-    subCategory: 'SEO',
-    difficulty: 'medium',
-    question: 'Which of the following is most important for local SEO?',
-    options: [
-      'High domain authority',
-      'Google My Business optimization',
-      'International backlinks',
-      'Mobile-first indexing'
-    ],
-    correctAnswer: 1,
-    explanation: 'Google My Business optimization is crucial for local SEO as it directly impacts local search rankings and visibility.',
-    points: 10,
-    timeLimit: 3,
-    tags: ['marketing', 'seo', 'local'],
-    keywords: ['local SEO', 'google my business', 'local search']
-  },
-
-  // ACCOUNTING QUESTIONS
-  
-  // Balance Sheet - Hard
-  {
-    id: 'acc_bal_001',
-    type: 'multiple_choice',
-    category: 'domain_specific',
-    domain: 'accounting',
-    subCategory: 'Balance Sheet',
-    difficulty: 'hard',
-    question: 'A company purchased equipment for $100,000 with a 10-year life and $10,000 salvage value. Using straight-line depreciation, what is the book value after 3 years?',
-    options: ['$70,000', '$73,000', '$77,000', '$80,000'],
-    correctAnswer: 1,
-    explanation: 'Annual depreciation = ($100,000 - $10,000) / 10 = $9,000. After 3 years: $100,000 - (3 × $9,000) = $73,000',
-    points: 12,
-    timeLimit: 5,
-    tags: ['accounting', 'depreciation', 'balance-sheet'],
-    keywords: ['depreciation', 'book value', 'straight-line']
-  },
-
-  // Auditing - Extreme
-  {
-    id: 'acc_aud_001',
-    type: 'multiple_choice',
-    category: 'domain_specific',
-    domain: 'accounting',
-    subCategory: 'Auditing',
-    difficulty: 'extreme',
-    question: 'An auditor discovers that a client has been capitalizing routine maintenance costs as fixed assets. This represents which type of misstatement?',
-    options: [
-      'Factual misstatement',
-      'Judgmental misstatement',
-      'Projected misstatement',
-      'Tolerable misstatement'
-    ],
-    correctAnswer: 0,
-    explanation: 'This is a factual misstatement because there is no doubt about the error - routine maintenance should be expensed, not capitalized.',
-    points: 20,
-    timeLimit: 6,
-    tags: ['accounting', 'auditing', 'misstatement'],
-    keywords: ['auditing', 'misstatement', 'capitalization']
-  },
-
-  // CODING QUESTIONS - TECHNICAL DOMAIN
-  
-  // Basic Algorithm - Easy
-  {
-    id: 'code_basic_001',
-    type: 'coding',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'algorithms',
     difficulty: 'easy',
-    question: 'Write a function that returns the sum of two numbers.',
-    correctAnswer: JSON.stringify({
-      javascript: 'function add(a, b) { return a + b; }',
-      python: 'def add(a, b):\n    return a + b'
-    }),
-    explanation: 'Simple addition function that takes two parameters and returns their sum.',
-    points: 5,
+    category: 'arrays',
+    hints: ['Consider using Math.max()', 'You can use reduce() method', 'Loop through the array and keep track of max'],
+    testCases: [
+      { input: [1, 5, 3, 9, 2], expected: 9, description: 'Basic array' },
+      { input: [-1, -5, -3], expected: -1, description: 'All negative numbers' },
+      { input: [42], expected: 42, description: 'Single element' }
+    ],
+    sampleAnswer: 'function solution(arr) { return Math.max(...arr); }',
+    timeLimit: 15,
+    companies: ['Google', 'Microsoft', 'Amazon']
+  },
+  {
+    id: 'c002',
+    question: 'Implement a function to reverse a string.',
+    type: 'coding',
+    difficulty: 'easy',
+    category: 'strings',
+    hints: ['Use split(), reverse(), join()', 'Consider using a loop', 'Think about two pointers approach'],
+    testCases: [
+      { input: 'hello', expected: 'olleh', description: 'Basic string' },
+      { input: 'a', expected: 'a', description: 'Single character' },
+      { input: '', expected: '', description: 'Empty string' }
+    ],
+    sampleAnswer: 'function solution(str) { return str.split("").reverse().join(""); }',
     timeLimit: 10,
-    tags: ['javascript', 'python', 'basic', 'math'],
-    keywords: ['function', 'sum', 'addition', 'parameters'],
-    testCases: JSON.stringify([
-      { input: [2, 3], expected: 5, description: 'Adding positive numbers' },
-      { input: [-1, 1], expected: 0, description: 'Adding negative and positive' },
-      { input: [0, 0], expected: 0, description: 'Adding zeros' }
-    ]),
-    boilerplate: JSON.stringify({
-      javascript: 'function add(a, b) {\n    // Your code here\n}',
-      python: 'def add(a, b):\n    # Your code here\n    pass'
-    }),
-    language: 'javascript,python'
+    companies: ['Facebook', 'Apple', 'Netflix']
   },
-
-  // String Manipulation - Medium
   {
-    id: 'code_string_001',
+    id: 'c003',
+    question: 'Check if a number is prime.',
     type: 'coding',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'algorithms',
-    difficulty: 'medium',
-    question: 'Write a function that reverses a string without using built-in reverse methods.',
-    correctAnswer: JSON.stringify({
-      javascript: 'function reverseString(str) {\n    let result = "";\n    for (let i = str.length - 1; i >= 0; i--) {\n        result += str[i];\n    }\n    return result;\n}',
-      python: 'def reverse_string(s):\n    result = ""\n    for i in range(len(s) - 1, -1, -1):\n        result += s[i]\n    return result'
-    }),
-    explanation: 'Manual string reversal using loop iteration from end to beginning.',
-    points: 10,
+    difficulty: 'easy',
+    category: 'math',
+    hints: ['Check divisibility from 2 to sqrt(n)', 'Handle edge cases (1, 2)', 'Use modulus operator'],
+    testCases: [
+      { input: 17, expected: true, description: 'Prime number' },
+      { input: 4, expected: false, description: 'Composite number' },
+      { input: 1, expected: false, description: 'Edge case: 1' }
+    ],
+    sampleAnswer: 'function solution(n) { if (n <= 1) return false; for (let i = 2; i <= Math.sqrt(n); i++) { if (n % i === 0) return false; } return true; }',
+    timeLimit: 20,
+    companies: ['Google', 'Amazon', 'Microsoft']
+  },
+  {
+    id: 'c004',
+    question: 'Find the sum of all elements in an array.',
+    type: 'coding',
+    difficulty: 'easy',
+    category: 'arrays',
+    hints: ['Use reduce() method', 'Use a for loop', 'Initialize sum to 0'],
+    testCases: [
+      { input: [1, 2, 3, 4, 5], expected: 15, description: 'Positive numbers' },
+      { input: [-1, -2, -3], expected: -6, description: 'Negative numbers' },
+      { input: [], expected: 0, description: 'Empty array' }
+    ],
+    sampleAnswer: 'function solution(arr) { return arr.reduce((sum, num) => sum + num, 0); }',
+    timeLimit: 10,
+    companies: ['Facebook', 'Twitter', 'LinkedIn']
+  },
+  {
+    id: 'c005',
+    question: 'Remove duplicates from an array.',
+    type: 'coding',
+    difficulty: 'easy',
+    category: 'arrays',
+    hints: ['Use Set data structure', 'Use filter with indexOf', 'Use Map to track seen elements'],
+    testCases: [
+      { input: [1, 2, 2, 3, 4, 4, 5], expected: [1, 2, 3, 4, 5], description: 'Array with duplicates' },
+      { input: [1, 2, 3], expected: [1, 2, 3], description: 'No duplicates' },
+      { input: [], expected: [], description: 'Empty array' }
+    ],
+    sampleAnswer: 'function solution(arr) { return [...new Set(arr)]; }',
     timeLimit: 15,
-    tags: ['javascript', 'python', 'strings', 'loops'],
-    keywords: ['reverse', 'string', 'iteration', 'loop'],
-    testCases: JSON.stringify([
-      { input: ['hello'], expected: 'olleh', description: 'Reverse simple string' },
-      { input: [''], expected: '', description: 'Reverse empty string' },
-      { input: ['a'], expected: 'a', description: 'Reverse single character' }
-    ]),
-    boilerplate: JSON.stringify({
-      javascript: 'function reverseString(str) {\n    // Your code here\n}',
-      python: 'def reverse_string(s):\n    # Your code here\n    pass'
-    }),
-    language: 'javascript,python'
+    companies: ['Google', 'Apple', 'Amazon']
   },
 
-  // Array Operations - Medium
+  // ==================== CODING QUESTIONS - MEDIUM ====================
   {
-    id: 'code_array_001',
+    id: 'c101',
+    question: 'Two Sum: Find two numbers in an array that sum to a target value.',
     type: 'coding',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'algorithms',
     difficulty: 'medium',
-    question: 'Write a function that finds the largest number in an array.',
-    correctAnswer: JSON.stringify({
-      javascript: 'function findMax(arr) {\n    if (arr.length === 0) return undefined;\n    let max = arr[0];\n    for (let i = 1; i < arr.length; i++) {\n        if (arr[i] > max) {\n            max = arr[i];\n        }\n    }\n    return max;\n}',
-      python: 'def find_max(arr):\n    if not arr:\n        return None\n    max_val = arr[0]\n    for num in arr[1:]:\n        if num > max_val:\n            max_val = num\n    return max_val'
-    }),
-    explanation: 'Find maximum value in array by iterating through all elements.',
-    points: 10,
-    timeLimit: 15,
-    tags: ['javascript', 'python', 'arrays', 'comparison'],
-    keywords: ['maximum', 'array', 'loop', 'comparison'],
-    testCases: JSON.stringify([
-      { input: [[1, 5, 3, 9, 2]], expected: 9, description: 'Find max in positive numbers' },
-      { input: [[-1, -5, -3]], expected: -1, description: 'Find max in negative numbers' },
-      { input: [[42]], expected: 42, description: 'Single element array' }
-    ]),
-    boilerplate: JSON.stringify({
-      javascript: 'function findMax(arr) {\n    // Your code here\n}',
-      python: 'def find_max(arr):\n    # Your code here\n    pass'
-    }),
-    language: 'javascript,python'
-  },
-
-  // Palindrome Check - Hard
-  {
-    id: 'code_palindrome_001',
-    type: 'coding',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'algorithms',
-    difficulty: 'hard',
-    question: 'Write a function that checks if a string is a palindrome (reads the same forwards and backwards).',
-    correctAnswer: JSON.stringify({
-      javascript: 'function isPalindrome(str) {\n    const cleaned = str.toLowerCase().replace(/[^a-z0-9]/g, "");\n    let left = 0;\n    let right = cleaned.length - 1;\n    while (left < right) {\n        if (cleaned[left] !== cleaned[right]) {\n            return false;\n        }\n        left++;\n        right--;\n    }\n    return true;\n}',
-      python: 'def is_palindrome(s):\n    cleaned = "".join(c.lower() for c in s if c.isalnum())\n    left, right = 0, len(cleaned) - 1\n    while left < right:\n        if cleaned[left] != cleaned[right]:\n            return False\n        left += 1\n        right -= 1\n    return True'
-    }),
-    explanation: 'Check if string is palindrome by comparing characters from both ends, ignoring case and non-alphanumeric characters.',
-    points: 15,
+    category: 'arrays',
+    hints: ['Use a hash map for O(n) solution', 'Store complement values', 'Check if complement exists'],
+    testCases: [
+      { input: { nums: [2, 7, 11, 15], target: 9 }, expected: [0, 1], description: 'Basic two sum' },
+      { input: { nums: [3, 2, 4], target: 6 }, expected: [1, 2], description: 'Different indices' },
+      { input: { nums: [3, 3], target: 6 }, expected: [0, 1], description: 'Same numbers' }
+    ],
+    sampleAnswer: 'function solution({nums, target}) { const map = new Map(); for (let i = 0; i < nums.length; i++) { const complement = target - nums[i]; if (map.has(complement)) return [map.get(complement), i]; map.set(nums[i], i); } return []; }',
     timeLimit: 25,
-    tags: ['javascript', 'python', 'strings', 'algorithms'],
-    keywords: ['palindrome', 'string', 'comparison', 'two-pointer'],
-    testCases: JSON.stringify([
-      { input: ['racecar'], expected: true, description: 'Simple palindrome' },
-      { input: ['A man, a plan, a canal: Panama'], expected: true, description: 'Palindrome with spaces and punctuation' },
-      { input: ['race a car'], expected: false, description: 'Not a palindrome' }
-    ]),
-    boilerplate: JSON.stringify({
-      javascript: 'function isPalindrome(str) {\n    // Your code here\n}',
-      python: 'def is_palindrome(s):\n    # Your code here\n    pass'
-    }),
-    language: 'javascript,python'
+    companies: ['Facebook', 'Google', 'Amazon']
   },
-
-  // Fibonacci Sequence - Hard
   {
-    id: 'code_fibonacci_001',
+    id: 'c102',
+    question: 'Valid Parentheses: Check if a string of parentheses is valid.',
     type: 'coding',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'algorithms',
-    difficulty: 'hard',
-    question: 'Write a function that implements the Fibonacci sequence (returns the nth Fibonacci number).',
-    correctAnswer: JSON.stringify({
-      javascript: 'function fibonacci(n) {\n    if (n <= 1) return n;\n    let a = 0, b = 1;\n    for (let i = 2; i <= n; i++) {\n        let temp = a + b;\n        a = b;\n        b = temp;\n    }\n    return b;\n}',
-      python: 'def fibonacci(n):\n    if n <= 1:\n        return n\n    a, b = 0, 1\n    for _ in range(2, n + 1):\n        a, b = b, a + b\n    return b'
-    }),
-    explanation: 'Calculate nth Fibonacci number using iterative approach for efficiency.',
-    points: 20,
+    difficulty: 'medium',
+    category: 'strings',
+    hints: ['Use a stack data structure', 'Match opening and closing brackets', 'Check stack is empty at end'],
+    testCases: [
+      { input: '()', expected: true, description: 'Simple valid' },
+      { input: '()[]{} ', expected: true, description: 'Multiple types' },
+      { input: '(]', expected: false, description: 'Invalid mix' }
+    ],
+    sampleAnswer: 'function solution(s) { const stack = []; const pairs = {")": "(", "}": "{", "]": "["}; for (let char of s) { if (char in pairs) { if (stack.pop() !== pairs[char]) return false; } else { stack.push(char); } } return stack.length === 0; }',
+    timeLimit: 20,
+    companies: ['Microsoft', 'Apple', 'Google']
+  },
+  {
+    id: 'c103',
+    question: 'Palindrome Check: Determine if a string is a palindrome.',
+    type: 'coding',
+    difficulty: 'medium',
+    category: 'strings',
+    hints: ['Compare characters from both ends', 'Consider case sensitivity', 'Handle spaces and punctuation'],
+    testCases: [
+      { input: 'racecar', expected: true, description: 'Simple palindrome' },
+      { input: 'hello', expected: false, description: 'Not a palindrome' },
+      { input: 'A man a plan a canal Panama', expected: true, description: 'Palindrome with spaces' }
+    ],
+    sampleAnswer: 'function solution(s) { const cleaned = s.replace(/[^A-Za-z0-9]/g, "").toLowerCase(); return cleaned === cleaned.split("").reverse().join(""); }',
+    timeLimit: 25,
+    companies: ['Amazon', 'Facebook', 'Netflix']
+  },
+  {
+    id: 'c104',
+    question: 'Binary Search: Implement binary search algorithm.',
+    type: 'coding',
+    difficulty: 'medium',
+    category: 'algorithms',
+    hints: ['Array must be sorted', 'Use two pointers (left, right)', 'Compare with middle element'],
+    testCases: [
+      { input: { arr: [1, 3, 5, 7, 9], target: 5 }, expected: 2, description: 'Target found' },
+      { input: { arr: [1, 3, 5, 7, 9], target: 6 }, expected: -1, description: 'Target not found' },
+      { input: { arr: [2], target: 2 }, expected: 0, description: 'Single element' }
+    ],
+    sampleAnswer: 'function solution({arr, target}) { let left = 0, right = arr.length - 1; while (left <= right) { const mid = Math.floor((left + right) / 2); if (arr[mid] === target) return mid; else if (arr[mid] < target) left = mid + 1; else right = mid - 1; } return -1; }',
     timeLimit: 30,
-    tags: ['javascript', 'python', 'fibonacci', 'math'],
-    keywords: ['fibonacci', 'sequence', 'iteration', 'math'],
-    testCases: JSON.stringify([
-      { input: [0], expected: 0, description: 'Fibonacci of 0' },
-      { input: [1], expected: 1, description: 'Fibonacci of 1' },
-      { input: [6], expected: 8, description: 'Fibonacci of 6' }
-    ]),
-    boilerplate: JSON.stringify({
-      javascript: 'function fibonacci(n) {\n    // Your code here\n}',
-      python: 'def fibonacci(n):\n    # Your code here\n    pass'
-    }),
-    language: 'javascript,python'
+    companies: ['Google', 'Microsoft', 'Apple']
+  },
+  {
+    id: 'c105',
+    question: 'Merge Two Sorted Arrays: Merge two sorted arrays into one.',
+    type: 'coding',
+    difficulty: 'medium',
+    category: 'arrays',
+    hints: ['Use two pointers', 'Compare elements from both arrays', 'Handle remaining elements'],
+    testCases: [
+      { input: { arr1: [1, 3, 5], arr2: [2, 4, 6] }, expected: [1, 2, 3, 4, 5, 6], description: 'Same length' },
+      { input: { arr1: [1, 5, 9], arr2: [2, 3, 4, 6, 7] }, expected: [1, 2, 3, 4, 5, 6, 7, 9], description: 'Different lengths' },
+      { input: { arr1: [], arr2: [1, 2, 3] }, expected: [1, 2, 3], description: 'Empty first array' }
+    ],
+    sampleAnswer: 'function solution({arr1, arr2}) { let result = [], i = 0, j = 0; while (i < arr1.length && j < arr2.length) { if (arr1[i] <= arr2[j]) result.push(arr1[i++]); else result.push(arr2[j++]); } return result.concat(arr1.slice(i)).concat(arr2.slice(j)); }',
+    timeLimit: 30,
+    companies: ['Amazon', 'Google', 'Facebook']
   },
 
-  // Two Sum Problem - Extreme
+  // ==================== CODING QUESTIONS - HARD ====================
   {
-    id: 'code_twosum_001',
+    id: 'c201',
+    question: 'Longest Substring Without Repeating Characters: Find the length of the longest substring without repeating characters.',
     type: 'coding',
-    category: 'domain_specific',
-    domain: 'technical',
-    subCategory: 'data-structures',
-    difficulty: 'extreme',
-    question: 'Write a function that finds the two numbers in an array that add up to a target sum.',
-    correctAnswer: JSON.stringify({
-      javascript: 'function twoSum(nums, target) {\n    const map = new Map();\n    for (let i = 0; i < nums.length; i++) {\n        const complement = target - nums[i];\n        if (map.has(complement)) {\n            return [map.get(complement), i];\n        }\n        map.set(nums[i], i);\n    }\n    return [];\n}',
-      python: 'def two_sum(nums, target):\n    num_map = {}\n    for i, num in enumerate(nums):\n        complement = target - num\n        if complement in num_map:\n            return [num_map[complement], i]\n        num_map[num] = i\n    return []'
-    }),
-    explanation: 'Find two numbers that sum to target using hash map for O(n) time complexity.',
-    points: 25,
-    timeLimit: 35,
-    tags: ['javascript', 'python', 'hash-map', 'algorithms'],
-    keywords: ['two-sum', 'hash-map', 'target', 'complement'],
-    testCases: JSON.stringify([
-      { input: [[2, 7, 11, 15], 9], expected: [0, 1], description: 'Two sum found at beginning' },
-      { input: [[3, 2, 4], 6], expected: [1, 2], description: 'Two sum found at middle/end' },
-      { input: [[3, 3], 6], expected: [0, 1], description: 'Two sum with duplicates' }
-    ]),
-    boilerplate: JSON.stringify({
-      javascript: 'function twoSum(nums, target) {\n    // Your code here\n}',
-      python: 'def two_sum(nums, target):\n    # Your code here\n    pass'
-    }),
-    language: 'javascript,python'
+    difficulty: 'hard',
+    category: 'strings',
+    hints: ['Use sliding window technique', 'Keep track of character positions', 'Update window when duplicate found'],
+    testCases: [
+      { input: 'abcabcbb', expected: 3, description: 'abc' },
+      { input: 'bbbbb', expected: 1, description: 'Single character' },
+      { input: 'pwwkew', expected: 3, description: 'wke' }
+    ],
+    sampleAnswer: 'function solution(s) { let maxLength = 0, start = 0; const charIndex = new Map(); for (let end = 0; end < s.length; end++) { if (charIndex.has(s[end])) { start = Math.max(charIndex.get(s[end]) + 1, start); } charIndex.set(s[end], end); maxLength = Math.max(maxLength, end - start + 1); } return maxLength; }',
+    timeLimit: 45,
+    companies: ['Facebook', 'Google', 'Amazon']
+  },
+  {
+    id: 'c202',
+    question: 'Median of Two Sorted Arrays: Find the median of two sorted arrays.',
+    type: 'coding',
+    difficulty: 'hard',
+    category: 'algorithms',
+    hints: ['Use binary search', 'Find the partition point', 'Ensure left side <= right side'],
+    testCases: [
+      { input: { nums1: [1, 3], nums2: [2] }, expected: 2.0, description: 'Odd total length' },
+      { input: { nums1: [1, 2], nums2: [3, 4] }, expected: 2.5, description: 'Even total length' },
+      { input: { nums1: [0, 0], nums2: [0, 0] }, expected: 0.0, description: 'All zeros' }
+    ],
+    sampleAnswer: 'function solution({nums1, nums2}) { if (nums1.length > nums2.length) return solution({nums1: nums2, nums2: nums1}); const m = nums1.length, n = nums2.length; let left = 0, right = m; while (left <= right) { const partitionX = Math.floor((left + right) / 2); const partitionY = Math.floor((m + n + 1) / 2) - partitionX; const maxLeftX = partitionX === 0 ? -Infinity : nums1[partitionX - 1]; const minRightX = partitionX === m ? Infinity : nums1[partitionX]; const maxLeftY = partitionY === 0 ? -Infinity : nums2[partitionY - 1]; const minRightY = partitionY === n ? Infinity : nums2[partitionY]; if (maxLeftX <= minRightY && maxLeftY <= minRightX) { if ((m + n) % 2 === 0) return (Math.max(maxLeftX, maxLeftY) + Math.min(minRightX, minRightY)) / 2; else return Math.max(maxLeftX, maxLeftY); } else if (maxLeftX > minRightY) right = partitionX - 1; else left = partitionX + 1; } }',
+    timeLimit: 60,
+    companies: ['Google', 'Microsoft', 'Apple']
+  },
+  {
+    id: 'c203',
+    question: 'Trapping Rain Water: Calculate how much water can be trapped after raining.',
+    type: 'coding',
+    difficulty: 'hard',
+    category: 'algorithms',
+    hints: ['Use two pointers approach', 'Track max height on left and right', 'Water level = min(leftMax, rightMax)'],
+    testCases: [
+      { input: [0, 1, 0, 2, 1, 0, 1, 3, 2, 1, 2, 1], expected: 6, description: 'Complex elevation' },
+      { input: [4, 2, 0, 3, 2, 5], expected: 9, description: 'Another example' },
+      { input: [3, 0, 2, 0, 4], expected: 7, description: 'Simple case' }
+    ],
+    sampleAnswer: 'function solution(height) { let left = 0, right = height.length - 1; let leftMax = 0, rightMax = 0; let water = 0; while (left < right) { if (height[left] < height[right]) { if (height[left] >= leftMax) leftMax = height[left]; else water += leftMax - height[left]; left++; } else { if (height[right] >= rightMax) rightMax = height[right]; else water += rightMax - height[right]; right--; } } return water; }',
+    timeLimit: 50,
+    companies: ['Amazon', 'Facebook', 'Google']
+  },
+
+  // ==================== BEHAVIORAL QUESTIONS ====================
+  {
+    id: 'b001',
+    question: 'Tell me about a time when you had to work with a difficult team member. How did you handle it?',
+    type: 'behavioral',
+    difficulty: 'medium',
+    category: 'teamwork',
+    hints: ['Use the STAR method (Situation, Task, Action, Result)', 'Focus on your actions and communication', 'Show growth and learning'],
+    sampleAnswer: 'I once worked with a colleague who was consistently missing deadlines, affecting our sprint goals. I approached them privately to understand their challenges, discovered they were overwhelmed with personal issues, and offered to help redistribute some tasks. I also established regular check-ins to provide support. This improved our team\'s delivery by 40% and strengthened our working relationship.',
+    timeLimit: 5,
+    companies: ['Google', 'Microsoft', 'Amazon', 'Facebook']
+  },
+  {
+    id: 'b002',
+    question: 'Describe a situation where you had to learn a new technology quickly. What was your approach?',
+    type: 'behavioral',
+    difficulty: 'medium',
+    category: 'learning',
+    hints: ['Show learning methodology', 'Mention resources used', 'Quantify the outcome'],
+    sampleAnswer: 'When our team needed to migrate to React, I had two weeks to become proficient. I created a structured learning plan: spent mornings on documentation and tutorials, afternoons building small projects, and evenings reviewing best practices. I also joined React communities and found a mentor. This approach helped me successfully lead the migration, reducing our app\'s load time by 30%.',
+    timeLimit: 5,
+    companies: ['Netflix', 'Airbnb', 'Uber', 'Twitter']
+  },
+  {
+    id: 'b003',
+    question: 'Tell me about a time when you disagreed with your manager. How did you handle it?',
+    type: 'behavioral',
+    difficulty: 'medium',
+    category: 'conflict_resolution',
+    hints: ['Show respect for authority', 'Focus on facts and data', 'Demonstrate professional communication'],
+    sampleAnswer: 'My manager wanted to rush a feature release without proper testing. I respectfully requested a meeting and presented data showing potential risks and customer impact. I proposed a compromise: a limited beta release to gather feedback first. This approach caught three critical bugs, and the manager appreciated my initiative. We established a new process for balancing speed with quality.',
+    timeLimit: 5,
+    companies: ['Apple', 'Google', 'Microsoft', 'Amazon']
+  },
+  {
+    id: 'b004',
+    question: 'Describe a project where you took initiative beyond your assigned responsibilities.',
+    type: 'behavioral',
+    difficulty: 'medium',
+    category: 'leadership',
+    hints: ['Show proactive thinking', 'Explain the impact', 'Demonstrate ownership'],
+    sampleAnswer: 'While working on a client project, I noticed our deployment process was causing frequent downtime. Although it wasn\'t my responsibility, I researched CI/CD solutions and proposed implementing automated deployments. I created a proof of concept during my free time, presented it to the team, and volunteered to lead implementation. This reduced deployment time by 80% and eliminated weekend outages.',
+    timeLimit: 5,
+    companies: ['Facebook', 'LinkedIn', 'Spotify', 'Slack']
+  },
+  {
+    id: 'b005',
+    question: 'Tell me about a time when you failed at something. How did you handle it?',
+    type: 'behavioral',
+    difficulty: 'medium',
+    category: 'failure_learning',
+    hints: ['Be honest about the failure', 'Focus on lessons learned', 'Show how you applied learning'],
+    sampleAnswer: 'I once underestimated the complexity of a database migration, causing a production outage. I immediately took ownership, communicated transparently with stakeholders, and worked with the team to restore service within 2 hours. I then conducted a thorough post-mortem, implemented better testing procedures, and created a rollback plan. This experience taught me to always have contingency plans and improved our team\'s deployment practices.',
+    timeLimit: 5,
+    companies: ['Amazon', 'Netflix', 'Uber', 'Airbnb']
+  },
+
+  // ==================== SYSTEM DESIGN QUESTIONS ====================
+  {
+    id: 's001',
+    question: 'Design a URL shortener like bit.ly. What are the key components and how would you scale it?',
+    type: 'system_design',
+    difficulty: 'hard',
+    category: 'web_systems',
+    hints: ['Consider database design', 'Think about caching', 'Plan for high traffic', 'URL encoding strategies'],
+    sampleAnswer: 'Key components: Load balancer, Web servers, Database (URL mappings), Cache (Redis), Analytics service. Use base62 encoding for short URLs, implement rate limiting, and use CDN for global distribution. For scaling: database sharding, read replicas, distributed caching, and microservices architecture.',
+    timeLimit: 45,
+    companies: ['Google', 'Facebook', 'Amazon', 'Twitter']
+  },
+  {
+    id: 's002',
+    question: 'How would you design a chat application like WhatsApp? Focus on real-time messaging.',
+    type: 'system_design',
+    difficulty: 'hard',
+    category: 'real_time_systems',
+    hints: ['WebSocket connections', 'Message queuing', 'Database schema', 'Push notifications'],
+    sampleAnswer: 'Architecture: WebSocket servers for real-time communication, message queues (Kafka/RabbitMQ), NoSQL database for message storage, Redis for session management. Implement message status tracking (sent/delivered/read), end-to-end encryption, and push notification services for offline users. Use horizontal scaling and load balancing for high availability.',
+    timeLimit: 45,
+    companies: ['WhatsApp', 'Facebook', 'Telegram', 'Signal']
+  },
+  {
+    id: 's003',
+    question: 'Design a distributed cache system like Redis. How would you handle consistency and availability?',
+    type: 'system_design',
+    difficulty: 'hard',
+    category: 'distributed_systems',
+    hints: ['Consistent hashing', 'Replication strategies', 'CAP theorem', 'Failure handling'],
+    sampleAnswer: 'Use consistent hashing for data distribution, implement master-slave replication for high availability, use heartbeat mechanisms for failure detection. For consistency: eventual consistency with conflict resolution, write-through/write-behind caching strategies. Include monitoring, metrics collection, and automatic failover mechanisms.',
+    timeLimit: 50,
+    companies: ['Redis Labs', 'Amazon', 'Google', 'Microsoft']
+  },
+  {
+    id: 's004',
+    question: 'Design a social media feed system like Facebook\'s news feed. How would you personalize and scale it?',
+    type: 'system_design',
+    difficulty: 'hard',
+    category: 'social_systems',
+    hints: ['Feed generation strategies', 'Content ranking algorithms', 'Caching strategies', 'Real-time updates'],
+    sampleAnswer: 'Hybrid approach: push model for active users, pull model for passive users. Use ML algorithms for content ranking, implement timeline generation service, Redis for feed caching. For scaling: content delivery networks, database sharding, and microservices. Include real-time updates via WebSockets and notification services.',
+    timeLimit: 50,
+    companies: ['Facebook', 'Twitter', 'Instagram', 'LinkedIn']
+  },
+  {
+    id: 's005',
+    question: 'Design a video streaming platform like YouTube. How would you handle video processing and delivery?',
+    type: 'system_design',
+    difficulty: 'hard',
+    category: 'media_systems',
+    hints: ['Video encoding/transcoding', 'CDN usage', 'Storage systems', 'Recommendation engine'],
+    sampleAnswer: 'Components: Upload service, transcoding pipeline, CDN for video delivery, metadata database, recommendation engine. Use cloud storage for video files, implement multiple quality formats, geographic content distribution. For scaling: horizontal scaling of services, caching strategies, and load balancing. Include analytics and monitoring systems.',
+    timeLimit: 50,
+    companies: ['YouTube', 'Netflix', 'Twitch', 'Vimeo']
   }
 ];
 
-// Helper function to get questions by category and tags
-export function getQuestionsByCategory(
-  category: 'general_aptitude' | 'english' | 'domain_specific',
-  tags: string[] = [],
-  difficulty: ('easy' | 'medium' | 'hard' | 'extreme')[] = ['easy', 'medium', 'hard', 'extreme'],
-  limit: number = 10
-): QuestionBankItem[] {
-  return questionBank
-    .filter(q => q.category === category)
-    .filter(q => {
-      if (tags.length === 0) return true;
-      const questionTags = Array.isArray(q.tags) ? q.tags : (q.tags ? [q.tags] : []);
-      return Array.isArray(tags) && tags.some(tag => questionTags.includes(tag));
-    })
-    .filter(q => difficulty.includes(q.difficulty))
-    .sort(() => Math.random() - 0.5) // Shuffle
-    .slice(0, limit);
+// Helper functions for question selection
+export function getQuestionsByType(type: 'coding' | 'behavioral' | 'system_design'): InterviewQuestion[] {
+  return QUESTION_BANK.filter(q => q.type === type);
 }
 
-// Function to generate a balanced test based on job profile
-export function generateTestQuestions(
-  jobProfileTags: string[],
-  totalQuestions: number = 30,
-  includeExtreme: boolean = true
-): QuestionBankItem[] {
-  const questions: QuestionBankItem[] = [];
-  
-  // Calculate distribution
-  const aptitudeCount = Math.floor(totalQuestions * 0.5); // 50%
-  const englishCount = Math.floor(totalQuestions * 0.2); // 20%
-  const domainCount = totalQuestions - aptitudeCount - englishCount; // 30%
-  
-  // Get aptitude questions (mix of difficulties)
-  const aptitudeQuestions = getQuestionsByCategory(
-    'general_aptitude',
-    [],
-    includeExtreme ? ['easy', 'medium', 'hard', 'extreme'] : ['easy', 'medium', 'hard'],
-    aptitudeCount
-  );
-  
-  // Get English questions
-  const englishQuestions = getQuestionsByCategory(
-    'english',
-    [],
-    includeExtreme ? ['easy', 'medium', 'hard', 'extreme'] : ['easy', 'medium', 'hard'],
-    englishCount
-  );
-  
-  // Get domain-specific questions based on job profile
-  const domainQuestions = getQuestionsByCategory(
-    'domain_specific',
-    jobProfileTags,
-    includeExtreme ? ['medium', 'hard', 'extreme'] : ['medium', 'hard'],
-    domainCount
-  );
-  
-  questions.push(...aptitudeQuestions, ...englishQuestions, ...domainQuestions);
-  
-  // Shuffle final questions
-  return questions.sort(() => Math.random() - 0.5);
+export function getQuestionsByDifficulty(difficulty: 'easy' | 'medium' | 'hard'): InterviewQuestion[] {
+  return QUESTION_BANK.filter(q => q.difficulty === difficulty);
 }
 
-// Function to get all available tags
-export function getAvailableTags(): string[] {
-  const tags = new Set<string>();
-  questionBank.forEach(q => q.tags.forEach(tag => tags.add(tag)));
-  return Array.from(tags).sort();
+export function getQuestionsByCategory(category: string): InterviewQuestion[] {
+  return QUESTION_BANK.filter(q => q.category === category);
 }
 
-// Function to get questions by specific domains
-export function getQuestionsByDomain(domain: string, limit: number = 10): QuestionBankItem[] {
-  return questionBank
-    .filter(q => q.domain === domain || q.tags.includes(domain))
-    .sort(() => Math.random() - 0.5)
-    .slice(0, limit);
+export function getQuestionsByCompany(company: string): InterviewQuestion[] {
+  return QUESTION_BANK.filter(q => q.companies?.includes(company));
+}
+
+export function getRandomQuestions(
+  type: 'coding' | 'behavioral' | 'system_design',
+  difficulty: 'easy' | 'medium' | 'hard',
+  count: number
+): InterviewQuestion[] {
+  const filtered = QUESTION_BANK.filter(q => q.type === type && q.difficulty === difficulty);
+  const shuffled = filtered.sort(() => 0.5 - Math.random());
+  return shuffled.slice(0, count);
+}
+
+export function getQuestionById(id: string): InterviewQuestion | undefined {
+  return QUESTION_BANK.find(q => q.id === id);
 }

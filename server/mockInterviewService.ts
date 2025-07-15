@@ -1,6 +1,8 @@
 import { storage } from "./storage";
 import { groqService } from "./groqService";
+import { pistonService } from "./pistonService";
 import { MockInterview, MockInterviewQuestion, InsertMockInterview, InsertMockInterviewQuestion } from "@shared/schema";
+import { QUESTION_BANK, getRandomQuestions, getQuestionsByType } from "./questionBank";
 
 interface InterviewQuestion {
   question: string;
@@ -25,135 +27,25 @@ interface InterviewConfiguration {
 }
 
 export class MockInterviewService {
-  private readonly technicalQuestions = {
-    easy: [
-      {
-        question: "Write a function to find the maximum number in an array",
-        type: 'coding' as const,
-        difficulty: 'easy' as const,
-        hints: ["Consider using a loop", "Initialize with the first element", "Compare each element"],
-        testCases: [
-          { input: [1, 5, 3, 9, 2], expected: 9, description: "Basic array" },
-          { input: [-1, -5, -3], expected: -1, description: "All negative numbers" },
-          { input: [42], expected: 42, description: "Single element" }
-        ],
-        sampleAnswer: "function findMax(arr) { return Math.max(...arr); }"
-      },
-      {
-        question: "Implement a function to reverse a string",
-        type: 'coding' as const,
-        difficulty: 'easy' as const,
-        hints: ["Use built-in methods", "Consider split, reverse, join", "Loop from end to start"],
-        testCases: [
-          { input: "hello", expected: "olleh", description: "Basic string" },
-          { input: "a", expected: "a", description: "Single character" },
-          { input: "", expected: "", description: "Empty string" }
-        ],
-        sampleAnswer: "function reverseString(str) { return str.split('').reverse().join(''); }"
-      }
-    ],
-    medium: [
-      {
-        question: "Implement a function to check if a string is a palindrome",
-        type: 'coding' as const,
-        difficulty: 'medium' as const,
-        hints: ["Compare characters from both ends", "Consider case sensitivity", "Handle spaces and punctuation"],
-        testCases: [
-          { input: "racecar", expected: true, description: "Simple palindrome" },
-          { input: "hello", expected: false, description: "Not a palindrome" },
-          { input: "A man a plan a canal Panama", expected: true, description: "Palindrome with spaces" }
-        ],
-        sampleAnswer: "function isPalindrome(str) { const cleaned = str.replace(/[^A-Za-z0-9]/g, '').toLowerCase(); return cleaned === cleaned.split('').reverse().join(''); }"
-      },
-      {
-        question: "Find the two numbers in an array that sum to a target value",
-        type: 'coding' as const,
-        difficulty: 'medium' as const,
-        hints: ["Use a hash map for O(n) solution", "Store complement values", "Check if complement exists"],
-        testCases: [
-          { input: { arr: [2, 7, 11, 15], target: 9 }, expected: [0, 1], description: "Basic two sum" },
-          { input: { arr: [3, 2, 4], target: 6 }, expected: [1, 2], description: "Different indices" },
-          { input: { arr: [3, 3], target: 6 }, expected: [0, 1], description: "Same numbers" }
-        ],
-        sampleAnswer: "function twoSum(nums, target) { const map = new Map(); for (let i = 0; i < nums.length; i++) { const complement = target - nums[i]; if (map.has(complement)) return [map.get(complement), i]; map.set(nums[i], i); } return []; }"
-      }
-    ],
-    hard: [
-      {
-        question: "Implement a function to find the longest substring without repeating characters",
-        type: 'coding' as const,
-        difficulty: 'hard' as const,
-        hints: ["Use sliding window technique", "Keep track of character positions", "Update window when duplicate found"],
-        testCases: [
-          { input: "abcabcbb", expected: 3, description: "abc" },
-          { input: "bbbbb", expected: 1, description: "Single character" },
-          { input: "pwwkew", expected: 3, description: "wke" }
-        ],
-        sampleAnswer: "function lengthOfLongestSubstring(s) { let maxLength = 0; let start = 0; const charIndex = new Map(); for (let end = 0; end < s.length; end++) { if (charIndex.has(s[end])) { start = Math.max(charIndex.get(s[end]) + 1, start); } charIndex.set(s[end], end); maxLength = Math.max(maxLength, end - start + 1); } return maxLength; }"
-      }
-    ]
-  };
-
-  private readonly behavioralQuestions = [
-    {
-      question: "Tell me about a time when you had to work with a difficult team member. How did you handle it?",
-      type: 'behavioral' as const,
-      difficulty: 'medium' as const,
-      hints: ["Use the STAR method", "Focus on your actions", "Show growth and learning"],
-      sampleAnswer: "I once worked with a colleague who was consistently missing deadlines. I approached them privately to understand their challenges, offered to help with workload distribution, and we established regular check-ins. This improved our team's delivery by 40%."
-    },
-    {
-      question: "Describe a situation where you had to learn a new technology quickly. What was your approach?",
-      type: 'behavioral' as const,
-      difficulty: 'medium' as const,
-      hints: ["Show learning methodology", "Mention resources used", "Quantify the outcome"],
-      sampleAnswer: "When our team needed to migrate to React, I dedicated 2 weeks to intensive learning through documentation, tutorials, and building a small project. I then led the migration of our main application, reducing load time by 30%."
-    }
-  ];
-
-  private readonly systemDesignQuestions = [
-    {
-      question: "Design a URL shortener like bit.ly. What are the key components and how would you scale it?",
-      type: 'system_design' as const,
-      difficulty: 'hard' as const,
-      hints: ["Consider database design", "Think about caching", "Plan for high traffic", "URL encoding strategies"],
-      sampleAnswer: "Key components: Load balancer, Web servers, Database (URLs mapping), Cache (Redis), Analytics service. Use base62 encoding for short URLs, implement rate limiting, and use CDN for global distribution."
-    },
-    {
-      question: "How would you design a chat application like WhatsApp? Focus on real-time messaging.",
-      type: 'system_design' as const,
-      difficulty: 'hard' as const,
-      hints: ["WebSocket connections", "Message queuing", "Database schema", "Push notifications"],
-      sampleAnswer: "Use WebSocket for real-time communication, message queues (Kafka/RabbitMQ), NoSQL for message storage, implement message status tracking, and use push notification services for offline users."
-    }
-  ];
-
   async generateInterviewQuestions(config: InterviewConfiguration): Promise<InterviewQuestion[]> {
     const questions: InterviewQuestion[] = [];
     
-    if (config.interviewType === 'technical') {
-      // Select questions based on difficulty
-      const questionPool = this.technicalQuestions[config.difficulty] || this.technicalQuestions.medium;
-      
-      // Add some variety by including questions from adjacent difficulty levels
-      const allQuestions = [
-        ...questionPool,
-        ...(config.difficulty !== 'easy' ? this.technicalQuestions.easy.slice(0, 1) : []),
-        ...(config.difficulty !== 'hard' ? this.technicalQuestions.hard.slice(0, 1) : [])
-      ];
-      
-      // Randomly select questions
-      const shuffled = allQuestions.sort(() => 0.5 - Math.random());
-      questions.push(...shuffled.slice(0, config.totalQuestions));
-      
-    } else if (config.interviewType === 'behavioral') {
-      const shuffled = this.behavioralQuestions.sort(() => 0.5 - Math.random());
-      questions.push(...shuffled.slice(0, config.totalQuestions));
-      
-    } else if (config.interviewType === 'system_design') {
-      const shuffled = this.systemDesignQuestions.sort(() => 0.5 - Math.random());
-      questions.push(...shuffled.slice(0, config.totalQuestions));
-    }
+    // Get questions from the comprehensive question bank
+    const selectedQuestions = getRandomQuestions(
+      config.interviewType === 'technical' ? 'coding' : config.interviewType,
+      config.difficulty,
+      config.totalQuestions
+    );
+    
+    // Convert to the expected format
+    questions.push(...selectedQuestions.map(q => ({
+      question: q.question,
+      type: q.type,
+      difficulty: q.difficulty,
+      hints: q.hints,
+      testCases: q.testCases,
+      sampleAnswer: q.sampleAnswer
+    })));
 
     // If we need more questions, generate them with AI
     if (questions.length < config.totalQuestions) {

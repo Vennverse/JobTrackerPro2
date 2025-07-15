@@ -3,6 +3,7 @@ import { mockInterviewService } from './mockInterviewService';
 import { storage } from './storage';
 import { isAuthenticated } from './auth';
 import { paymentService } from './paymentService';
+import { pistonService } from './pistonService';
 import { z } from 'zod';
 
 const router = Router();
@@ -22,6 +23,16 @@ const submitAnswerSchema = z.object({
   answer: z.string(),
   code: z.string().optional(),
   timeSpent: z.number().optional()
+});
+
+const executeCodeSchema = z.object({
+  code: z.string(),
+  language: z.string(),
+  testCases: z.array(z.object({
+    input: z.any(),
+    expected: z.any(),
+    description: z.string()
+  })).optional()
 });
 
 // Get user's interview stats
@@ -285,6 +296,44 @@ router.post('/payment/success', isAuthenticated, async (req: any, res) => {
   } catch (error) {
     console.error('Error verifying payment:', error);
     res.status(500).json({ error: 'Failed to verify payment' });
+  }
+});
+
+// Execute code with Piston API
+router.post('/execute-code', isAuthenticated, async (req: any, res) => {
+  try {
+    const { code, language, testCases } = executeCodeSchema.parse(req.body);
+    
+    // Execute code using Piston API
+    const result = await pistonService.executeCode(code, language, testCases || []);
+    
+    res.json(result);
+  } catch (error) {
+    console.error('Error executing code:', error);
+    res.status(500).json({ error: 'Failed to execute code' });
+  }
+});
+
+// Get available programming languages
+router.get('/languages', async (req, res) => {
+  try {
+    const languages = await pistonService.getAvailableLanguages();
+    res.json(languages);
+  } catch (error) {
+    console.error('Error fetching languages:', error);
+    res.status(500).json({ error: 'Failed to fetch available languages' });
+  }
+});
+
+// Get boilerplate code for a language
+router.get('/boilerplate/:language', async (req, res) => {
+  try {
+    const { language } = req.params;
+    const boilerplate = pistonService.getBoilerplate(language);
+    res.json({ boilerplate });
+  } catch (error) {
+    console.error('Error getting boilerplate:', error);
+    res.status(500).json({ error: 'Failed to get boilerplate code' });
   }
 });
 

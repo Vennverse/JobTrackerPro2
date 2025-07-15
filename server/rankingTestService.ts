@@ -17,14 +17,14 @@ import {
   type WeeklyRanking,
   type MonthlyRanking
 } from "@shared/schema";
-import { generateTestQuestions, getQuestionsByDomain } from "./questionBank";
+import { QUESTION_BANK, getQuestionsByCategory } from "./questionBank";
 import { testService } from "./testService";
 
 class RankingTestService {
   // Create a new ranking test for a user
   async createRankingTest(userId: string, category: string, domain: string, difficultyLevel: string): Promise<RankingTest> {
     // Generate questions using the existing question bank
-    const questions = generateTestQuestions(category, domain, difficultyLevel, 30);
+    const questions = getQuestionsByCategory(category).slice(0, 30);
     
     const testData: InsertRankingTest = {
       userId,

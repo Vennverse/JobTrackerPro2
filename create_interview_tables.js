@@ -18,12 +18,16 @@ async function createInterviewTables() {
         interview_type VARCHAR(50) NOT NULL,
         language VARCHAR(50) DEFAULT 'javascript',
         total_questions INTEGER NOT NULL,
-        current_question INTEGER DEFAULT 0,
-        status VARCHAR(50) DEFAULT 'in_progress',
+        current_question INTEGER DEFAULT 1,
+        time_remaining INTEGER DEFAULT 3600,
+        status VARCHAR(50) DEFAULT 'active',
         score INTEGER,
         feedback TEXT,
+        is_paid BOOLEAN DEFAULT false,
+        payment_id VARCHAR(255),
+        start_time TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        end_time TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-        completed_at TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
     `;
@@ -57,8 +61,10 @@ async function createInterviewTables() {
         completed_interviews INTEGER DEFAULT 0,
         average_score DECIMAL(5,2) DEFAULT 0,
         free_interviews_used INTEGER DEFAULT 0,
+        paid_interviews INTEGER DEFAULT 0,
         best_score INTEGER DEFAULT 0,
         total_time_spent INTEGER DEFAULT 0,
+        last_interview_date TIMESTAMP,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
         updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
       )
