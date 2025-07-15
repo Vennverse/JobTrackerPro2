@@ -180,6 +180,140 @@ export default function Landing() {
         </div>
       </section>
 
+      {/* Platform Showcase */}
+      <section className="py-20 bg-white dark:bg-gray-900">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <motion.div
+            className="text-center mb-16"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+          >
+            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+              See AutoJobr in Action
+            </h2>
+            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
+              Explore how our AI-powered platform transforms your job search experience with intelligent tools and beautiful interfaces.
+            </p>
+          </motion.div>
+
+          <div className="grid lg:grid-cols-3 gap-8">
+            {/* Dashboard Preview */}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              whileInView={{ opacity: 1, y: 0 }}
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="lg:col-span-2"
+            >
+              <Card className="overflow-hidden border-0 shadow-xl bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+                <CardHeader>
+                  <div className="flex items-center gap-3">
+                    <div className="w-10 h-10 bg-gradient-to-r from-blue-600 to-indigo-600 rounded-lg flex items-center justify-center">
+                      <BarChart3 className="w-5 h-5 text-white" />
+                    </div>
+                    <div>
+                      <CardTitle className="text-xl">Smart Dashboard</CardTitle>
+                      <CardDescription>Your job search progress at a glance</CardDescription>
+                    </div>
+                  </div>
+                </CardHeader>
+                <CardContent className="p-0">
+                  <div className="aspect-[4/3] bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
+                    <img 
+                      src="/src/assets/platform-dashboard.svg" 
+                      alt="AutoJobr Dashboard Preview" 
+                      className="w-full h-full object-cover"
+                    />
+                  </div>
+                </CardContent>
+              </Card>
+            </motion.div>
+
+            {/* Feature Cards */}
+            <div className="space-y-6">
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.2 }}
+              >
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-green-600 to-emerald-600 rounded-lg flex items-center justify-center">
+                        <FileText className="w-4 h-4 text-white" />
+                      </div>
+                      <CardTitle className="text-lg">Resume Analysis</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="aspect-[4/3] bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
+                      <img 
+                        src="/src/assets/resume-analysis.svg" 
+                        alt="AI Resume Analysis" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
+              <motion.div
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: 0.3 }}
+              >
+                <Card className="border-0 shadow-lg bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+                  <CardHeader>
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 bg-gradient-to-r from-purple-600 to-pink-600 rounded-lg flex items-center justify-center">
+                        <Target className="w-4 h-4 text-white" />
+                      </div>
+                      <CardTitle className="text-lg">Job Matching</CardTitle>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="p-0">
+                    <div className="aspect-[4/3] bg-gray-50 dark:bg-gray-800 rounded-lg overflow-hidden">
+                      <img 
+                        src="/src/assets/job-matching.svg" 
+                        alt="AI Job Matching" 
+                        className="w-full h-full object-cover"
+                      />
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+            </div>
+          </div>
+
+          {/* Stats Section */}
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ delay: 0.4 }}
+            className="mt-20"
+          >
+            <div className="grid md:grid-cols-3 gap-8">
+              <div className="text-center">
+                <div className="text-4xl font-bold text-blue-600 mb-2">10x</div>
+                <div className="text-gray-600 dark:text-gray-300">Faster Job Applications</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-green-600 mb-2">94%</div>
+                <div className="text-gray-600 dark:text-gray-300">Average Match Score</div>
+              </div>
+              <div className="text-center">
+                <div className="text-4xl font-bold text-purple-600 mb-2">500K+</div>
+                <div className="text-gray-600 dark:text-gray-300">Job Seekers Helped</div>
+              </div>
+            </div>
+          </motion.div>
+        </div>
+      </section>
+
       {/* Feature Highlights */}
       <section id="features" className="py-20 bg-white/50 dark:bg-gray-800/50">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
