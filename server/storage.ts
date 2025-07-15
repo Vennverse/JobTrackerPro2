@@ -1368,7 +1368,23 @@ export class DatabaseStorage implements IStorage {
   // User interview stats
   async getUserInterviewStats(userId: string): Promise<UserInterviewStats | undefined> {
     return await handleDbOperation(async () => {
-      const [stats] = await db.select().from(userInterviewStats).where(eq(userInterviewStats.userId, userId));
+      let [stats] = await db.select().from(userInterviewStats).where(eq(userInterviewStats.userId, userId));
+      
+      // If no stats exist, create default stats
+      if (!stats) {
+        const defaultStats = {
+          userId,
+          totalInterviews: 0,
+          completedInterviews: 0,
+          averageScore: 0,
+          freeInterviewsUsed: 0,
+          bestScore: 0,
+          totalTimeSpent: 0
+        };
+        
+        [stats] = await db.insert(userInterviewStats).values(defaultStats).returning();
+      }
+      
       return stats;
     }, undefined);
   }
