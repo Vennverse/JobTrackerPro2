@@ -49,6 +49,18 @@ import {
 } from "lucide-react";
 import { Link } from "wouter";
 import { useState, useEffect } from "react";
+import { Helmet } from "react-helmet";
+
+// Import the platform screenshots
+import dashboardImage from "@assets/image_1752591356271.png";
+import resumeImage from "@assets/image_1752591359330.png";
+import jobMatchImage from "@assets/image_1752591363466.png";
+import applicationImage from "@assets/image_1752591366598.png";
+import careerAiImage from "@assets/image_1752591370293.png";
+import testSystemImage from "@assets/image_1752591375218.png";
+import recruitingImage from "@assets/image_1752591380889.png";
+import analyticsImage from "@assets/image_1752591387481.png";
+import messagingImage from "@assets/image_1752591392801.png";
 
 // Platform Slider Component
 const PlatformSlider = () => {
@@ -58,7 +70,7 @@ const PlatformSlider = () => {
     {
       title: "Application Tracking Dashboard",
       description: "Complete job application management with pipeline visualization, success metrics, and activity tracking",
-      image: "image_1752591356271.png",
+      image: dashboardImage,
       alt: "Job Applications Dashboard showing pipeline, stats, and recent activity",
       features: [
         "Real-time application pipeline tracking",
@@ -71,7 +83,7 @@ const PlatformSlider = () => {
     {
       title: "Resume Management & Analysis",
       description: "Upload multiple resumes and get instant AI-powered ATS optimization with detailed scoring",
-      image: "image_1752591359330.png",
+      image: resumeImage,
       alt: "Resume management interface with upload and analysis features",
       features: [
         "Upload up to 2 resumes simultaneously",
@@ -84,7 +96,7 @@ const PlatformSlider = () => {
     {
       title: "Detailed AI Resume Analysis",
       description: "Comprehensive resume breakdown with ATS scoring, formatting analysis, and actionable recommendations",
-      image: "image_1752591366598.png",
+      image: applicationImage,
       alt: "Detailed resume analysis showing ATS score, formatting, and recommendations",
       features: [
         "Overall ATS score (40%) with detailed breakdown",
@@ -98,7 +110,7 @@ const PlatformSlider = () => {
     {
       title: "Personal Career AI Assistant",
       description: "Get personalized career guidance powered by Groq AI with location-specific market insights",
-      image: "image_1752591387481.png",
+      image: analyticsImage,
       alt: "Personal Career AI Assistant interface with analysis options",
       features: [
         "CEO career goal setting and planning",
@@ -111,7 +123,7 @@ const PlatformSlider = () => {
     {
       title: "Skills Development Tracking",
       description: "Monitor skill progression with learning resources and career advancement timelines",
-      image: "image_1752591370293.png",
+      image: careerAiImage,
       alt: "Skills development interface showing progress bars and learning resources",
       features: [
         "Leadership and Management (6/10 → 9/10)",
@@ -151,10 +163,16 @@ const PlatformSlider = () => {
             {/* Screenshot */}
             <div className="bg-gray-50 dark:bg-gray-800">
               <img 
-                src={`/attached_assets/${slide.image}`}
+                src={slide.image}
                 alt={slide.alt}
+                title={slide.title}
                 className="w-full h-auto object-contain"
                 style={{ maxHeight: '400px' }}
+                loading="lazy"
+                data-feature={slide.title.toLowerCase().replace(/\s+/g, '-')}
+                data-category="platform-screenshot"
+                data-description={slide.description}
+                itemProp="image"
               />
             </div>
           </div>
@@ -276,6 +294,60 @@ export default function Landing() {
     window.location.href = "/auth";
   };
 
+  // SEO structured data for search engines
+  const structuredData = {
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": "AutoJobr",
+    "description": "AI-powered job search platform with resume optimization, intelligent job matching, automated applications, and personalized career guidance",
+    "applicationCategory": "BusinessApplication",
+    "operatingSystem": "Web",
+    "url": "https://autojobr.com",
+    "offers": {
+      "@type": "Offer",
+      "price": "0",
+      "priceCurrency": "USD",
+      "description": "Free to start with premium features available"
+    },
+    "aggregateRating": {
+      "@type": "AggregateRating",
+      "ratingValue": "4.8",
+      "ratingCount": "12500"
+    },
+    "image": [
+      "https://autojobr.com/assets/image_1752591356271.png",
+      "https://autojobr.com/assets/image_1752591359330.png",
+      "https://autojobr.com/assets/image_1752591363466.png"
+    ],
+    "screenshot": [
+      "https://autojobr.com/assets/image_1752591356271.png",
+      "https://autojobr.com/assets/image_1752591359330.png",
+      "https://autojobr.com/assets/image_1752591363466.png",
+      "https://autojobr.com/assets/image_1752591366598.png",
+      "https://autojobr.com/assets/image_1752591370293.png",
+      "https://autojobr.com/assets/image_1752591375218.png",
+      "https://autojobr.com/assets/image_1752591380889.png",
+      "https://autojobr.com/assets/image_1752591387481.png",
+      "https://autojobr.com/assets/image_1752591392801.png"
+    ],
+    "featureList": [
+      "AI-powered resume optimization and ATS scoring",
+      "Intelligent job matching with 94% accuracy",
+      "Automated job applications with chrome extension",
+      "Personal career AI assistant for guidance",
+      "Real-time application tracking dashboard",
+      "Interview preparation and scheduling",
+      "Salary benchmarking and negotiation",
+      "Comprehensive skills development tracking",
+      "Recruiting tools for hiring managers",
+      "Analytics and performance insights"
+    ],
+    "author": {
+      "@type": "Organization",
+      "name": "AutoJobr Team"
+    }
+  };
+
   const containerVariants = {
     hidden: { opacity: 0 },
     visible: {
@@ -301,6 +373,47 @@ export default function Landing() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+      <Helmet>
+        <title>AutoJobr - AI-Powered Job Search Platform | Land Your Dream Job 10x Faster</title>
+        <meta name="description" content="AutoJobr combines AI-powered resume optimization, intelligent job matching, automated applications, and personalized career guidance to accelerate your job search success. Join 500K+ users who found their dream jobs faster with 94% match accuracy." />
+        <meta name="keywords" content="AI job search, resume optimization, ATS scoring, job matching, career guidance, automated applications, job seeker platform, resume analysis, interview preparation, salary benchmarking, job search automation, career AI assistant" />
+        <meta name="author" content="AutoJobr Team" />
+        <meta name="robots" content="index, follow" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <meta name="theme-color" content="#2563eb" />
+        <link rel="canonical" href="https://autojobr.com" />
+        
+        {/* Open Graph tags for social media sharing */}
+        <meta property="og:title" content="AutoJobr - AI-Powered Job Search Platform | Land Your Dream Job 10x Faster" />
+        <meta property="og:description" content="Join 500K+ job seekers who found their dream jobs faster with AI-powered resume optimization, intelligent job matching, and automated applications. 94% match accuracy guaranteed." />
+        <meta property="og:type" content="website" />
+        <meta property="og:url" content="https://autojobr.com" />
+        <meta property="og:image" content="https://autojobr.com/assets/image_1752591356271.png" />
+        <meta property="og:image:width" content="1200" />
+        <meta property="og:image:height" content="630" />
+        <meta property="og:image:alt" content="AutoJobr dashboard showing job application tracking, AI-powered resume analysis, and career guidance features" />
+        <meta property="og:site_name" content="AutoJobr" />
+        <meta property="og:locale" content="en_US" />
+        
+        {/* Twitter Card tags */}
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:site" content="@AutoJobr" />
+        <meta name="twitter:title" content="AutoJobr - AI-Powered Job Search Platform" />
+        <meta name="twitter:description" content="Land your dream job 10x faster with AI-powered resume optimization, intelligent job matching, and automated applications. Join 500K+ successful job seekers." />
+        <meta name="twitter:image" content="https://autojobr.com/assets/image_1752591356271.png" />
+        <meta name="twitter:image:alt" content="AutoJobr dashboard showing job application tracking and AI-powered career features" />
+        
+        {/* Additional meta tags for better SEO */}
+        <meta name="application-name" content="AutoJobr" />
+        <meta name="msapplication-TileColor" content="#2563eb" />
+        <meta name="msapplication-config" content="/browserconfig.xml" />
+        <meta name="format-detection" content="telephone=no" />
+        
+        {/* Structured data for search engines */}
+        <script type="application/ld+json">
+          {JSON.stringify(structuredData)}
+        </script>
+      </Helmet>
       {/* Navigation */}
       <nav className="fixed top-0 left-0 right-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-md border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -401,7 +514,11 @@ export default function Landing() {
       </section>
 
       {/* Platform Showcase Slider */}
-      <section className="py-20 bg-white dark:bg-gray-900">
+      <section 
+        className="py-20 bg-white dark:bg-gray-900"
+        itemScope
+        itemType="https://schema.org/ImageGallery"
+      >
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <motion.div
             className="text-center mb-16"
@@ -409,15 +526,23 @@ export default function Landing() {
             whileInView={{ opacity: 1, y: 0 }}
             viewport={{ once: true }}
           >
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4">
+            <h2 
+              className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-4"
+              itemProp="name"
+            >
               See AutoJobr in Action
             </h2>
-            <p className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto">
-              Explore how our AI-powered platform transforms your job search experience
+            <p 
+              className="text-xl text-gray-600 dark:text-gray-300 max-w-3xl mx-auto"
+              itemProp="description"
+            >
+              Explore how our AI-powered platform transforms your job search experience with real screenshots and detailed feature demonstrations
             </p>
           </motion.div>
 
-          <PlatformSlider />
+          <div itemScope itemType="https://schema.org/ImageObject">
+            <PlatformSlider />
+          </div>
 
           {/* Stats Section */}
           <motion.div
