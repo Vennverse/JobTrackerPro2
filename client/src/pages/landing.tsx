@@ -56,34 +56,70 @@ const PlatformSlider = () => {
   
   const slides = [
     {
-      title: "Smart Dashboard",
-      description: "Track your job search progress, applications, and success metrics in real-time",
-      image: "dashboard",
-      gradient: "from-blue-500 to-indigo-600"
+      title: "Application Tracking Dashboard",
+      description: "Complete job application management with pipeline visualization, success metrics, and activity tracking",
+      image: "image_1752591356271.png",
+      alt: "Job Applications Dashboard showing pipeline, stats, and recent activity",
+      features: [
+        "Real-time application pipeline tracking",
+        "Success rate and interview analytics",
+        "Activity feed with timestamps",
+        "One-click application sync"
+      ],
+      highlight: "Track 5 applications • 0% response rate • 0 interviews scheduled"
     },
     {
-      title: "AI Resume Analysis",
-      description: "Get instant ATS scoring and optimization recommendations to improve your resume",
-      image: "resume",
-      gradient: "from-green-500 to-emerald-600"
+      title: "Resume Management & Analysis",
+      description: "Upload multiple resumes and get instant AI-powered ATS optimization with detailed scoring",
+      image: "image_1752591359330.png",
+      alt: "Resume management interface with upload and analysis features",
+      features: [
+        "Upload up to 2 resumes simultaneously",
+        "40% ATS score with improvement tracking",
+        "Instant analysis of strengths and weaknesses",
+        "208.3 kB file size optimization"
+      ],
+      highlight: "40% ATS Score • 2 Strengths • 4 Improvements • 3 Missing Keywords"
     },
     {
-      title: "Job Matching",
-      description: "Discover personalized job recommendations with AI-powered matching scores",
-      image: "jobs",
-      gradient: "from-purple-500 to-pink-600"
+      title: "Detailed AI Resume Analysis",
+      description: "Comprehensive resume breakdown with ATS scoring, formatting analysis, and actionable recommendations",
+      image: "image_1752591366598.png",
+      alt: "Detailed resume analysis showing ATS score, formatting, and recommendations",
+      features: [
+        "Overall ATS score (40%) with detailed breakdown",
+        "Formatting score (60%) with specific issues",
+        "Content quality assessment",
+        "Missing keywords identification",
+        "Keyword suggestions for improvement"
+      ],
+      highlight: "Missing: programming languages, agile methodologies, cloud platforms"
     },
     {
-      title: "Application Tracking",
-      description: "Monitor all your job applications and interview progress in one place",
-      image: "applications",
-      gradient: "from-orange-500 to-red-600"
+      title: "Personal Career AI Assistant",
+      description: "Get personalized career guidance powered by Groq AI with location-specific market insights",
+      image: "image_1752591387481.png",
+      alt: "Personal Career AI Assistant interface with analysis options",
+      features: [
+        "CEO career goal setting and planning",
+        "5-year timeline with strategic milestones",
+        "Location-based market analysis (Bangalore)",
+        "Premium AI model access with 30-day trial"
+      ],
+      highlight: "Powered by Groq AI (llama-3.3-70b-versatile) • Location-specific insights"
     },
     {
-      title: "Career AI Assistant",
-      description: "Get personalized career guidance and skill development recommendations",
-      image: "career",
-      gradient: "from-teal-500 to-cyan-600"
+      title: "Skills Development Tracking",
+      description: "Monitor skill progression with learning resources and career advancement timelines",
+      image: "image_1752591370293.png",
+      alt: "Skills development interface showing progress bars and learning resources",
+      features: [
+        "Leadership and Management (6/10 → 9/10)",
+        "Strategic Planning (5/10 → 8/10)",
+        "6-12 month development timelines",
+        "Curated learning resources and workshops"
+      ],
+      highlight: "6-12 month timeline • Online courses • Books • Workshops recommended"
     }
   ];
 
@@ -96,236 +132,80 @@ const PlatformSlider = () => {
 
   const PlatformMockup = ({ slide }: { slide: typeof slides[0] }) => (
     <div className="relative">
-      {/* Browser Window */}
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden max-w-2xl mx-auto">
-        {/* Browser Header */}
-        <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 flex items-center gap-2">
-          <div className="flex gap-2">
-            <div className="w-3 h-3 bg-red-500 rounded-full"></div>
-            <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
-            <div className="w-3 h-3 bg-green-500 rounded-full"></div>
-          </div>
-          <div className="flex-1 bg-white dark:bg-gray-600 rounded-md px-3 py-1 mx-4">
-            <span className="text-sm text-gray-500 dark:text-gray-400">autojobr.com/{slide.image}</span>
+      <div className="grid lg:grid-cols-3 gap-6 max-w-7xl mx-auto">
+        {/* Screenshot Display */}
+        <div className="lg:col-span-2">
+          <div className="bg-white dark:bg-gray-800 rounded-lg shadow-2xl border border-gray-200 dark:border-gray-700 overflow-hidden">
+            {/* Browser Header */}
+            <div className="bg-gray-100 dark:bg-gray-700 px-4 py-3 flex items-center gap-2">
+              <div className="flex gap-2">
+                <div className="w-3 h-3 bg-red-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-yellow-500 rounded-full"></div>
+                <div className="w-3 h-3 bg-green-500 rounded-full"></div>
+              </div>
+              <div className="flex-1 bg-white dark:bg-gray-600 rounded-md px-3 py-1 mx-4">
+                <span className="text-sm text-gray-500 dark:text-gray-400">autojobr.com</span>
+              </div>
+            </div>
+            
+            {/* Screenshot */}
+            <div className="bg-gray-50 dark:bg-gray-800">
+              <img 
+                src={`/attached_assets/${slide.image}`}
+                alt={slide.alt}
+                className="w-full h-auto object-contain"
+                style={{ maxHeight: '400px' }}
+              />
+            </div>
           </div>
         </div>
-        
-        {/* Content Area */}
-        <div className="h-96 bg-gradient-to-br from-gray-50 to-gray-100 dark:from-gray-900 dark:to-gray-800 p-4">
-          {/* Platform-specific content */}
-          {slide.image === 'dashboard' && (
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Dashboard</h3>
-                <div className="flex gap-2">
-                  <div className="w-6 h-6 bg-blue-500 rounded-full"></div>
-                  <div className="w-6 h-6 bg-green-500 rounded-full"></div>
-                </div>
-              </div>
-              
-              {/* Stats Cards */}
-              <div className="grid grid-cols-3 gap-3">
-                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-                  <div className="text-2xl font-bold text-blue-600">23</div>
-                  <div className="text-xs text-gray-500">Applications</div>
-                </div>
-                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-                  <div className="text-2xl font-bold text-green-600">89%</div>
-                  <div className="text-xs text-gray-500">ATS Score</div>
-                </div>
-                <div className="bg-white dark:bg-gray-700 p-3 rounded-lg shadow-sm">
-                  <div className="text-2xl font-bold text-purple-600">5</div>
-                  <div className="text-xs text-gray-500">Interviews</div>
-                </div>
-              </div>
-              
-              {/* Activity Feed */}
-              <div className="bg-white dark:bg-gray-700 rounded-lg p-4">
-                <h4 className="font-medium text-gray-900 dark:text-white mb-3">Recent Activity</h4>
-                <div className="space-y-3">
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-blue-500 rounded-full flex items-center justify-center">
-                      <div className="w-3 h-3 bg-white rounded-full"></div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">Applied to Senior Engineer</div>
-                      <div className="text-xs text-gray-500">2 hours ago</div>
-                    </div>
-                  </div>
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 bg-green-500 rounded-full flex items-center justify-center">
-                      <div className="w-3 h-3 bg-white rounded-full"></div>
-                    </div>
-                    <div>
-                      <div className="text-sm font-medium text-gray-900 dark:text-white">Resume optimized</div>
-                      <div className="text-xs text-gray-500">1 day ago</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
 
-          {slide.image === 'resume' && (
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Resume Analysis</h3>
-                <div className="bg-green-500 text-white px-2 py-1 rounded-full text-xs">89% Score</div>
-              </div>
-              
-              {/* Resume Preview */}
-              <div className="grid grid-cols-2 gap-4">
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white mb-2">Your Resume</div>
-                  <div className="space-y-2">
-                    <div className="w-full h-3 bg-gray-200 dark:bg-gray-600 rounded"></div>
-                    <div className="w-3/4 h-3 bg-gray-200 dark:bg-gray-600 rounded"></div>
-                    <div className="w-full h-2 bg-gray-100 dark:bg-gray-600 rounded"></div>
-                    <div className="w-2/3 h-2 bg-gray-100 dark:bg-gray-600 rounded"></div>
-                  </div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
-                  <div className="text-sm font-medium text-gray-900 dark:text-white mb-2">AI Recommendations</div>
-                  <div className="space-y-2">
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                      <div className="text-xs text-gray-600 dark:text-gray-300">Strong technical skills</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-yellow-500 rounded-full"></div>
-                      <div className="text-xs text-gray-600 dark:text-gray-300">Add more keywords</div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <div className="w-2 h-2 bg-red-500 rounded-full"></div>
-                      <div className="text-xs text-gray-600 dark:text-gray-300">Improve contact info</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
+        {/* Feature Information Panel */}
+        <div className="space-y-4">
+          {/* Key Highlight */}
+          <div className="bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg p-4">
+            <div className="text-white">
+              <div className="text-sm font-medium mb-1">Key Metrics</div>
+              <div className="text-xs opacity-90">{slide.highlight}</div>
             </div>
-          )}
+          </div>
 
-          {slide.image === 'jobs' && (
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Job Recommendations</h3>
-                <div className="text-xs text-gray-500">852 jobs found</div>
-              </div>
-              
-              {/* Job Cards */}
-              <div className="space-y-3">
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm border-l-4 border-green-500">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">Senior Software Engineer</div>
-                    <div className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-xs">97% Match</div>
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">TechCorp • San Francisco, CA</div>
-                  <div className="flex gap-2">
-                    <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">React</div>
-                    <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded text-xs">Node.js</div>
-                  </div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm border-l-4 border-blue-500">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">Full Stack Developer</div>
-                    <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs">94% Match</div>
-                  </div>
-                  <div className="text-xs text-gray-500 mb-2">StartupXYZ • Remote</div>
-                  <div className="flex gap-2">
-                    <div className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded text-xs">Python</div>
-                    <div className="bg-purple-100 dark:bg-purple-900 text-purple-800 dark:text-purple-200 px-2 py-1 rounded text-xs">AWS</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          {/* Feature List */}
+          <div className="bg-white dark:bg-gray-800 rounded-lg p-4 border border-gray-200 dark:border-gray-700">
+            <h4 className="font-semibold text-gray-900 dark:text-white mb-3 flex items-center gap-2">
+              <CheckCircle className="w-4 h-4 text-green-500" />
+              Key Features
+            </h4>
+            <ul className="space-y-2">
+              {slide.features.map((feature, index) => (
+                <li key={index} className="flex items-start gap-2 text-sm">
+                  <div className="w-1.5 h-1.5 bg-blue-500 rounded-full mt-2 flex-shrink-0"></div>
+                  <span className="text-gray-700 dark:text-gray-300">{feature}</span>
+                </li>
+              ))}
+            </ul>
+          </div>
 
-          {slide.image === 'applications' && (
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Application Tracking</h3>
-                <div className="text-xs text-gray-500">23 applications</div>
+          {/* Action Button */}
+          <div className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg p-4 border border-green-200 dark:border-green-800">
+            <div className="text-center">
+              <div className="text-sm font-medium text-green-800 dark:text-green-200 mb-2">
+                Ready to experience this feature?
               </div>
-              
-              {/* Applications List */}
-              <div className="space-y-3">
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">Software Engineer - Google</div>
-                    <div className="bg-yellow-100 dark:bg-yellow-900 text-yellow-800 dark:text-yellow-200 px-2 py-1 rounded-full text-xs">Interview</div>
-                  </div>
-                  <div className="text-xs text-gray-500">Applied 3 days ago</div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">Senior Dev - Microsoft</div>
-                    <div className="bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full text-xs">Applied</div>
-                  </div>
-                  <div className="text-xs text-gray-500">Applied 1 week ago</div>
-                </div>
-                
-                <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
-                  <div className="flex items-center justify-between mb-2">
-                    <div className="text-sm font-medium text-gray-900 dark:text-white">Frontend Dev - Meta</div>
-                    <div className="bg-green-100 dark:bg-green-900 text-green-800 dark:text-green-200 px-2 py-1 rounded-full text-xs">Offer</div>
-                  </div>
-                  <div className="text-xs text-gray-500">Applied 2 weeks ago</div>
-                </div>
-              </div>
+              <Link href="/auth">
+                <button className="px-4 py-2 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors">
+                  Try It Now
+                </button>
+              </Link>
             </div>
-          )}
-
-          {slide.image === 'career' && (
-            <div className="space-y-4">
-              {/* Header */}
-              <div className="flex items-center justify-between">
-                <h3 className="text-lg font-semibold text-gray-900 dark:text-white">Career AI Assistant</h3>
-                <div className="w-6 h-6 bg-gradient-to-r from-purple-500 to-pink-500 rounded-full"></div>
-              </div>
-              
-              {/* AI Recommendations */}
-              <div className="bg-white dark:bg-gray-700 p-4 rounded-lg shadow-sm">
-                <div className="text-sm font-medium text-gray-900 dark:text-white mb-3">Personalized Career Insights</div>
-                <div className="space-y-3">
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-blue-500 rounded-full mt-2"></div>
-                    <div>
-                      <div className="text-sm text-gray-900 dark:text-white">Focus on React and TypeScript</div>
-                      <div className="text-xs text-gray-500">High demand in your target market</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-green-500 rounded-full mt-2"></div>
-                    <div>
-                      <div className="text-sm text-gray-900 dark:text-white">Consider leadership roles</div>
-                      <div className="text-xs text-gray-500">Your experience aligns with senior positions</div>
-                    </div>
-                  </div>
-                  <div className="flex items-start gap-3">
-                    <div className="w-2 h-2 bg-purple-500 rounded-full mt-2"></div>
-                    <div>
-                      <div className="text-sm text-gray-900 dark:text-white">Optimize networking</div>
-                      <div className="text-xs text-gray-500">Connect with 3 professionals weekly</div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          )}
+          </div>
         </div>
       </div>
     </div>
   );
 
   return (
-    <div className="relative max-w-4xl mx-auto">
+    <div className="relative max-w-7xl mx-auto">
       {/* Slider Container */}
       <div className="relative overflow-hidden">
         <motion.div
@@ -358,14 +238,14 @@ const PlatformSlider = () => {
       {/* Navigation Arrows */}
       <button
         onClick={() => setCurrentSlide((prev) => (prev - 1 + slides.length) % slides.length)}
-        className="absolute left-0 top-1/2 -translate-y-1/2 -translate-x-4 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors z-10"
       >
         <ChevronRight className="w-5 h-5 rotate-180 text-gray-600 dark:text-gray-400" />
       </button>
       
       <button
         onClick={() => setCurrentSlide((prev) => (prev + 1) % slides.length)}
-        className="absolute right-0 top-1/2 -translate-y-1/2 translate-x-4 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors"
+        className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 bg-white dark:bg-gray-800 rounded-full shadow-lg border border-gray-200 dark:border-gray-700 flex items-center justify-center hover:bg-gray-50 dark:hover:bg-gray-700 transition-colors z-10"
       >
         <ChevronRight className="w-5 h-5 text-gray-600 dark:text-gray-400" />
       </button>
