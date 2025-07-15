@@ -9,9 +9,10 @@ import { eq, desc, and, or, like, isNotNull, count, asc, isNull, sql } from "dri
 import * as schema from "@shared/schema";
 import { resumes } from "@shared/schema";
 
-// Simple in-memory cache for frequently accessed data
+// Enhanced in-memory cache with better performance
 const cache = new Map();
 const CACHE_TTL = 5 * 60 * 1000; // 5 minutes
+const MAX_CACHE_SIZE = 1000; // Prevent memory bloat
 
 // Track user activity for online/offline status
 const userActivity = new Map<string, number>();
@@ -27,7 +28,24 @@ const getCached = (key: string) => {
 };
 
 const setCache = (key: string, data: any, ttl?: number) => {
+  // Prevent cache from growing too large
+  if (cache.size >= MAX_CACHE_SIZE) {
+    // Remove oldest entries (simple LRU)
+    const oldestKey = cache.keys().next().value;
+    cache.delete(oldestKey);
+  }
   cache.set(key, { data, timestamp: Date.now(), ttl: ttl || CACHE_TTL });
+};
+
+// Helper function to invalidate user-specific cache
+const invalidateUserCache = (userId: string) => {
+  const keysToDelete = [];
+  for (const key of cache.keys()) {
+    if (key.includes(userId)) {
+      keysToDelete.push(key);
+    }
+  }
+  keysToDelete.forEach(key => cache.delete(key));
 };
 // Dynamic import for pdf-parse to avoid startup issues
 import { storage } from "./storage";
@@ -570,6 +588,9 @@ Additional Information:
       // Store in database with compression
       const newResume = await storage.storeResume(userId, resumeData);
       
+      // Invalidate user cache after resume upload
+      invalidateUserCache(userId);
+      
       return res.json({ 
         success: true,
         analysis: analysis,
@@ -718,10 +739,21 @@ Additional Information:
   app.get('/api/resumes', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
+      const cacheKey = `resumes_${userId}`;
+      
+      // Check cache first
+      const cachedResumes = getCached(cacheKey);
+      if (cachedResumes) {
+        return res.json(cachedResumes);
+      }
+      
       console.log(`[DEBUG] Fetching resumes for user: ${userId}`);
       
       // Use the database storage service to get resumes
       const resumes = await storage.getUserResumes(userId);
+      
+      // Cache resumes for 1 minute
+      setCache(cacheKey, resumes, 60000);
       
       console.log(`[DEBUG] Returning ${resumes.length} resumes for user ${userId}`);
       res.json(resumes);

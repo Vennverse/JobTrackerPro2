@@ -51,16 +51,20 @@ export async function setupAuth(app: Express) {
     },
   }));
 
-  // Auth status endpoint
+  // Auth status endpoint with caching
+  const providersCache = {
+    providers: {
+      google: authConfig.providers.google.enabled,
+      github: authConfig.providers.github.enabled,
+      linkedin: authConfig.providers.linkedin.enabled,
+      email: authConfig.providers.email.enabled,
+    },
+  };
+
   app.get('/api/auth/providers', (req, res) => {
-    res.json({
-      providers: {
-        google: authConfig.providers.google.enabled,
-        github: authConfig.providers.github.enabled,
-        linkedin: authConfig.providers.linkedin.enabled,
-        email: authConfig.providers.email.enabled,
-      },
-    });
+    // Set cache headers for better performance
+    res.set('Cache-Control', 'public, max-age=3600'); // 1 hour
+    res.json(providersCache);
   });
 
   // Login route
