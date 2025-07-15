@@ -53,7 +53,7 @@ export default function Landing() {
   const { user } = useAuth();
 
   const handleLogin = () => {
-    window.location.href = "/login";
+    window.location.href = "/auth";
   };
 
   const containerVariants = {
@@ -441,8 +441,8 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* For Recruiters Section */}
-      <section className="py-20 bg-gradient-to-r from-gray-900 to-blue-900 text-white">
+      {/* For Recruiters Section with Auto-Sliding Feature Showcase */}
+      <section className="py-20 bg-gradient-to-r from-gray-900 to-blue-900 text-white overflow-hidden">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center mb-16">
             <h2 className="text-3xl md:text-4xl font-bold mb-4">
@@ -453,39 +453,149 @@ export default function Landing() {
             </p>
           </div>
 
-          <div className="grid md:grid-cols-3 gap-8">
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Users className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Premium Targeting</h3>
-              <p className="text-gray-300">
-                Target candidates by education, skills, experience, and more with our advanced filtering system.
-              </p>
-            </div>
+          {/* Auto-Sliding Feature Showcase */}
+          <div className="relative mb-16">
+            <div className="flex overflow-hidden">
+              <div className="flex animate-slideLoop">
+                {/* Slide 1 - Premium Targeting */}
+                <div className="flex-none w-full md:w-1/3 px-4">
+                  <div className="bg-gradient-to-br from-blue-800/50 to-purple-800/50 backdrop-blur-sm rounded-2xl p-8 h-80 flex flex-col justify-center items-center text-center border border-blue-500/30">
+                    <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6">
+                      <Users className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4">Premium Targeting</h3>
+                    <p className="text-gray-300 mb-6">
+                      Target candidates by education, skills, experience, and more with our advanced filtering system.
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-blue-300">
+                      <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                      <span>$99-$300+ based on targeting precision</span>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <Shield className="w-8 h-8 text-white" />
-              </div>
-              <h3 className="text-xl font-semibold mb-4">Skill Testing</h3>
-              <p className="text-gray-300">
-                Comprehensive testing system with coding challenges, skill assessments, and anti-cheat protection.
-              </p>
-            </div>
+                {/* Slide 2 - Skill Testing */}
+                <div className="flex-none w-full md:w-1/3 px-4">
+                  <div className="bg-gradient-to-br from-green-800/50 to-emerald-800/50 backdrop-blur-sm rounded-2xl p-8 h-80 flex flex-col justify-center items-center text-center border border-green-500/30">
+                    <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6">
+                      <Shield className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4">Skill Testing</h3>
+                    <p className="text-gray-300 mb-6">
+                      Comprehensive testing system with coding challenges, skill assessments, and anti-cheat protection.
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-green-300">
+                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                      <span>AI-powered scoring & violation detection</span>
+                    </div>
+                  </div>
+                </div>
 
-            <div className="text-center">
-              <div className="w-16 h-16 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mx-auto mb-6">
-                <TrendingUp className="w-8 h-8 text-white" />
+                {/* Slide 3 - Analytics */}
+                <div className="flex-none w-full md:w-1/3 px-4">
+                  <div className="bg-gradient-to-br from-orange-800/50 to-red-800/50 backdrop-blur-sm rounded-2xl p-8 h-80 flex flex-col justify-center items-center text-center border border-orange-500/30">
+                    <div className="w-20 h-20 bg-gradient-to-r from-orange-500 to-red-500 rounded-2xl flex items-center justify-center mb-6">
+                      <TrendingUp className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4">Analytics Dashboard</h3>
+                    <p className="text-gray-300 mb-6">
+                      Track hiring metrics, candidate pipeline, and optimize your recruitment process with detailed analytics.
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-orange-300">
+                      <span className="w-2 h-2 bg-orange-400 rounded-full"></span>
+                      <span>Real-time hiring insights & metrics</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slide 4 - Job Management */}
+                <div className="flex-none w-full md:w-1/3 px-4">
+                  <div className="bg-gradient-to-br from-purple-800/50 to-pink-800/50 backdrop-blur-sm rounded-2xl p-8 h-80 flex flex-col justify-center items-center text-center border border-purple-500/30">
+                    <div className="w-20 h-20 bg-gradient-to-r from-purple-500 to-pink-500 rounded-2xl flex items-center justify-center mb-6">
+                      <Briefcase className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4">Job Management</h3>
+                    <p className="text-gray-300 mb-6">
+                      Post jobs, manage applications, and streamline your hiring process with our intuitive interface.
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-purple-300">
+                      <span className="w-2 h-2 bg-purple-400 rounded-full"></span>
+                      <span>Automated workflow & candidate tracking</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slide 5 - AI Screening */}
+                <div className="flex-none w-full md:w-1/3 px-4">
+                  <div className="bg-gradient-to-br from-indigo-800/50 to-blue-800/50 backdrop-blur-sm rounded-2xl p-8 h-80 flex flex-col justify-center items-center text-center border border-indigo-500/30">
+                    <div className="w-20 h-20 bg-gradient-to-r from-indigo-500 to-blue-500 rounded-2xl flex items-center justify-center mb-6">
+                      <Brain className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4">AI Screening</h3>
+                    <p className="text-gray-300 mb-6">
+                      Automate initial candidate screening with AI-powered resume analysis and skill matching.
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-indigo-300">
+                      <span className="w-2 h-2 bg-indigo-400 rounded-full"></span>
+                      <span>Smart candidate ranking & filtering</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Slide 6 - Communication */}
+                <div className="flex-none w-full md:w-1/3 px-4">
+                  <div className="bg-gradient-to-br from-teal-800/50 to-cyan-800/50 backdrop-blur-sm rounded-2xl p-8 h-80 flex flex-col justify-center items-center text-center border border-teal-500/30">
+                    <div className="w-20 h-20 bg-gradient-to-r from-teal-500 to-cyan-500 rounded-2xl flex items-center justify-center mb-6">
+                      <MessageSquare className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4">Communication Hub</h3>
+                    <p className="text-gray-300 mb-6">
+                      Seamlessly communicate with candidates through our integrated messaging and interview scheduling system.
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-teal-300">
+                      <span className="w-2 h-2 bg-teal-400 rounded-full"></span>
+                      <span>Integrated messaging & scheduling</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Duplicate first few slides for seamless loop */}
+                <div className="flex-none w-full md:w-1/3 px-4">
+                  <div className="bg-gradient-to-br from-blue-800/50 to-purple-800/50 backdrop-blur-sm rounded-2xl p-8 h-80 flex flex-col justify-center items-center text-center border border-blue-500/30">
+                    <div className="w-20 h-20 bg-gradient-to-r from-blue-500 to-purple-500 rounded-2xl flex items-center justify-center mb-6">
+                      <Users className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4">Premium Targeting</h3>
+                    <p className="text-gray-300 mb-6">
+                      Target candidates by education, skills, experience, and more with our advanced filtering system.
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-blue-300">
+                      <span className="w-2 h-2 bg-blue-400 rounded-full"></span>
+                      <span>$99-$300+ based on targeting precision</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="flex-none w-full md:w-1/3 px-4">
+                  <div className="bg-gradient-to-br from-green-800/50 to-emerald-800/50 backdrop-blur-sm rounded-2xl p-8 h-80 flex flex-col justify-center items-center text-center border border-green-500/30">
+                    <div className="w-20 h-20 bg-gradient-to-r from-green-500 to-emerald-500 rounded-2xl flex items-center justify-center mb-6">
+                      <Shield className="w-10 h-10 text-white" />
+                    </div>
+                    <h3 className="text-2xl font-bold mb-4">Skill Testing</h3>
+                    <p className="text-gray-300 mb-6">
+                      Comprehensive testing system with coding challenges, skill assessments, and anti-cheat protection.
+                    </p>
+                    <div className="flex items-center gap-2 text-sm text-green-300">
+                      <span className="w-2 h-2 bg-green-400 rounded-full"></span>
+                      <span>AI-powered scoring & violation detection</span>
+                    </div>
+                  </div>
+                </div>
               </div>
-              <h3 className="text-xl font-semibold mb-4">Analytics</h3>
-              <p className="text-gray-300">
-                Track hiring metrics, candidate pipeline, and optimize your recruitment process with detailed analytics.
-              </p>
             </div>
           </div>
 
-          <div className="text-center mt-12">
+          <div className="text-center">
             <Link href="/for-recruiters">
               <Button size="lg" className="bg-white text-gray-900 hover:bg-gray-100 text-lg px-8 py-4">
                 <Building className="mr-2 h-5 w-5" />
@@ -643,7 +753,7 @@ export default function Landing() {
               <CardHeader className="text-center pb-8">
                 <CardTitle className="text-2xl">Premium</CardTitle>
                 <div className="text-4xl font-bold text-gray-900 dark:text-white mt-4">
-                  $29
+                  $10
                   <span className="text-lg text-gray-600 dark:text-gray-300">/month</span>
                 </div>
                 <p className="text-gray-600 dark:text-gray-300">For serious job seekers</p>

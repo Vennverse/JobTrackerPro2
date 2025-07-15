@@ -142,6 +142,7 @@ function Router() {
           <Route path="/" component={Landing} />
           <Route path="/auth" component={AuthPage} />
           <Route path="/email-verification" component={() => <EmailVerificationPage />} />
+          <Route path="/for-recruiters" component={RecruiterFeatures} />
           <Route path="/recruiters" component={RecruiterFeatures} />
           <Route path="/recruiter-features" component={RecruiterFeatures} />
           <Route path="/test/:id" component={TestTaking} />

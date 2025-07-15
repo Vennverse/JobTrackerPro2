@@ -72,6 +72,10 @@ The application is fully migrated and operational on Replit with all core featur
 - ✅ **Smart Filtering**: Source filter dropdown allows filtering by "All Sources", "Platform", or "Extension"
 - ✅ **Pipeline Progress Fix**: Fixed misleading 100% progress display to show actual success rate calculation
 - ✅ **Landing Page Redesign**: Complete modern redesign highlighting Personal Career AI Assistant, ranking tests, and all premium features
+- ✅ **Auto-Sliding Recruiter Showcase**: Added modern auto-sliding feature showcase for recruiter tools with smooth animations
+- ✅ **Login Route Fix**: Fixed all login buttons to route to correct "/auth" page instead of "/login"
+- ✅ **For-Recruiters Page**: Created dedicated recruiter features page accessible at "/for-recruiters"
+- ✅ **Pricing Update**: Updated premium pricing from $29 to $10/month as requested
 - ✅ **Payment System**: Stripe supports all payment methods, PayPal integration ready for API keys
 - ✅ **UI Improvements**: Enhanced application cards with source badges, improved visual hierarchy and user experience
 

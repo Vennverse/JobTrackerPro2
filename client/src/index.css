@@ -75,6 +75,25 @@
     transition: all 0.2s ease-in-out;
   }
   
+  /* Auto-sliding animation for recruiter features */
+  @keyframes slideLoop {
+    0% {
+      transform: translateX(0);
+    }
+    100% {
+      transform: translateX(-66.666%); /* Move by 2/3 to show next 2 slides */
+    }
+  }
+  
+  .animate-slideLoop {
+    animation: slideLoop 15s linear infinite;
+  }
+  
+  /* Pause animation on hover */
+  .animate-slideLoop:hover {
+    animation-play-state: paused;
+  }
+  
   /* Image optimization */
   img {
     max-width: 100%;
