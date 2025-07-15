@@ -1477,7 +1477,7 @@ Additional Information:
         jobType: jobType || '',
         workMode: workMode || '',
         salaryRange: salaryRange || '',
-        source: 'web'
+        source: 'platform'
       };
 
       const application = await storage.createApplication(applicationData);
@@ -1485,6 +1485,10 @@ Additional Information:
       // Clear applications cache
       const cacheKey = `applications_${userId}`;
       clearCache(cacheKey);
+      
+      // Also clear stats cache
+      const statsCacheKey = `applications_stats_${userId}`;
+      clearCache(statsCacheKey);
       
       res.json({ message: 'Application tracked successfully', application });
     } catch (error) {
@@ -2787,9 +2791,13 @@ Additional Information:
 
       const application = await storage.createApplication(applicationData);
       
-      // Clear applications cache
+      // Clear applications cache to ensure fresh data
       const cacheKey = `applications_${userId}`;
       clearCache(cacheKey);
+      
+      // Also clear stats cache
+      const statsCacheKey = `applications_stats_${userId}`;
+      clearCache(statsCacheKey);
       
       res.json({ success: true, message: 'Application tracked successfully', application });
     } catch (error) {

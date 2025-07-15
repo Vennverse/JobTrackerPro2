@@ -359,11 +359,18 @@ export default function Applications() {
           <div className="flex gap-3">
             <Button
               variant="outline"
-              onClick={() => queryClient.invalidateQueries({ queryKey: ["/api/applications"] })}
+              onClick={() => {
+                queryClient.invalidateQueries({ queryKey: ["/api/applications"] });
+                queryClient.invalidateQueries({ queryKey: ["/api/applications/stats"] });
+                toast({
+                  title: "Synced",
+                  description: "Application data refreshed from both platform and extension.",
+                });
+              }}
               disabled={applicationsLoading}
             >
               <RefreshCw className={`h-4 w-4 mr-2 ${applicationsLoading ? 'animate-spin' : ''}`} />
-              Refresh
+              Sync All
             </Button>
             <Dialog open={showAddDialog} onOpenChange={setShowAddDialog}>
               <DialogTrigger asChild>
@@ -488,28 +495,110 @@ export default function Applications() {
                     </CardTitle>
                   </CardHeader>
                   <CardContent>
-                    <div className="space-y-4">
+                    <div className="space-y-3">
                       {[
-                        { status: "applied", label: "Applied", count: filteredApplications.filter(app => app.status === "applied").length, color: "blue" },
-                        { status: "interview", label: "Interview", count: filteredApplications.filter(app => app.status === "interview" || app.status === "interviewed").length, color: "green" },
-                        { status: "offered", label: "Offered", count: filteredApplications.filter(app => app.status === "offered").length, color: "purple" },
-                        { status: "rejected", label: "Rejected", count: filteredApplications.filter(app => app.status === "rejected").length, color: "red" }
+                        { 
+                          status: "applied", 
+                          label: "Applied", 
+                          count: filteredApplications.filter(app => app.status === "applied").length, 
+                          color: "blue",
+                          bgColor: "bg-blue-500",
+                          lightBg: "bg-blue-50 dark:bg-blue-900/20",
+                          textColor: "text-blue-600 dark:text-blue-400",
+                          icon: <Clock className="h-4 w-4" />
+                        },
+                        { 
+                          status: "interview", 
+                          label: "Interview", 
+                          count: filteredApplications.filter(app => app.status === "interview" || app.status === "interviewed").length, 
+                          color: "green",
+                          bgColor: "bg-green-500",
+                          lightBg: "bg-green-50 dark:bg-green-900/20",
+                          textColor: "text-green-600 dark:text-green-400",
+                          icon: <Users className="h-4 w-4" />
+                        },
+                        { 
+                          status: "offered", 
+                          label: "Offered", 
+                          count: filteredApplications.filter(app => app.status === "offered").length, 
+                          color: "purple",
+                          bgColor: "bg-purple-500",
+                          lightBg: "bg-purple-50 dark:bg-purple-900/20",
+                          textColor: "text-purple-600 dark:text-purple-400",
+                          icon: <Award className="h-4 w-4" />
+                        },
+                        { 
+                          status: "rejected", 
+                          label: "Rejected", 
+                          count: filteredApplications.filter(app => app.status === "rejected").length, 
+                          color: "red",
+                          bgColor: "bg-red-500",
+                          lightBg: "bg-red-50 dark:bg-red-900/20",
+                          textColor: "text-red-600 dark:text-red-400",
+                          icon: <XCircle className="h-4 w-4" />
+                        }
                       ].map((stage) => (
-                        <motion.div
-                          key={stage.status}
-                          className="flex items-center justify-between p-3 rounded-lg border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/50 transition-colors"
-                          whileHover={{ x: 5 }}
+                        <motion.div 
+                          key={stage.status} 
+                          className={`flex items-center justify-between p-4 rounded-xl ${stage.lightBg} border border-gray-200 dark:border-gray-700 hover:shadow-md transition-all duration-200 cursor-pointer`}
+                          whileHover={{ scale: 1.02 }}
+                          onClick={() => setStatusFilter(stage.status)}
                         >
-                          <div className="flex items-center gap-3">
-                            <div className={`w-3 h-3 rounded-full bg-${stage.color}-500`} />
-                            <span className="font-medium">{stage.label}</span>
+                          <div className="flex items-center gap-4">
+                            <div className={`w-10 h-10 rounded-full ${stage.bgColor} flex items-center justify-center text-white`}>
+                              {stage.icon}
+                            </div>
+                            <div>
+                              <div className="font-semibold text-gray-900 dark:text-white">{stage.label}</div>
+                              <div className="text-sm text-gray-500 dark:text-gray-400">
+                                {stage.count} application{stage.count !== 1 ? 's' : ''}
+                              </div>
+                            </div>
                           </div>
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm text-gray-500">{stage.count} applications</span>
-                            <ChevronRight className="h-4 w-4 text-gray-400" />
+                          <div className="flex items-center gap-3">
+                            <div className={`text-2xl font-bold ${stage.textColor}`}>
+                              {stage.count}
+                            </div>
+                            <ChevronRight className="h-5 w-5 text-gray-400" />
                           </div>
                         </motion.div>
                       ))}
+                    </div>
+                    
+                    {/* Pipeline Progress Bar */}
+                    <div className="mt-6 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between mb-2">
+                        <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Pipeline Progress</span>
+                        <span className="text-sm text-gray-500 dark:text-gray-400">
+                          {Math.round((filteredApplications.filter(app => app.status !== "applied" && app.status !== "rejected").length / Math.max(filteredApplications.length, 1)) * 100)}% progressed
+                        </span>
+                      </div>
+                      <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                        <div 
+                          className="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-300"
+                          style={{ 
+                            width: `${Math.round((filteredApplications.filter(app => app.status !== "applied" && app.status !== "rejected").length / Math.max(filteredApplications.length, 1)) * 100)}%` 
+                          }}
+                        />
+                      </div>
+                    </div>
+                    
+                    {/* Source Breakdown */}
+                    <div className="mt-4 pt-4 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-blue-500"></div>
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Platform: {filteredApplications.filter(app => app.source === 'platform' || !app.source).length}
+                          </span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <div className="w-2 h-2 rounded-full bg-green-500"></div>
+                          <span className="text-gray-600 dark:text-gray-400">
+                            Extension: {filteredApplications.filter(app => app.source === 'extension').length}
+                          </span>
+                        </div>
+                      </div>
                     </div>
                   </CardContent>
                 </Card>
@@ -599,7 +688,7 @@ export default function Applications() {
                   </SelectTrigger>
                   <SelectContent>
                     <SelectItem value="all">All Sources</SelectItem>
-                    <SelectItem value="internal">Platform</SelectItem>
+                    <SelectItem value="platform">Platform</SelectItem>
                     <SelectItem value="extension">Extension</SelectItem>
                   </SelectContent>
                 </Select>
@@ -732,7 +821,7 @@ export default function Applications() {
                             {/* Source Badge */}
                             <div className="mt-3 flex items-center justify-between">
                               <Badge variant="outline" className="text-xs">
-                                {app.source === "internal" ? (
+                                {app.source === "platform" ? (
                                   <><Building className="h-2 w-2 mr-1" /> Platform</>
                                 ) : (
                                   <><Globe className="h-2 w-2 mr-1" /> Extension</>
@@ -816,7 +905,11 @@ export default function Applications() {
                                 </td>
                                 <td className="p-4">
                                   <Badge variant="outline" className="text-xs">
-                                    {app.source === "internal" ? "Platform" : "Extension"}
+                                    {app.source === "platform" ? (
+                                      <><Building className="h-2 w-2 mr-1" /> Platform</>
+                                    ) : (
+                                      <><Globe className="h-2 w-2 mr-1" /> Extension</>
+                                    )}
                                   </Badge>
                                 </td>
                                 <td className="p-4">
