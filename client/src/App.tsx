@@ -42,6 +42,8 @@ import QuestionBankAdmin from "@/pages/admin/question-bank";
 import RecruiterPremium from "@/pages/recruiter/premium";
 import CareerAIAssistant from "@/pages/career-ai-assistant";
 import RankingTests from "@/pages/ranking-tests";
+import MockInterview from "@/pages/mock-interview";
+import MockInterviewSession from "@/pages/mock-interview-session";
 
 
 function Router() {
@@ -116,6 +118,8 @@ function Router() {
                   <Route path="/test/:id/retake-payment">
                     {(params) => <TestRetakePayment />}
                   </Route>
+                  <Route path="/mock-interview" component={MockInterview} />
+                  <Route path="/mock-interview/session/:sessionId" component={MockInterviewSession} />
                   <Route path="/jobs/:id" component={ViewJob} />
                   <Route path="/career-ai-assistant" component={CareerAIAssistant} />
                   <Route path="/subscription" component={Subscription} />

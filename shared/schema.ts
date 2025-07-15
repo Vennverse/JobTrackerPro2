@@ -1186,6 +1186,10 @@ export const usersRelations = relations(users, ({ one, many }) => ({
   assignedTests: many(testAssignments, { relationName: "assignedTests" }),
   receivedTests: many(testAssignments, { relationName: "receivedTests" }),
   testRetakePayments: many(testRetakePayments),
+  // Mock interview relations
+  mockInterviews: many(mockInterviews),
+  interviewPayments: many(interviewPayments),
+  interviewStats: one(userInterviewStats),
 }));
 
 export const jobPostingsRelations = relations(jobPostings, ({ one, many }) => ({
@@ -1570,3 +1574,153 @@ export type MonthlyRanking = typeof monthlyRankings.$inferSelect;
 export type InsertMonthlyRanking = z.infer<typeof insertMonthlyRankingSchema>;
 export type RecruiterRankingAccess = typeof recruiterRankingAccess.$inferSelect;
 export type InsertRecruiterRankingAccess = z.infer<typeof insertRecruiterRankingAccessSchema>;
+
+// Mock Interview Sessions
+export const mockInterviews = pgTable("mock_interviews", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  sessionId: varchar("session_id").unique().notNull(),
+  interviewType: varchar("interview_type").default("technical"), // technical, behavioral, system_design
+  difficulty: varchar("difficulty").default("medium"), // easy, medium, hard
+  role: varchar("role").default("software_engineer"), // role being interviewed for
+  company: varchar("company"), // optional company context
+  language: varchar("language").default("javascript"), // programming language
+  status: varchar("status").default("active"), // active, completed, abandoned
+  currentQuestion: integer("current_question").default(1),
+  totalQuestions: integer("total_questions").default(3),
+  timeRemaining: integer("time_remaining").default(3600), // in seconds
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time"),
+  score: integer("score"), // overall score 0-100
+  feedback: text("feedback"), // AI generated feedback
+  isPaid: boolean("is_paid").default(false), // whether this interview was paid for
+  paymentId: varchar("payment_id"), // reference to payment transaction
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Mock Interview Questions
+export const mockInterviewQuestions = pgTable("mock_interview_questions", {
+  id: serial("id").primaryKey(),
+  interviewId: integer("interview_id").references(() => mockInterviews.id).notNull(),
+  questionNumber: integer("question_number").notNull(),
+  question: text("question").notNull(),
+  questionType: varchar("question_type").default("coding"), // coding, behavioral, system_design
+  difficulty: varchar("difficulty").default("medium"),
+  hints: jsonb("hints").default("[]"), // Array of hints
+  testCases: jsonb("test_cases").default("[]"), // For coding questions
+  sampleAnswer: text("sample_answer"), // Expected answer/solution
+  userAnswer: text("user_answer"), // User's submitted answer
+  userCode: text("user_code"), // User's code submission
+  score: integer("score"), // question score 0-100
+  timeSpent: integer("time_spent"), // time spent in seconds
+  feedback: text("feedback"), // AI feedback for this question
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Payment transactions for mock interviews
+export const interviewPayments = pgTable("interview_payments", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  interviewId: integer("interview_id").references(() => mockInterviews.id),
+  amount: integer("amount").notNull(), // amount in cents
+  currency: varchar("currency").default("USD"),
+  paymentProvider: varchar("payment_provider").notNull(), // stripe, paypal, razorpay
+  paymentIntentId: varchar("payment_intent_id"), // Stripe payment intent ID
+  paypalOrderId: varchar("paypal_order_id"), // PayPal order ID
+  razorpayPaymentId: varchar("razorpay_payment_id"), // Razorpay payment ID
+  razorpayOrderId: varchar("razorpay_order_id"), // Razorpay order ID
+  status: varchar("status").default("pending"), // pending, completed, failed, refunded
+  metadata: jsonb("metadata"), // Additional payment metadata
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// User interview statistics
+export const userInterviewStats = pgTable("user_interview_stats", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  totalInterviews: integer("total_interviews").default(0),
+  freeInterviewsUsed: integer("free_interviews_used").default(0),
+  paidInterviews: integer("paid_interviews").default(0),
+  averageScore: integer("average_score").default(0),
+  bestScore: integer("best_score").default(0),
+  totalTimeSpent: integer("total_time_spent").default(0), // in seconds
+  lastInterviewDate: timestamp("last_interview_date"),
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+});
+
+// Mock Interview Relations
+export const mockInterviewsRelations = relations(mockInterviews, ({ one, many }) => ({
+  user: one(users, {
+    fields: [mockInterviews.userId],
+    references: [users.id],
+  }),
+  questions: many(mockInterviewQuestions),
+  payment: one(interviewPayments, {
+    fields: [mockInterviews.paymentId],
+    references: [interviewPayments.id],
+  }),
+}));
+
+export const mockInterviewQuestionsRelations = relations(mockInterviewQuestions, ({ one }) => ({
+  interview: one(mockInterviews, {
+    fields: [mockInterviewQuestions.interviewId],
+    references: [mockInterviews.id],
+  }),
+}));
+
+export const interviewPaymentsRelations = relations(interviewPayments, ({ one }) => ({
+  user: one(users, {
+    fields: [interviewPayments.userId],
+    references: [users.id],
+  }),
+  interview: one(mockInterviews, {
+    fields: [interviewPayments.interviewId],
+    references: [mockInterviews.id],
+  }),
+}));
+
+export const userInterviewStatsRelations = relations(userInterviewStats, ({ one }) => ({
+  user: one(users, {
+    fields: [userInterviewStats.userId],
+    references: [users.id],
+  }),
+}));
+
+// Mock Interview Insert Schemas
+export const insertMockInterviewSchema = createInsertSchema(mockInterviews).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertMockInterviewQuestionSchema = createInsertSchema(mockInterviewQuestions).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertInterviewPaymentSchema = createInsertSchema(interviewPayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertUserInterviewStatsSchema = createInsertSchema(userInterviewStats).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+// Mock Interview Types
+export type MockInterview = typeof mockInterviews.$inferSelect;
+export type InsertMockInterview = z.infer<typeof insertMockInterviewSchema>;
+export type MockInterviewQuestion = typeof mockInterviewQuestions.$inferSelect;
+export type InsertMockInterviewQuestion = z.infer<typeof insertMockInterviewQuestionSchema>;
+export type InterviewPayment = typeof interviewPayments.$inferSelect;
+export type InsertInterviewPayment = z.infer<typeof insertInterviewPaymentSchema>;
+export type UserInterviewStats = typeof userInterviewStats.$inferSelect;
+export type InsertUserInterviewStats = z.infer<typeof insertUserInterviewStatsSchema>;

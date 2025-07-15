@@ -54,6 +54,7 @@ export function Navbar() {
         { href: "/applications", label: "Applications", icon: FileText },
         { href: "/ranking-tests", label: "Ranking Tests", icon: Trophy },
         { href: "/career-ai-assistant", label: "Career AI Assistant", icon: Brain },
+        { href: "/mock-interview", label: "Mock Interview", icon: MessageCircle },
         { href: "/profile", label: "Profile", icon: User },
         { href: "/jobs", label: "Jobs", icon: Briefcase },
         { href: "/chat", label: "Messages", icon: MessageCircle },

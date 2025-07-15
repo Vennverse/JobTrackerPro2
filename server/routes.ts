@@ -53,6 +53,7 @@ import {
 } from "@shared/schema";
 import { z } from "zod";
 import { rankingTestService } from "./rankingTestService";
+import { mockInterviewRoutes } from "./mockInterviewRoutes";
 
 // Middleware to check usage limits
 const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applications' | 'autoFills') => {
@@ -7037,6 +7038,9 @@ Host: https://autojobr.com`;
       res.status(500).json({ message: "Failed to update progress" });
     }
   });
+
+  // Mock Interview Routes
+  app.use('/api/mock-interview', mockInterviewRoutes);
 
   return httpServer;
 }

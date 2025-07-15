@@ -18,6 +18,10 @@ import {
   testAssignments,
   testRetakePayments,
   testGenerationLogs,
+  mockInterviews,
+  mockInterviewQuestions,
+  interviewPayments,
+  userInterviewStats,
   type User,
   type UpsertUser,
   type UserProfile,
@@ -54,6 +58,14 @@ import {
   type InsertTestAssignment,
   type TestRetakePayment,
   type InsertTestRetakePayment,
+  type MockInterview,
+  type InsertMockInterview,
+  type MockInterviewQuestion,
+  type InsertMockInterviewQuestion,
+  type InterviewPayment,
+  type InsertInterviewPayment,
+  type UserInterviewStats,
+  type InsertUserInterviewStats,
 } from "@shared/schema";
 import { db } from "./db";
 
@@ -195,6 +207,31 @@ export interface IStorage {
   getTestRetakePayment(id: number): Promise<TestRetakePayment | undefined>;
   createTestRetakePayment(payment: InsertTestRetakePayment): Promise<TestRetakePayment>;
   updateTestRetakePayment(id: number, payment: Partial<InsertTestRetakePayment>): Promise<TestRetakePayment>;
+
+  // Mock interview operations
+  getMockInterviews(userId: string): Promise<MockInterview[]>;
+  getMockInterview(id: number): Promise<MockInterview | undefined>;
+  getMockInterviewBySessionId(sessionId: string): Promise<MockInterview | undefined>;
+  createMockInterview(interview: InsertMockInterview): Promise<MockInterview>;
+  updateMockInterview(id: number, interview: Partial<InsertMockInterview>): Promise<MockInterview>;
+  deleteMockInterview(id: number): Promise<void>;
+  
+  // Mock interview questions
+  getMockInterviewQuestions(interviewId: number): Promise<MockInterviewQuestion[]>;
+  getMockInterviewQuestion(id: number): Promise<MockInterviewQuestion | undefined>;
+  createMockInterviewQuestion(question: InsertMockInterviewQuestion): Promise<MockInterviewQuestion>;
+  updateMockInterviewQuestion(id: number, question: Partial<InsertMockInterviewQuestion>): Promise<MockInterviewQuestion>;
+  deleteMockInterviewQuestion(id: number): Promise<void>;
+  
+  // Interview payments
+  getInterviewPayments(userId: string): Promise<InterviewPayment[]>;
+  getInterviewPayment(id: number): Promise<InterviewPayment | undefined>;
+  createInterviewPayment(payment: InsertInterviewPayment): Promise<InterviewPayment>;
+  updateInterviewPayment(id: number, payment: Partial<InsertInterviewPayment>): Promise<InterviewPayment>;
+  
+  // User interview stats
+  getUserInterviewStats(userId: string): Promise<UserInterviewStats | undefined>;
+  upsertUserInterviewStats(stats: InsertUserInterviewStats): Promise<UserInterviewStats>;
 }
 
 export class DatabaseStorage implements IStorage {
@@ -1205,6 +1242,152 @@ export class DatabaseStorage implements IStorage {
           .orderBy(desc(testGenerationLogs.createdAt));
       }
     }, []);
+  }
+
+  // Mock interview operations
+  async getMockInterviews(userId: string): Promise<MockInterview[]> {
+    return await handleDbOperation(async () => {
+      return await db.select().from(mockInterviews)
+        .where(eq(mockInterviews.userId, userId))
+        .orderBy(desc(mockInterviews.createdAt));
+    }, []);
+  }
+
+  async getMockInterview(id: number): Promise<MockInterview | undefined> {
+    return await handleDbOperation(async () => {
+      const [interview] = await db.select().from(mockInterviews).where(eq(mockInterviews.id, id));
+      return interview;
+    }, undefined);
+  }
+
+  async getMockInterviewBySessionId(sessionId: string): Promise<MockInterview | undefined> {
+    return await handleDbOperation(async () => {
+      const [interview] = await db.select().from(mockInterviews).where(eq(mockInterviews.sessionId, sessionId));
+      return interview;
+    }, undefined);
+  }
+
+  async createMockInterview(interview: InsertMockInterview): Promise<MockInterview> {
+    return await handleDbOperation(async () => {
+      const [newInterview] = await db.insert(mockInterviews).values(interview).returning();
+      return newInterview;
+    });
+  }
+
+  async updateMockInterview(id: number, interview: Partial<InsertMockInterview>): Promise<MockInterview> {
+    return await handleDbOperation(async () => {
+      const [updatedInterview] = await db
+        .update(mockInterviews)
+        .set({ ...interview, updatedAt: new Date() })
+        .where(eq(mockInterviews.id, id))
+        .returning();
+      return updatedInterview;
+    });
+  }
+
+  async deleteMockInterview(id: number): Promise<void> {
+    await handleDbOperation(async () => {
+      await db.delete(mockInterviews).where(eq(mockInterviews.id, id));
+    });
+  }
+
+  // Mock interview questions
+  async getMockInterviewQuestions(interviewId: number): Promise<MockInterviewQuestion[]> {
+    return await handleDbOperation(async () => {
+      return await db.select().from(mockInterviewQuestions)
+        .where(eq(mockInterviewQuestions.interviewId, interviewId))
+        .orderBy(mockInterviewQuestions.questionNumber);
+    }, []);
+  }
+
+  async getMockInterviewQuestion(id: number): Promise<MockInterviewQuestion | undefined> {
+    return await handleDbOperation(async () => {
+      const [question] = await db.select().from(mockInterviewQuestions).where(eq(mockInterviewQuestions.id, id));
+      return question;
+    }, undefined);
+  }
+
+  async createMockInterviewQuestion(question: InsertMockInterviewQuestion): Promise<MockInterviewQuestion> {
+    return await handleDbOperation(async () => {
+      const [newQuestion] = await db.insert(mockInterviewQuestions).values(question).returning();
+      return newQuestion;
+    });
+  }
+
+  async updateMockInterviewQuestion(id: number, question: Partial<InsertMockInterviewQuestion>): Promise<MockInterviewQuestion> {
+    return await handleDbOperation(async () => {
+      const [updatedQuestion] = await db
+        .update(mockInterviewQuestions)
+        .set({ ...question, updatedAt: new Date() })
+        .where(eq(mockInterviewQuestions.id, id))
+        .returning();
+      return updatedQuestion;
+    });
+  }
+
+  async deleteMockInterviewQuestion(id: number): Promise<void> {
+    await handleDbOperation(async () => {
+      await db.delete(mockInterviewQuestions).where(eq(mockInterviewQuestions.id, id));
+    });
+  }
+
+  // Interview payments
+  async getInterviewPayments(userId: string): Promise<InterviewPayment[]> {
+    return await handleDbOperation(async () => {
+      return await db.select().from(interviewPayments)
+        .where(eq(interviewPayments.userId, userId))
+        .orderBy(desc(interviewPayments.createdAt));
+    }, []);
+  }
+
+  async getInterviewPayment(id: number): Promise<InterviewPayment | undefined> {
+    return await handleDbOperation(async () => {
+      const [payment] = await db.select().from(interviewPayments).where(eq(interviewPayments.id, id));
+      return payment;
+    }, undefined);
+  }
+
+  async createInterviewPayment(payment: InsertInterviewPayment): Promise<InterviewPayment> {
+    return await handleDbOperation(async () => {
+      const [newPayment] = await db.insert(interviewPayments).values(payment).returning();
+      return newPayment;
+    });
+  }
+
+  async updateInterviewPayment(id: number, payment: Partial<InsertInterviewPayment>): Promise<InterviewPayment> {
+    return await handleDbOperation(async () => {
+      const [updatedPayment] = await db
+        .update(interviewPayments)
+        .set({ ...payment, updatedAt: new Date() })
+        .where(eq(interviewPayments.id, id))
+        .returning();
+      return updatedPayment;
+    });
+  }
+
+  // User interview stats
+  async getUserInterviewStats(userId: string): Promise<UserInterviewStats | undefined> {
+    return await handleDbOperation(async () => {
+      const [stats] = await db.select().from(userInterviewStats).where(eq(userInterviewStats.userId, userId));
+      return stats;
+    }, undefined);
+  }
+
+  async upsertUserInterviewStats(stats: InsertUserInterviewStats): Promise<UserInterviewStats> {
+    return await handleDbOperation(async () => {
+      const [upsertedStats] = await db
+        .insert(userInterviewStats)
+        .values(stats)
+        .onConflictDoUpdate({
+          target: userInterviewStats.userId,
+          set: {
+            ...stats,
+            updatedAt: new Date(),
+          },
+        })
+        .returning();
+      return upsertedStats;
+    });
   }
 }
 

@@ -332,6 +332,56 @@ export default function ModernDashboard() {
                 </Card>
               </motion.div>
 
+              {/* Mock Interview Practice */}
+              <motion.div variants={itemVariants}>
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-blue-50 via-indigo-50 to-blue-100 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-blue-900/20">
+                  <CardHeader className="bg-gradient-to-r from-blue-600 to-indigo-600 text-white">
+                    <CardTitle className="flex items-center gap-2">
+                      <MessageSquare className="w-5 h-5" />
+                      Mock Interview Practice
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-blue-600" />
+                        <span className="text-sm font-medium text-blue-800 dark:text-blue-200">
+                          AI-Powered Interview Simulation
+                        </span>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        Practice with realistic interview scenarios powered by AI. Get real-time feedback and improve your performance.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3 text-blue-600" />
+                          <span>Technical Questions</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Users className="w-3 h-3 text-blue-600" />
+                          <span>Behavioral Interview</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Settings className="w-3 h-3 text-blue-600" />
+                          <span>System Design</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Award className="w-3 h-3 text-blue-600" />
+                          <span>Performance Scoring</span>
+                        </div>
+                      </div>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                        onClick={() => navigate('/mock-interview')}
+                      >
+                        <MessageSquare className="w-4 h-4 mr-2" />
+                        Start Mock Interview
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
               {/* Recent Applications */}
               <motion.div variants={itemVariants}>
                 <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
