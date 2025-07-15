@@ -17,7 +17,6 @@ const stripePromise = loadStripe(import.meta.env.VITE_STRIPE_PUBLIC_KEY || '');
 export default function RankingTests() {
   const [selectedCategory, setSelectedCategory] = useState('');
   const [selectedDomain, setSelectedDomain] = useState('');
-  const [selectedDifficulty, setSelectedDifficulty] = useState('');
   const [leaderboardType, setLeaderboardType] = useState<'weekly' | 'monthly' | 'all-time'>('weekly');
   const [showPayment, setShowPayment] = useState(false);
   const [currentTest, setCurrentTest] = useState<any>(null);
@@ -72,10 +71,10 @@ export default function RankingTests() {
   });
 
   const handleCreateTest = () => {
-    if (!selectedCategory || !selectedDomain || !selectedDifficulty) {
+    if (!selectedCategory || !selectedDomain) {
       toast({
         title: "Missing Information",
-        description: "Please select category, domain, and difficulty level",
+        description: "Please select category and domain",
         variant: "destructive",
       });
       return;
@@ -84,7 +83,7 @@ export default function RankingTests() {
     createTestMutation.mutate({
       category: selectedCategory,
       domain: selectedDomain,
-      difficultyLevel: selectedDifficulty
+      difficultyLevel: 'expert'
     });
   };
 
@@ -129,14 +128,14 @@ export default function RankingTests() {
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Star className="w-5 h-5 text-yellow-500" />
-                  Create New Ranking Test
+                  Take New Ranking Test
                 </CardTitle>
                 <CardDescription>
                   Select your test parameters and compete for rankings
                 </CardDescription>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
                     <label className="block text-sm font-medium mb-2">Category</label>
                     <Select value={selectedCategory} onValueChange={setSelectedCategory}>
@@ -168,22 +167,16 @@ export default function RankingTests() {
                       </SelectContent>
                     </Select>
                   </div>
-                  
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Difficulty</label>
-                    <Select value={selectedDifficulty} onValueChange={setSelectedDifficulty}>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select difficulty" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {difficulties.map((diff) => (
-                          <SelectItem key={diff.value} value={diff.value}>
-                            {diff.label}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                </div>
+                
+                <div className="bg-amber-50 p-4 rounded-lg border border-amber-200">
+                  <div className="flex items-center gap-2 mb-2">
+                    <Star className="w-4 h-4 text-amber-600" />
+                    <span className="font-medium text-amber-900">Expert Level Only</span>
                   </div>
+                  <p className="text-sm text-amber-800">
+                    All ranking tests are set to expert difficulty level to ensure fair competition among top performers.
+                  </p>
                 </div>
                 
                 <div className="bg-blue-50 p-4 rounded-lg">
@@ -201,10 +194,10 @@ export default function RankingTests() {
                 
                 <Button 
                   onClick={handleCreateTest}
-                  disabled={!selectedCategory || !selectedDomain || !selectedDifficulty || createTestMutation.isPending}
+                  disabled={!selectedCategory || !selectedDomain || createTestMutation.isPending}
                   className="w-full"
                 >
-                  {createTestMutation.isPending ? 'Creating Test...' : 'Create Test ($1)'}
+                  {createTestMutation.isPending ? 'Starting Test...' : 'Take Test ($1)'}
                 </Button>
               </CardContent>
             </Card>

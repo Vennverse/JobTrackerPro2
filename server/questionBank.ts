@@ -580,7 +580,7 @@ export function getQuestionsByCategory(
     .filter(q => {
       if (tags.length === 0) return true;
       const questionTags = Array.isArray(q.tags) ? q.tags : (q.tags ? [q.tags] : []);
-      return tags.some(tag => questionTags.includes(tag));
+      return Array.isArray(tags) && tags.some(tag => questionTags.includes(tag));
     })
     .filter(q => difficulty.includes(q.difficulty))
     .sort(() => Math.random() - 0.5) // Shuffle
