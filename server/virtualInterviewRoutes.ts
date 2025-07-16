@@ -3,15 +3,60 @@ import { db } from "./db";
 import { virtualInterviews, virtualInterviewMessages, virtualInterviewFeedback, virtualInterviewStats } from "@shared/schema";
 import { isAuthenticated } from "./auth";
 import { virtualInterviewService } from "./virtualInterviewService";
+import { virtualInterviewPaymentService } from "./virtualInterviewPaymentService";
 import { eq, desc, and } from "drizzle-orm";
 
 const router = Router();
 
+// Check usage and payment requirements
+router.get("/usage", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const usageInfo = await virtualInterviewPaymentService.checkUsageAndPayment(userId);
+    res.json(usageInfo);
+  } catch (error) {
+    console.error('Error checking virtual interview usage:', error);
+    res.status(500).json({ error: 'Failed to check usage limits' });
+  }
+});
+
+// Create payment intent for virtual interview
+router.post("/payment-intent", isAuthenticated, async (req: any, res) => {
+  try {
+    const userId = req.user.id;
+    const paymentInfo = await virtualInterviewPaymentService.createPaymentIntent(userId);
+    
+    // For now, just return the payment info without Stripe integration
+    // Real implementation would create Stripe PaymentIntent here
+    res.json({
+      amount: paymentInfo.amount,
+      currency: paymentInfo.currency,
+      description: `Virtual Interview Session - $${virtualInterviewPaymentService.getInterviewCost()}`,
+      clientSecret: `mock_payment_intent_${Date.now()}` // Mock for testing
+    });
+  } catch (error) {
+    console.error('Error creating payment intent:', error);
+    res.status(500).json({ error: 'Failed to create payment intent' });
+  }
+});
+
 // Start a new virtual interview session
 router.post("/start", isAuthenticated, async (req: any, res) => {
   try {
-    const { interviewType, role, company, difficulty, duration, personality, style, jobDescription } = req.body;
+    const { interviewType, role, company, difficulty, duration, personality, style, jobDescription, isPaid } = req.body;
     const userId = req.user.id;
+    
+    // Check usage limits and payment requirements
+    const usageInfo = await virtualInterviewPaymentService.checkUsageAndPayment(userId);
+    
+    if (!usageInfo.canStartInterview && !isPaid) {
+      return res.status(402).json({
+        error: 'Payment required',
+        message: usageInfo.message,
+        requiresPayment: true,
+        cost: usageInfo.cost
+      });
+    }
     
     // Generate unique session ID
     const sessionId = `virtual_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
@@ -57,24 +102,8 @@ router.post("/start", isAuthenticated, async (req: any, res) => {
       messageIndex: 1
     });
 
-    // Initialize user stats if not exists
-    const existingStats = await db.query.virtualInterviewStats.findFirst({
-      where: (stats, { eq }) => eq(stats.userId, userId)
-    });
-
-    if (!existingStats) {
-      await db.insert(virtualInterviewStats).values({
-        userId,
-        totalInterviews: 1,
-      });
-    } else {
-      await db.update(virtualInterviewStats)
-        .set({ 
-          totalInterviews: existingStats.totalInterviews + 1,
-          lastInterviewDate: new Date()
-        })
-        .where(eq(virtualInterviewStats.userId, userId));
-    }
+    // Record the interview start in usage tracking
+    await virtualInterviewPaymentService.recordInterviewStart(userId, isPaid || false);
 
     res.json({
       success: true,

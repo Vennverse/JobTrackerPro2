@@ -1,10 +1,17 @@
 import { useState } from "react";
 import { useLocation } from "wouter";
-import { useMutation } from "@tanstack/react-query";
+import { useMutation, useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Textarea } from "@/components/ui/textarea";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Slider } from "@/components/ui/slider";
@@ -21,13 +28,17 @@ import {
   Target,
   TrendingUp,
   Award,
-  Play
+  Play,
+  Lock,
+  CreditCard,
+  AlertCircle
 } from "lucide-react";
 import { apiRequest } from "@/lib/queryClient";
 
 export default function VirtualInterviewStart() {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const [showPaymentDialog, setShowPaymentDialog] = useState(false);
   
   const [formData, setFormData] = useState({
     interviewType: 'technical',
@@ -40,9 +51,22 @@ export default function VirtualInterviewStart() {
     jobDescription: ''
   });
 
+  // Check usage limits
+  const { data: usageInfo, refetch: refetchUsage } = useQuery({
+    queryKey: ['/api/virtual-interview/usage'],
+    queryFn: async () => {
+      const response = await apiRequest('GET', '/api/virtual-interview/usage');
+      return response.json();
+    },
+  });
+
   const startInterviewMutation = useMutation({
-    mutationFn: async (data: typeof formData) => {
+    mutationFn: async (data: typeof formData & { isPaid?: boolean }) => {
       const response = await apiRequest('POST', '/api/virtual-interview/start', data);
+      if (response.status === 402) {
+        const errorData = await response.json();
+        throw new Error(JSON.stringify({ requiresPayment: true, ...errorData }));
+      }
       return response.json();
     },
     onSuccess: (data) => {
@@ -51,8 +75,17 @@ export default function VirtualInterviewStart() {
         description: "Your virtual AI interviewer is ready.",
       });
       setLocation(`/virtual-interview/${data.interview.sessionId}`);
+      refetchUsage(); // Refresh usage info
     },
     onError: (error: any) => {
+      try {
+        const errorData = JSON.parse(error.message);
+        if (errorData.requiresPayment) {
+          setShowPaymentDialog(true);
+          return;
+        }
+      } catch {}
+      
       toast({
         title: "Error",
         description: error.message || "Failed to start interview session",
@@ -62,7 +95,18 @@ export default function VirtualInterviewStart() {
   });
 
   const handleStart = () => {
+    // Check usage limits first
+    if (usageInfo && !usageInfo.canStartInterview && usageInfo.requiresPayment) {
+      setShowPaymentDialog(true);
+      return;
+    }
+    
     startInterviewMutation.mutate(formData);
+  };
+
+  const handlePaidStart = () => {
+    startInterviewMutation.mutate({ ...formData, isPaid: true });
+    setShowPaymentDialog(false);
   };
 
   const interviewTypes = [
@@ -104,6 +148,35 @@ export default function VirtualInterviewStart() {
           Practice with our advanced AI interviewer. Get real-time feedback, improve your skills, 
           and build confidence for your next interview.
         </p>
+        
+        {/* Usage Information */}
+        {usageInfo && (
+          <div className="mt-6 max-w-md mx-auto">
+            <Card className="border-blue-200 bg-blue-50">
+              <CardContent className="pt-6">
+                <div className="text-center">
+                  <h3 className="font-semibold text-blue-800 mb-2">Interview Usage</h3>
+                  {usageInfo.freeInterviewsRemaining > 0 && (
+                    <p className="text-sm text-blue-700">
+                      🎉 {usageInfo.freeInterviewsRemaining} free interview{usageInfo.freeInterviewsRemaining === 1 ? '' : 's'} remaining
+                    </p>
+                  )}
+                  {usageInfo.monthlyInterviewsRemaining > 0 && (
+                    <p className="text-sm text-blue-700">
+                      ⭐ {usageInfo.monthlyInterviewsRemaining} premium interview{usageInfo.monthlyInterviewsRemaining === 1 ? '' : 's'} remaining this month
+                    </p>
+                  )}
+                  {usageInfo.requiresPayment && (
+                    <p className="text-sm text-orange-700 flex items-center justify-center gap-2">
+                      <CreditCard className="h-4 w-4" />
+                      Next interview: ${usageInfo.cost || 2}
+                    </p>
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </div>
 
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -347,6 +420,69 @@ export default function VirtualInterviewStart() {
           </Card>
         </div>
       </div>
+
+      {/* Payment Dialog */}
+      <Dialog open={showPaymentDialog} onOpenChange={setShowPaymentDialog}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CreditCard className="h-5 w-5" />
+              Payment Required
+            </DialogTitle>
+            <DialogDescription>
+              {usageInfo?.message || "You've reached your interview limit. Pay $2 to continue with your virtual interview session."}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div className="bg-blue-50 p-4 rounded-lg">
+              <div className="flex items-center justify-between">
+                <span className="font-medium">Virtual Interview Session</span>
+                <span className="text-lg font-bold">${usageInfo?.cost || 2}</span>
+              </div>
+              <p className="text-sm text-gray-600 mt-1">
+                AI-powered conversational interview with detailed feedback
+              </p>
+            </div>
+            
+            <div className="flex items-center gap-2 text-sm text-gray-600">
+              <AlertCircle className="h-4 w-4" />
+              <span>Upgrade to Premium for 5 free interviews per month</span>
+            </div>
+            
+            <div className="flex gap-3">
+              <Button 
+                variant="outline" 
+                onClick={() => setShowPaymentDialog(false)}
+                className="flex-1"
+              >
+                Cancel
+              </Button>
+              <Button 
+                onClick={handlePaidStart}
+                disabled={startInterviewMutation.isPending}
+                className="flex-1"
+              >
+                {startInterviewMutation.isPending ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Processing...
+                  </>
+                ) : (
+                  <>
+                    <CreditCard className="h-4 w-4 mr-2" />
+                    Pay ${usageInfo?.cost || 2} & Start
+                  </>
+                )}
+              </Button>
+            </div>
+            
+            <p className="text-xs text-gray-500 text-center">
+              * Payment will be processed through Stripe. You'll be charged ${usageInfo?.cost || 2} for this interview session.
+            </p>
+          </div>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

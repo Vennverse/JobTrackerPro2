@@ -1866,6 +1866,9 @@ export const virtualInterviewStats = pgTable("virtual_interview_stats", {
   // Usage statistics
   totalInterviews: integer("total_interviews").default(0),
   completedInterviews: integer("completed_interviews").default(0),
+  freeInterviewsUsed: integer("free_interviews_used").default(0),
+  monthlyInterviewsUsed: integer("monthly_interviews_used").default(0),
+  lastMonthlyReset: timestamp("last_monthly_reset").defaultNow(),
   averageScore: integer("average_score").default(0),
   bestScore: integer("best_score").default(0),
   
