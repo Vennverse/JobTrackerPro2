@@ -85,7 +85,7 @@ export default function MockInterviewSession() {
 
   // Fetch interview session
   const { data: session, isLoading } = useQuery<InterviewSession>({
-    queryKey: ['/api/mock-interview/session', sessionId],
+    queryKey: [`/api/mock-interview/session/${sessionId}`],
     enabled: !!sessionId,
     retry: false,
   });
