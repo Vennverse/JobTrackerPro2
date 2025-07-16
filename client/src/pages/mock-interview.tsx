@@ -97,10 +97,12 @@ export default function MockInterview() {
       return await apiRequest('POST', '/api/mock-interview/start', data);
     },
     onSuccess: (data) => {
+      console.log('Interview started successfully:', data);
       toast({
         title: "Interview Started!",
         description: "Your mock interview session has begun. Good luck!",
       });
+      // The backend returns the interview object with sessionId
       navigate(`/mock-interview/session/${data.sessionId}`);
     },
     onError: (error: any) => {
