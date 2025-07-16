@@ -70,8 +70,12 @@ router.post('/start', isAuthenticated, async (req: any, res) => {
     const userId = req.user.id;
     const config = startInterviewSchema.parse(req.body);
     
+    console.log('🔍 Starting interview for user:', userId, 'with config:', config);
+    
     // Check if user has free interviews remaining
     const freeInterviewsRemaining = await mockInterviewService.checkFreeInterviewsRemaining(userId);
+    
+    console.log('🔍 Free interviews remaining:', freeInterviewsRemaining);
     
     if (freeInterviewsRemaining === 0) {
       return res.status(402).json({ 
@@ -82,7 +86,26 @@ router.post('/start', isAuthenticated, async (req: any, res) => {
     }
     
     const interview = await mockInterviewService.startInterview(userId, config);
-    res.json(interview);
+    
+    console.log('🔍 Interview created:', interview);
+    
+    if (!interview || !interview.sessionId) {
+      console.error('❌ Interview creation failed - no sessionId returned');
+      return res.status(500).json({ error: 'Interview creation failed' });
+    }
+    
+    // Ensure dates are properly serialized
+    const response = {
+      ...interview,
+      startTime: interview.startTime?.toISOString(),
+      endTime: interview.endTime?.toISOString(),
+      createdAt: interview.createdAt?.toISOString(),
+      updatedAt: interview.updatedAt?.toISOString()
+    };
+    
+    console.log('🔍 Sending response:', response);
+    
+    res.json(response);
   } catch (error) {
     console.error('Error starting interview:', error);
     res.status(500).json({ error: 'Failed to start interview' });
@@ -381,5 +404,7 @@ router.get('/boilerplate/:language', async (req, res) => {
     res.status(500).json({ error: 'Failed to get boilerplate code' });
   }
 });
+
+
 
 export { router as mockInterviewRoutes };

@@ -94,7 +94,8 @@ export default function MockInterview() {
   // Start interview mutation
   const startInterviewMutation = useMutation({
     mutationFn: async (data: StartInterviewForm) => {
-      return await apiRequest('POST', '/api/mock-interview/start', data);
+      const response = await apiRequest('POST', '/api/mock-interview/start', data);
+      return await response.json();
     },
     onSuccess: (data) => {
       console.log('Interview started successfully:', data);

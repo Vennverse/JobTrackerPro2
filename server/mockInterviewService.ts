@@ -98,6 +98,8 @@ export class MockInterviewService {
   async startInterview(userId: string, config: InterviewConfiguration): Promise<MockInterview> {
     const sessionId = `interview_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
     
+    console.log('🔍 Starting interview with sessionId:', sessionId);
+    
     const interviewData: InsertMockInterview = {
       userId,
       sessionId,
@@ -111,10 +113,20 @@ export class MockInterviewService {
       isPaid: false // First interview is free
     };
 
+    console.log('🔍 Interview data to insert:', interviewData);
+
     const interview = await storage.createMockInterview(interviewData);
+    
+    console.log('🔍 Interview created in storage:', interview);
+    
+    if (!interview) {
+      throw new Error('Failed to create interview in storage');
+    }
     
     // Generate and store questions
     const questions = await this.generateInterviewQuestions(config);
+    
+    console.log('🔍 Generated questions:', questions.length);
     
     for (let i = 0; i < questions.length; i++) {
       const questionData: InsertMockInterviewQuestion = {
@@ -131,6 +143,8 @@ export class MockInterviewService {
       await storage.createMockInterviewQuestion(questionData);
     }
 
+    console.log('🔍 Returning interview:', interview);
+    
     return interview;
   }
 

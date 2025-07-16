@@ -1269,7 +1269,9 @@ export class DatabaseStorage implements IStorage {
 
   async createMockInterview(interview: InsertMockInterview): Promise<MockInterview> {
     return await handleDbOperation(async () => {
+      console.log('🔍 Inserting interview into database:', interview);
       const [newInterview] = await db.insert(mockInterviews).values(interview).returning();
+      console.log('🔍 Interview inserted, result:', newInterview);
       return newInterview;
     });
   }

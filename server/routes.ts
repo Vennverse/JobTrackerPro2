@@ -1788,19 +1788,28 @@ Additional Information:
   app.get('/api/resume/analysis', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
-      const profile = await storage.getUserProfile(userId);
       
-      if (!profile?.atsAnalysis) {
-        return res.status(404).json({ message: "No resume analysis found" });
+      // Get user resumes from resumes table
+      const userResumes = await storage.getUserResumes(userId);
+      const activeResume = userResumes.find((r: any) => r.isActive) || userResumes[0];
+      
+      if (!activeResume) {
+        return res.status(404).json({ message: "No resume found. Please upload a resume first." });
+      }
+      
+      // Check if resume has analysis
+      if (!activeResume.analysis) {
+        return res.status(404).json({ message: "No resume analysis found. Please upload a resume for analysis." });
       }
 
       res.json({
-        atsScore: profile.atsScore,
-        analysis: profile.atsAnalysis,
-        recommendations: profile.atsRecommendations,
-        lastAnalysis: profile.lastResumeAnalysis,
-        hasResume: !!profile.resumeText,
-        fileName: profile.resumeFileName
+        atsScore: activeResume.atsScore || 0,
+        analysis: activeResume.analysis,
+        recommendations: activeResume.recommendations || [],
+        lastAnalysis: activeResume.lastAnalyzed,
+        hasResume: true,
+        fileName: activeResume.fileName,
+        resumeId: activeResume.id
       });
     } catch (error) {
       console.error("Error fetching resume analysis:", error);

@@ -93,7 +93,8 @@ export default function MockInterviewSession() {
   // Submit answer mutation
   const submitAnswerMutation = useMutation({
     mutationFn: async (data: { questionId: number; answer: string; code?: string; timeSpent: number }) => {
-      return await apiRequest('POST', '/api/mock-interview/answer', data);
+      const response = await apiRequest('POST', '/api/mock-interview/answer', data);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -113,7 +114,8 @@ export default function MockInterviewSession() {
   // Complete interview mutation
   const completeInterviewMutation = useMutation({
     mutationFn: async () => {
-      return await apiRequest('POST', `/api/mock-interview/complete/${sessionId}`);
+      const response = await apiRequest('POST', `/api/mock-interview/complete/${sessionId}`);
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -241,8 +243,33 @@ export default function MockInterviewSession() {
     }
   };
 
-  const hints = currentQuestion?.hints ? JSON.parse(currentQuestion.hints) : [];
-  const testCases = currentQuestion?.testCases ? JSON.parse(currentQuestion.testCases) : [];
+  const hints = currentQuestion?.hints ? (() => {
+    try {
+      // If it's already an array, return it directly
+      if (Array.isArray(currentQuestion.hints)) {
+        return currentQuestion.hints;
+      }
+      // Otherwise try to parse as JSON
+      return JSON.parse(currentQuestion.hints);
+    } catch (error) {
+      console.warn('Failed to parse hints:', error);
+      return [];
+    }
+  })() : [];
+  
+  const testCases = currentQuestion?.testCases ? (() => {
+    try {
+      // If it's already an array, return it directly
+      if (Array.isArray(currentQuestion.testCases)) {
+        return currentQuestion.testCases;
+      }
+      // Otherwise try to parse as JSON
+      return JSON.parse(currentQuestion.testCases);
+    } catch (error) {
+      console.warn('Failed to parse test cases:', error);
+      return [];
+    }
+  })() : [];
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
