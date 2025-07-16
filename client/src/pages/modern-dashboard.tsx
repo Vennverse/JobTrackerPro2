@@ -382,6 +382,56 @@ export default function ModernDashboard() {
                 </Card>
               </motion.div>
 
+              {/* Virtual AI Interview */}
+              <motion.div variants={itemVariants}>
+                <Card className="shadow-lg border-0 bg-gradient-to-br from-emerald-50 via-teal-50 to-cyan-100 dark:from-emerald-900/20 dark:via-teal-900/20 dark:to-cyan-900/20">
+                  <CardHeader className="bg-gradient-to-r from-emerald-600 to-teal-600 text-white">
+                    <CardTitle className="flex items-center gap-2">
+                      <Brain className="w-5 h-5" />
+                      Virtual AI Interview
+                    </CardTitle>
+                  </CardHeader>
+                  <CardContent className="p-6">
+                    <div className="space-y-4">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-emerald-600" />
+                        <span className="text-sm font-medium text-emerald-800 dark:text-emerald-200">
+                          Conversational AI Interviewer
+                        </span>
+                      </div>
+                      <p className="text-gray-700 dark:text-gray-300">
+                        Practice with our advanced AI interviewer in a natural chat format. Get real-time feedback and personalized questions.
+                      </p>
+                      <div className="grid grid-cols-2 gap-3 text-sm">
+                        <div className="flex items-center gap-1">
+                          <MessageSquare className="w-3 h-3 text-emerald-600" />
+                          <span>Chat Interface</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Brain className="w-3 h-3 text-emerald-600" />
+                          <span>AI Personalities</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Clock className="w-3 h-3 text-emerald-600" />
+                          <span>Real-time Scoring</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Award className="w-3 h-3 text-emerald-600" />
+                          <span>Detailed Feedback</span>
+                        </div>
+                      </div>
+                      <Button 
+                        className="w-full bg-gradient-to-r from-emerald-600 to-teal-600 hover:from-emerald-700 hover:to-teal-700 text-white"
+                        onClick={() => navigate('/virtual-interview/new')}
+                      >
+                        <Brain className="w-4 h-4 mr-2" />
+                        Start Virtual Interview
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
+              </motion.div>
+
               {/* Recent Applications */}
               <motion.div variants={itemVariants}>
                 <Card className="shadow-lg border-0 bg-white dark:bg-gray-800">
@@ -475,6 +525,14 @@ export default function ModernDashboard() {
                     >
                       <Settings className="w-4 h-4 mr-2" />
                       Update Profile
+                    </Button>
+                    <Button 
+                      className="w-full justify-start" 
+                      variant="outline"
+                      onClick={() => navigate('/virtual-interview/new')}
+                    >
+                      <Brain className="w-4 h-4 mr-2" />
+                      Virtual Interview
                     </Button>
                     <Button 
                       className="w-full justify-start" 
