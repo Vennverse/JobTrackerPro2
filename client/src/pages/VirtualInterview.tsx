@@ -74,7 +74,7 @@ export default function VirtualInterview() {
 
   // Fetch interview session data
   const { data: sessionData, isLoading } = useQuery({
-    queryKey: ['/api/virtual-interview', sessionId],
+    queryKey: [`/api/virtual-interview/${sessionId}`],
     enabled: !!sessionId,
   });
 
@@ -88,7 +88,7 @@ export default function VirtualInterview() {
       return response.json();
     },
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/virtual-interview', sessionId] });
+      queryClient.invalidateQueries({ queryKey: [`/api/virtual-interview/${sessionId}`] });
       setCurrentMessage("");
       setIsTyping(false);
     },
