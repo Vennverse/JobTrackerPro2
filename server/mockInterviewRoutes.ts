@@ -89,13 +89,41 @@ router.post('/start', isAuthenticated, async (req: any, res) => {
   }
 });
 
-// Get interview session with questions
+// Get interview session with questions (both URL param and query param support)
 router.get('/session/:sessionId', isAuthenticated, async (req: any, res) => {
   try {
     const { sessionId } = req.params;
     const userId = req.user.id;
     
     const interviewData = await mockInterviewService.getInterviewWithQuestions(sessionId);
+    
+    if (!interviewData) {
+      return res.status(404).json({ error: 'Interview session not found' });
+    }
+    
+    // Verify user owns this interview
+    if (interviewData.interview.userId !== userId) {
+      return res.status(403).json({ error: 'Unauthorized access to interview' });
+    }
+    
+    res.json(interviewData);
+  } catch (error) {
+    console.error('Error fetching interview session:', error);
+    res.status(500).json({ error: 'Failed to fetch interview session' });
+  }
+});
+
+// Get interview session with questions (alternative route for frontend compatibility)
+router.get('/session', isAuthenticated, async (req: any, res) => {
+  try {
+    const { sessionId } = req.query;
+    const userId = req.user.id;
+    
+    if (!sessionId) {
+      return res.status(400).json({ error: 'Session ID is required' });
+    }
+    
+    const interviewData = await mockInterviewService.getInterviewWithQuestions(sessionId as string);
     
     if (!interviewData) {
       return res.status(404).json({ error: 'Interview session not found' });
@@ -140,6 +168,23 @@ router.post('/answer', isAuthenticated, async (req: any, res) => {
   } catch (error) {
     console.error('Error submitting answer:', error);
     res.status(500).json({ error: 'Failed to submit answer' });
+  }
+});
+
+// Execute code with test cases
+router.post('/execute-code', isAuthenticated, async (req: any, res) => {
+  try {
+    const { code, language, testCases } = req.body;
+    
+    if (!code || !language) {
+      return res.status(400).json({ error: 'Code and language are required' });
+    }
+    
+    const result = await pistonService.executeCode(code, language, testCases || []);
+    res.json(result);
+  } catch (error) {
+    console.error('Error executing code:', error);
+    res.status(500).json({ error: 'Failed to execute code' });
   }
 });
 
