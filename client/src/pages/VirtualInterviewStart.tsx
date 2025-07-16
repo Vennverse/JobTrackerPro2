@@ -42,10 +42,8 @@ export default function VirtualInterviewStart() {
 
   const startInterviewMutation = useMutation({
     mutationFn: async (data: typeof formData) => {
-      return apiRequest('/api/virtual-interview/start', {
-        method: 'POST',
-        body: data,
-      });
+      const response = await apiRequest('POST', '/api/virtual-interview/start', data);
+      return response.json();
     },
     onSuccess: (data) => {
       toast({
