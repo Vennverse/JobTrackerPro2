@@ -44,6 +44,9 @@ import CareerAIAssistant from "@/pages/career-ai-assistant";
 import RankingTests from "@/pages/ranking-tests";
 import MockInterview from "@/pages/mock-interview";
 import MockInterviewSession from "@/pages/mock-interview-session";
+import VirtualInterviewStart from "@/pages/VirtualInterviewStart";
+import VirtualInterview from "@/pages/VirtualInterview";
+import VirtualInterviewFeedback from "@/pages/VirtualInterviewFeedback";
 
 
 function Router() {
@@ -120,6 +123,9 @@ function Router() {
                   </Route>
                   <Route path="/mock-interview" component={MockInterview} />
                   <Route path="/mock-interview/session/:sessionId" component={MockInterviewSession} />
+                  <Route path="/virtual-interview/new" component={VirtualInterviewStart} />
+                  <Route path="/virtual-interview/:sessionId" component={VirtualInterview} />
+                  <Route path="/virtual-interview/:sessionId/feedback" component={VirtualInterviewFeedback} />
                   <Route path="/jobs/:id" component={ViewJob} />
                   <Route path="/career-ai-assistant" component={CareerAIAssistant} />
                   <Route path="/subscription" component={Subscription} />

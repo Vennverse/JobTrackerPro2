@@ -1715,6 +1715,215 @@ export const insertUserInterviewStatsSchema = createInsertSchema(userInterviewSt
   updatedAt: true,
 });
 
+// Virtual AI Interview System - Conversational interview experience
+export const virtualInterviews = pgTable("virtual_interviews", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  sessionId: varchar("session_id").unique().notNull(),
+  
+  // Interview configuration
+  interviewType: varchar("interview_type").default("technical"), // technical, behavioral, mixed, system_design
+  role: varchar("role").default("software_engineer"), // role being interviewed for
+  company: varchar("company"), // optional company context
+  difficulty: varchar("difficulty").default("medium"), // easy, medium, hard
+  duration: integer("duration").default(30), // in minutes
+  
+  // AI interviewer configuration
+  interviewerPersonality: varchar("interviewer_personality").default("professional"), // friendly, professional, challenging
+  interviewStyle: varchar("interview_style").default("conversational"), // conversational, structured, adaptive
+  
+  // Session state
+  status: varchar("status").default("active"), // active, completed, paused, abandoned
+  currentStep: varchar("current_step").default("introduction"), // introduction, main_questions, follow_ups, conclusion
+  questionsAsked: integer("questions_asked").default(0),
+  totalQuestions: integer("total_questions").default(5),
+  
+  // Timing
+  startTime: timestamp("start_time").defaultNow(),
+  endTime: timestamp("end_time"),
+  timeRemaining: integer("time_remaining"), // in seconds
+  pausedTime: integer("paused_time").default(0), // total time paused
+  
+  // Performance metrics
+  overallScore: integer("overall_score"), // 0-100
+  technicalScore: integer("technical_score"), // 0-100
+  communicationScore: integer("communication_score"), // 0-100
+  confidenceScore: integer("confidence_score"), // 0-100
+  
+  // AI feedback
+  strengths: text("strengths").array().default("[]"),
+  weaknesses: text("weaknesses").array().default("[]"),
+  recommendations: text("recommendations").array().default("[]"),
+  detailedFeedback: text("detailed_feedback"),
+  
+  // Interview context
+  jobDescription: text("job_description"), // context for tailored questions
+  resumeContext: text("resume_context"), // user's background for personalized questions
+  
+  // Payment and access
+  isPaid: boolean("is_paid").default(false),
+  paymentId: varchar("payment_id"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("virtual_interviews_user_idx").on(table.userId),
+  index("virtual_interviews_status_idx").on(table.status),
+  index("virtual_interviews_type_idx").on(table.interviewType),
+  index("virtual_interviews_created_idx").on(table.createdAt),
+]);
+
+// Virtual interview messages - Chat-like conversation log
+export const virtualInterviewMessages = pgTable("virtual_interview_messages", {
+  id: serial("id").primaryKey(),
+  interviewId: integer("interview_id").references(() => virtualInterviews.id).notNull(),
+  
+  // Message details
+  sender: varchar("sender").notNull(), // "interviewer", "candidate"
+  messageType: varchar("message_type").default("text"), // text, question, answer, feedback, system
+  content: text("content").notNull(),
+  
+  // Question-specific data
+  questionCategory: varchar("question_category"), // technical, behavioral, follow_up
+  difficulty: varchar("difficulty"), // easy, medium, hard
+  expectedAnswer: text("expected_answer"), // AI's expected response for scoring
+  
+  // Response analysis
+  responseTime: integer("response_time"), // time taken to respond in seconds
+  responseQuality: integer("response_quality"), // 1-10 AI assessment
+  keywordsMatched: text("keywords_matched").array().default("[]"),
+  sentiment: varchar("sentiment"), // positive, neutral, negative
+  confidence: integer("confidence"), // 1-100 AI confidence in assessment
+  
+  // AI scoring for this exchange
+  technicalAccuracy: integer("technical_accuracy"), // 0-100
+  clarityScore: integer("clarity_score"), // 0-100
+  depthScore: integer("depth_score"), // 0-100
+  
+  // Metadata
+  timestamp: timestamp("timestamp").defaultNow(),
+  messageIndex: integer("message_index").notNull(), // order in conversation
+  
+  createdAt: timestamp("created_at").defaultNow(),
+}, (table) => [
+  index("virtual_interview_messages_interview_idx").on(table.interviewId),
+  index("virtual_interview_messages_sender_idx").on(table.sender),
+  index("virtual_interview_messages_type_idx").on(table.messageType),
+  index("virtual_interview_messages_order_idx").on(table.interviewId, table.messageIndex),
+]);
+
+// Virtual interview feedback sessions - Post-interview detailed analysis
+export const virtualInterviewFeedback = pgTable("virtual_interview_feedback", {
+  id: serial("id").primaryKey(),
+  interviewId: integer("interview_id").references(() => virtualInterviews.id).notNull(),
+  
+  // Overall performance analysis
+  performanceSummary: text("performance_summary").notNull(),
+  keyStrengths: text("key_strengths").array().notNull(),
+  areasForImprovement: text("areas_for_improvement").array().notNull(),
+  
+  // Detailed scoring breakdown
+  technicalSkillsScore: integer("technical_skills_score").notNull(), // 0-100
+  problemSolvingScore: integer("problem_solving_score").notNull(), // 0-100
+  communicationScore: integer("communication_score").notNull(), // 0-100
+  teamworkScore: integer("teamwork_score"), // 0-100 (if applicable)
+  leadershipScore: integer("leadership_score"), // 0-100 (if applicable)
+  
+  // Interview-specific metrics
+  responseConsistency: integer("response_consistency").notNull(), // 0-100
+  adaptabilityScore: integer("adaptability_score").notNull(), // 0-100
+  stressHandling: integer("stress_handling").notNull(), // 0-100
+  
+  // Personalized recommendations
+  skillGaps: text("skill_gaps").array().default("[]"),
+  recommendedResources: jsonb("recommended_resources").default("[]"), // Learning resources
+  practiceAreas: text("practice_areas").array().default("[]"),
+  nextSteps: text("next_steps").array().default("[]"),
+  
+  // Market insights
+  marketComparison: text("market_comparison"), // How they compare to others
+  salaryInsights: text("salary_insights"), // Based on performance
+  roleReadiness: varchar("role_readiness").notNull(), // ready, needs_practice, significant_gaps
+  
+  // AI confidence and methodology
+  aiConfidenceScore: integer("ai_confidence_score").notNull(), // 0-100
+  analysisMethod: varchar("analysis_method").default("groq_ai"), // AI model used
+  feedbackVersion: varchar("feedback_version").default("1.0"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("virtual_interview_feedback_interview_idx").on(table.interviewId),
+  index("virtual_interview_feedback_role_readiness_idx").on(table.roleReadiness),
+  index("virtual_interview_feedback_created_idx").on(table.createdAt),
+]);
+
+// Virtual interview user stats and progress tracking
+export const virtualInterviewStats = pgTable("virtual_interview_stats", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  
+  // Usage statistics
+  totalInterviews: integer("total_interviews").default(0),
+  completedInterviews: integer("completed_interviews").default(0),
+  averageScore: integer("average_score").default(0),
+  bestScore: integer("best_score").default(0),
+  
+  // Progress tracking
+  improvementRate: integer("improvement_rate").default(0), // percentage improvement over time
+  consistencyScore: integer("consistency_score").default(0), // performance consistency
+  
+  // Interview type performance
+  technicalInterviewAvg: integer("technical_interview_avg").default(0),
+  behavioralInterviewAvg: integer("behavioral_interview_avg").default(0),
+  systemDesignAvg: integer("system_design_avg").default(0),
+  
+  // Skill development
+  strongestSkills: text("strongest_skills").array().default("[]"),
+  improvingSkills: text("improving_skills").array().default("[]"),
+  needsWorkSkills: text("needs_work_skills").array().default("[]"),
+  
+  // Engagement metrics
+  totalTimeSpent: integer("total_time_spent").default(0), // in minutes
+  averageSessionLength: integer("average_session_length").default(0), // in minutes
+  lastInterviewDate: timestamp("last_interview_date"),
+  
+  // Milestone tracking
+  milestonesAchieved: text("milestones_achieved").array().default("[]"),
+  nextMilestone: varchar("next_milestone"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("virtual_interview_stats_user_idx").on(table.userId),
+  index("virtual_interview_stats_score_idx").on(table.bestScore),
+  index("virtual_interview_stats_last_interview_idx").on(table.lastInterviewDate),
+]);
+
+// Virtual interview insert schemas
+export const insertVirtualInterviewSchema = createInsertSchema(virtualInterviews).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertVirtualInterviewMessageSchema = createInsertSchema(virtualInterviewMessages).omit({
+  id: true,
+  createdAt: true,
+});
+
+export const insertVirtualInterviewFeedbackSchema = createInsertSchema(virtualInterviewFeedback).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
+export const insertVirtualInterviewStatsSchema = createInsertSchema(virtualInterviewStats).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 // Mock Interview Types
 export type MockInterview = typeof mockInterviews.$inferSelect;
 export type InsertMockInterview = z.infer<typeof insertMockInterviewSchema>;
@@ -1724,3 +1933,13 @@ export type InterviewPayment = typeof interviewPayments.$inferSelect;
 export type InsertInterviewPayment = z.infer<typeof insertInterviewPaymentSchema>;
 export type UserInterviewStats = typeof userInterviewStats.$inferSelect;
 export type InsertUserInterviewStats = z.infer<typeof insertUserInterviewStatsSchema>;
+
+// Virtual AI Interview Types
+export type VirtualInterview = typeof virtualInterviews.$inferSelect;
+export type InsertVirtualInterview = z.infer<typeof insertVirtualInterviewSchema>;
+export type VirtualInterviewMessage = typeof virtualInterviewMessages.$inferSelect;
+export type InsertVirtualInterviewMessage = z.infer<typeof insertVirtualInterviewMessageSchema>;
+export type VirtualInterviewFeedback = typeof virtualInterviewFeedback.$inferSelect;
+export type InsertVirtualInterviewFeedback = z.infer<typeof insertVirtualInterviewFeedbackSchema>;
+export type VirtualInterviewStats = typeof virtualInterviewStats.$inferSelect;
+export type InsertVirtualInterviewStats = z.infer<typeof insertVirtualInterviewStatsSchema>;

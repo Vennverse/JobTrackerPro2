@@ -72,6 +72,7 @@ import {
 import { z } from "zod";
 import { rankingTestService } from "./rankingTestService";
 import { mockInterviewRoutes } from "./mockInterviewRoutes";
+import virtualInterviewRoutes from "./virtualInterviewRoutes";
 
 // Middleware to check usage limits
 const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applications' | 'autoFills') => {
@@ -7082,6 +7083,7 @@ Host: https://autojobr.com`;
 
   // Mock Interview Routes
   app.use('/api/mock-interview', mockInterviewRoutes);
+  app.use('/api/virtual-interview', virtualInterviewRoutes);
 
   return httpServer;
 }
