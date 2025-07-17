@@ -1,7 +1,7 @@
 import { Groq } from 'groq-sdk';
 
 // Using Groq AI for all virtual interview functionality
-const DEFAULT_MODEL_STR = "llama-3.1-8b-instant";
+const DEFAULT_MODEL_STR = "llama3-8b-8192";
 
 interface InterviewerPersonality {
   greeting: string;

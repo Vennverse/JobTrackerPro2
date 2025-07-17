@@ -44,10 +44,10 @@ interface JobMatchAnalysis {
 class GroqService {
   public client: Groq;
   
-  // AI Model Tiers - Using cheaper model with higher rate limits
+  // AI Model Tiers - Using optimized model with higher rate limits and better context
   private readonly models = {
-    premium: "llama-3.1-8b-instant",   // Fast, cheaper model with higher rate limits
-    basic: "llama-3.1-8b-instant"      // Same model for all users - cost-effective
+    premium: "llama3-8b-8192",   // Optimized model with 8K context and same rate limits
+    basic: "llama3-8b-8192"      // Same model for all users - cost-effective with better context
   };
 
   constructor() {
@@ -577,7 +577,7 @@ Be precise and only extract information that is explicitly stated in the job pos
             content: prompt
           }
         ],
-        model: "llama-3.1-8b-instant",
+        model: "llama3-8b-8192",
         temperature: 0.1,
         max_tokens: 1000,
       });
@@ -655,7 +655,7 @@ Guidelines:
 `;
 
       const completion = await this.client.chat.completions.create({
-        model: "llama-3.1-8b-instant",
+        model: "llama3-8b-8192",
         messages: [
           {
             role: "system",
