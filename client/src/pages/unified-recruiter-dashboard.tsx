@@ -357,9 +357,9 @@ export default function RecruiterDashboard() {
                   <Video className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold text-gray-900 dark:text-white">24</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">-</p>
                   <p className="text-sm text-gray-600 dark:text-gray-400">Interviews Assigned</p>
-                  <p className="text-xs text-purple-600 dark:text-purple-400">18 completed</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400">coming soon</p>
                 </div>
               </div>
             </CardContent>
@@ -523,55 +523,55 @@ export default function RecruiterDashboard() {
           </Card>
         </div>
 
-        {/* Revenue Features */}
-        <Card className="mb-8 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-2 border-amber-200 dark:border-amber-800">
+        {/* Recruitment Tools */}
+        <Card className="mb-8 bg-gradient-to-r from-indigo-50 to-cyan-50 dark:from-indigo-900/20 dark:to-cyan-900/20 border-2 border-indigo-200 dark:border-indigo-800">
           <CardHeader>
             <CardTitle className="flex items-center gap-2">
-              <Star className="w-5 h-5 text-amber-600" />
-              Revenue-Generating Features
+              <Briefcase className="w-5 h-5 text-indigo-600" />
+              Advanced Recruitment Tools
             </CardTitle>
             <CardDescription>
-              Monetize your recruitment process with premium features
+              Powerful features to streamline your hiring process
             </CardDescription>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-800">
+              <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-indigo-200 dark:border-indigo-800">
                 <div className="flex items-center gap-2 mb-2">
-                  <Video className="w-4 h-4 text-amber-600" />
-                  <span className="font-semibold">Interview Retakes</span>
+                  <GitBranch className="w-4 h-4 text-indigo-600" />
+                  <span className="font-semibold">Pipeline Management</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Candidates pay $5 for interview retakes
+                  Track candidates through your hiring pipeline
                 </p>
-                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                  $5 per retake
+                <Badge className="bg-indigo-100 text-indigo-800 dark:bg-indigo-900 dark:text-indigo-200">
+                  Full workflow
                 </Badge>
               </div>
               
               <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-800">
                 <div className="flex items-center gap-2 mb-2">
-                  <Zap className="w-4 h-4 text-purple-600" />
-                  <span className="font-semibold">Premium Targeting</span>
+                  <BarChart3 className="w-4 h-4 text-purple-600" />
+                  <span className="font-semibold">Analytics Dashboard</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Target ideal candidates with precision
+                  Comprehensive recruitment performance insights
                 </p>
                 <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
-                  $99-$300+ per post
+                  Real-time data
                 </Badge>
               </div>
               
               <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-800">
                 <div className="flex items-center gap-2 mb-2">
-                  <Star className="w-4 h-4 text-green-600" />
-                  <span className="font-semibold">Job Promotion</span>
+                  <MessageSquare className="w-4 h-4 text-green-600" />
+                  <span className="font-semibold">Candidate Messaging</span>
                 </div>
                 <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
-                  Boost job visibility and applications
+                  Direct communication with candidates
                 </p>
                 <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                  $10 per promotion
+                  Integrated chat
                 </Badge>
               </div>
             </div>
@@ -632,9 +632,9 @@ export default function RecruiterDashboard() {
               <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
                 <div className="flex items-center justify-between">
                   <div>
-                    <p className="text-sm text-amber-600 dark:text-amber-400">Revenue Generated</p>
-                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">$247</p>
-                    <p className="text-xs text-amber-500 dark:text-amber-400">this month</p>
+                    <p className="text-sm text-amber-600 dark:text-amber-400">Active Campaigns</p>
+                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">-</p>
+                    <p className="text-xs text-amber-500 dark:text-amber-400">premium jobs</p>
                   </div>
                   <Star className="w-8 h-8 text-amber-500" />
                 </div>
@@ -656,37 +656,38 @@ export default function RecruiterDashboard() {
           </CardHeader>
           <CardContent>
             <div className="space-y-4">
-              <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">New application received</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Sarah Johnson applied for Senior Developer • 2 hours ago</p>
+              {applications.length === 0 && jobPostings.length === 0 ? (
+                <div className="text-center py-8">
+                  <Clock className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                  <p className="text-gray-600 dark:text-gray-400">No recent activity</p>
+                  <p className="text-sm text-gray-500 dark:text-gray-500">Activity will appear here as you post jobs and receive applications</p>
                 </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Interview completed</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Michael Chen finished Virtual AI Interview • 4 hours ago</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Test submitted</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Alex Rodriguez completed Mock Coding Test • 6 hours ago</p>
-                </div>
-              </div>
-              
-              <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Premium targeting activated</p>
-                  <p className="text-xs text-gray-600 dark:text-gray-400">Frontend Engineer job promoted with targeting • 8 hours ago</p>
-                </div>
-              </div>
+              ) : (
+                <>
+                  {applications.slice(0, 3).map((app: any, index: number) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                      <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">New application received</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {app.applicantName || `${app.applicantFirstName || ''} ${app.applicantLastName || ''}`.trim() || 'Candidate'} applied for {app.jobTitle || 'Position'} • {new Date(app.appliedAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                  {jobPostings.slice(0, 2).map((job: any, index: number) => (
+                    <div key={index} className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                      <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                      <div className="flex-1">
+                        <p className="text-sm font-medium">Job posted</p>
+                        <p className="text-xs text-gray-600 dark:text-gray-400">
+                          {job.title} • {new Date(job.createdAt).toLocaleDateString()}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -1777,15 +1778,15 @@ export default function RecruiterDashboard() {
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span>Active Interviews:</span>
-                            <span className="font-medium">12</span>
+                            <span className="font-medium">-</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Completed:</span>
-                            <span className="font-medium">8</span>
+                            <span className="font-medium">-</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Pending:</span>
-                            <span className="font-medium">4</span>
+                            <span className="font-medium">-</span>
                           </div>
                         </div>
                         <Button 
@@ -1812,15 +1813,15 @@ export default function RecruiterDashboard() {
                         <div className="space-y-2 text-sm">
                           <div className="flex justify-between">
                             <span>Active Tests:</span>
-                            <span className="font-medium">6</span>
+                            <span className="font-medium">-</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Completed:</span>
-                            <span className="font-medium">4</span>
+                            <span className="font-medium">-</span>
                           </div>
                           <div className="flex justify-between">
                             <span>Pending:</span>
-                            <span className="font-medium">2</span>
+                            <span className="font-medium">-</span>
                           </div>
                         </div>
                         <Button 
@@ -1842,20 +1843,20 @@ export default function RecruiterDashboard() {
                     <CardContent>
                       <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                         <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
-                          <div className="text-2xl font-bold text-blue-600">87%</div>
+                          <div className="text-2xl font-bold text-blue-600">-</div>
                           <div className="text-sm text-gray-600 dark:text-gray-400">Completion Rate</div>
                         </div>
                         <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
-                          <div className="text-2xl font-bold text-green-600">7.2/10</div>
+                          <div className="text-2xl font-bold text-green-600">-</div>
                           <div className="text-sm text-gray-600 dark:text-gray-400">Average Score</div>
                         </div>
                         <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
-                          <div className="text-2xl font-bold text-purple-600">24min</div>
+                          <div className="text-2xl font-bold text-purple-600">-</div>
                           <div className="text-sm text-gray-600 dark:text-gray-400">Avg Duration</div>
                         </div>
                         <div className="text-center p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
-                          <div className="text-2xl font-bold text-amber-600">$45</div>
-                          <div className="text-sm text-gray-600 dark:text-gray-400">Retake Revenue</div>
+                          <div className="text-2xl font-bold text-amber-600">-</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Interviews Assigned</div>
                         </div>
                       </div>
                     </CardContent>
@@ -1868,43 +1869,10 @@ export default function RecruiterDashboard() {
                     </CardHeader>
                     <CardContent>
                       <div className="space-y-3">
-                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
-                            <div>
-                              <p className="font-medium">John Smith completed AI Interview</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Frontend Developer • Score: 8.5/10</p>
-                            </div>
-                          </div>
-                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
-                            Completed
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
-                            <div>
-                              <p className="font-medium">Sarah Johnson started Coding Test</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Backend Developer • In Progress</p>
-                            </div>
-                          </div>
-                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
-                            In Progress
-                          </Badge>
-                        </div>
-                        
-                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-                          <div className="flex items-center gap-3">
-                            <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
-                            <div>
-                              <p className="font-medium">Mike Chen requested retake</p>
-                              <p className="text-sm text-gray-600 dark:text-gray-400">Full Stack Developer • Payment: $5</p>
-                            </div>
-                          </div>
-                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
-                            Retake Paid
-                          </Badge>
+                        <div className="text-center py-8">
+                          <Video className="w-12 h-12 text-gray-400 mx-auto mb-4" />
+                          <p className="text-gray-600 dark:text-gray-400">No interview activity yet</p>
+                          <p className="text-sm text-gray-500 dark:text-gray-500">Interview activity will appear here when you assign interviews to candidates</p>
                         </div>
                       </div>
                     </CardContent>
