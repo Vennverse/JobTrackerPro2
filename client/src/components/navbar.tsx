@@ -5,7 +5,7 @@ import { useTheme } from "@/components/theme-provider";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
-import { Rocket, Moon, Sun, User, Settings, LogOut, BarChart3, FileText, Briefcase, Crown, Menu, X, Plus, MessageCircle, Search, Target, Brain, Users, Trophy, Code } from "lucide-react";
+import { Rocket, Moon, Sun, User, Settings, LogOut, BarChart3, FileText, Briefcase, Crown, Menu, X, Plus, MessageCircle, Search, Target, Brain, Users, Trophy, Code, Bell, Upload, Zap, HelpCircle, ChevronDown, TrendingUp } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 export function Navbar() {
@@ -13,6 +13,9 @@ export function Navbar() {
   const { user } = useAuth() as { user: any };
   const { theme, setTheme } = useTheme();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [showQuickActions, setShowQuickActions] = useState(false);
 
   const handleLogout = async () => {
     try {
@@ -71,11 +74,16 @@ export function Navbar() {
       <div className="w-full mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           <div className="flex items-center space-x-2 sm:space-x-4">
-            <Link href="/" className="flex items-center space-x-2">
-              <div className="w-8 h-8 bg-primary rounded-lg flex items-center justify-center">
-                <Rocket className="w-4 h-4 text-primary-foreground" />
+            <Link href="/" className="flex items-center space-x-2 group">
+              <div className="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center group-hover:scale-110 transition-transform duration-200">
+                <Rocket className="w-4 h-4 text-white" />
               </div>
-              <span className="text-lg sm:text-xl font-bold text-foreground">AutoJobr</span>
+              <span className="text-lg sm:text-xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
+                AutoJobr
+              </span>
+              {user?.planType === 'premium' && (
+                <Crown className="w-4 h-4 text-yellow-500" />
+              )}
             </Link>
             <div className="hidden md:flex space-x-4 lg:space-x-6">
               {navItems.map((item) => {
@@ -101,6 +109,100 @@ export function Navbar() {
           </div>
           
           <div className="flex items-center space-x-2 sm:space-x-4">
+            {/* Global Search Bar - hidden on mobile */}
+            {user && (
+              <div className="hidden lg:flex relative">
+                <div className="relative">
+                  <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+                  <input
+                    type="text"
+                    placeholder="Search jobs, companies, skills..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                    className="pl-10 pr-4 py-2 w-72 text-sm border border-border rounded-lg bg-background/50 backdrop-blur-sm focus:outline-none focus:ring-2 focus:ring-primary focus:border-transparent"
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && searchQuery.trim()) {
+                        window.location.href = `/jobs?search=${encodeURIComponent(searchQuery.trim())}`;
+                      }
+                    }}
+                  />
+                </div>
+              </div>
+            )}
+
+            {/* Quick Actions Dropdown */}
+            {user && (
+              <DropdownMenu open={showQuickActions} onOpenChange={setShowQuickActions}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="outline" size="sm" className="hidden sm:flex">
+                    <Plus className="h-4 w-4 mr-2" />
+                    Quick Actions
+                    <ChevronDown className="h-3 w-3 ml-1" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <DropdownMenuItem onClick={() => window.location.href = '/resumes'}>
+                    <Upload className="mr-2 h-4 w-4" />
+                    Upload Resume
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/mock-interview'}>
+                    <Code className="mr-2 h-4 w-4" />
+                    Start Practice Test
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/virtual-interview/new'}>
+                    <Brain className="mr-2 h-4 w-4" />
+                    Begin Interview Simulation
+                  </DropdownMenuItem>
+                  <DropdownMenuItem onClick={() => window.location.href = '/career-ai-assistant'}>
+                    <Zap className="mr-2 h-4 w-4" />
+                    Get Career Insights
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
+            {/* Notifications Bell */}
+            {user && (
+              <DropdownMenu open={showNotifications} onOpenChange={setShowNotifications}>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" size="icon" className="relative">
+                    <Bell className="h-4 w-4" />
+                    <span className="absolute -top-1 -right-1 h-3 w-3 bg-red-500 rounded-full text-xs flex items-center justify-center text-white">
+                      3
+                    </span>
+                    <span className="sr-only">Notifications</span>
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-80">
+                  <div className="p-3 border-b">
+                    <h3 className="font-semibold">Notifications</h3>
+                  </div>
+                  <div className="max-h-64 overflow-y-auto">
+                    <DropdownMenuItem className="flex-col items-start p-3">
+                      <div className="font-medium">New Job Match Found!</div>
+                      <div className="text-sm text-muted-foreground">Software Engineer at TechCorp - 94% match</div>
+                      <div className="text-xs text-muted-foreground mt-1">2 hours ago</div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex-col items-start p-3">
+                      <div className="font-medium">Interview Request</div>
+                      <div className="text-sm text-muted-foreground">StartupCo wants to schedule an interview</div>
+                      <div className="text-xs text-muted-foreground mt-1">1 day ago</div>
+                    </DropdownMenuItem>
+                    <DropdownMenuItem className="flex-col items-start p-3">
+                      <div className="font-medium">Resume Analysis Complete</div>
+                      <div className="text-sm text-muted-foreground">Your ATS score improved to 87%</div>
+                      <div className="text-xs text-muted-foreground mt-1">2 days ago</div>
+                    </DropdownMenuItem>
+                  </div>
+                  <div className="p-2 border-t">
+                    <Button variant="ghost" className="w-full text-sm">
+                      View All Notifications
+                    </Button>
+                  </div>
+                </DropdownMenuContent>
+              </DropdownMenu>
+            )}
+
             {/* Mobile menu button - show first on mobile */}
             <Button
               variant="ghost"
@@ -177,9 +279,23 @@ export function Navbar() {
                     <span>Profile</span>
                   </DropdownMenuItem>
                 </Link>
+                <Link href="/subscription">
+                  <DropdownMenuItem>
+                    <Crown className="mr-2 h-4 w-4" />
+                    <span>Subscription</span>
+                  </DropdownMenuItem>
+                </Link>
                 <DropdownMenuItem>
                   <Settings className="mr-2 h-4 w-4" />
                   <span>Settings</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem>
+                  <HelpCircle className="mr-2 h-4 w-4" />
+                  <span>Help & Support</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem className="text-green-600">
+                  <TrendingUp className="mr-2 h-4 w-4" />
+                  <span>Activity Summary</span>
                 </DropdownMenuItem>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem onClick={handleLogout}>
