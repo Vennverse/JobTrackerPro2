@@ -178,23 +178,6 @@ Focus on THIS specific resume content. Provide personalized, actionable advice t
 
     try {
       const accessInfo = this.hasAIAccess(user);
-      
-      // Test API key with a simple request first
-      try {
-        await this.client.chat.completions.create({
-          messages: [{ role: "user", content: "test" }],
-          model: "llama-3.1-8b-instant",
-          max_tokens: 1,
-        });
-      } catch (error: any) {
-        if (error.status === 401) {
-          console.error("GROQ API key is invalid. Using fallback analysis.");
-          // Return fallback analysis
-          return this.getFallbackResumeAnalysis(resumeText);
-        }
-        throw error;
-      }
-      
       const completion = await this.client.chat.completions.create({
         messages: [
           {
@@ -501,22 +484,6 @@ Consider:
 
     try {
       const accessInfo = this.hasAIAccess(user);
-      
-      // Test API key first
-      try {
-        await this.client.chat.completions.create({
-          messages: [{ role: "user", content: "test" }],
-          model: "llama-3.1-8b-instant",
-          max_tokens: 1,
-        });
-      } catch (error: any) {
-        if (error.status === 401) {
-          console.error("GROQ API key is invalid. Using fallback job match analysis.");
-          return this.getFallbackJobMatchAnalysis(candidateProfile, jobPosting);
-        }
-        throw error;
-      }
-      
       const completion = await this.client.chat.completions.create({
         messages: [
           {
