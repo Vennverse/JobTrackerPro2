@@ -52,6 +52,8 @@ import {
   Zap,
   Copy,
   ExternalLink,
+  Video,
+  Code,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -231,6 +233,43 @@ export default function RecruiterDashboard() {
 
       {/* Dashboard Content */}
       <div className="container mx-auto px-4 py-8">
+        {/* Interview Assignment Feature Card */}
+        <Card className="mb-8 bg-gradient-to-r from-blue-50 to-green-50 dark:from-blue-900/20 dark:to-green-900/20 border-2 border-blue-200 dark:border-blue-800">
+          <CardContent className="p-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-4">
+                <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-green-600 rounded-xl flex items-center justify-center">
+                  <Video className="w-8 h-8 text-white" />
+                </div>
+                <div>
+                  <h3 className="text-xl font-bold text-gray-900 dark:text-white">Interview Assignment System</h3>
+                  <p className="text-gray-600 dark:text-gray-400">
+                    Assign Virtual AI Interviews & Mock Coding Tests to candidates with automated notifications
+                  </p>
+                  <div className="flex items-center gap-4 mt-2">
+                    <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                      <Video className="w-3 h-3 mr-1" />
+                      Virtual AI Interviews
+                    </Badge>
+                    <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                      <Code className="w-3 h-3 mr-1" />
+                      Mock Coding Tests
+                    </Badge>
+                  </div>
+                </div>
+              </div>
+              <Button
+                onClick={() => setLocation("/recruiter/interview-assignments")}
+                className="bg-gradient-to-r from-blue-600 to-green-600 hover:from-blue-700 hover:to-green-700"
+                size="lg"
+              >
+                <Video className="w-4 h-4 mr-2" />
+                Assign Interviews
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Premium Targeting Feature Card */}
         <Card className="mb-8 bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20 border-2 border-purple-200 dark:border-purple-800">
           <CardContent className="p-6">
