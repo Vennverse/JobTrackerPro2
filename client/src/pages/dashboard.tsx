@@ -51,7 +51,9 @@ import {
   Settings,
   MessageSquare,
   MessageCircle,
-  Code
+  Code,
+  Brain,
+  Trophy
 } from "lucide-react";
 
 const containerVariants = {
