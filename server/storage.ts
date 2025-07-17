@@ -668,6 +668,12 @@ export class DatabaseStorage implements IStorage {
     }, []);
   }
 
+  async getAllJobPostings(): Promise<JobPosting[]> {
+    return await handleDbOperation(async () => {
+      return await db.select().from(jobPostings).where(eq(jobPostings.isActive, true)).orderBy(desc(jobPostings.createdAt));
+    }, []);
+  }
+
   async getJobPosting(id: number): Promise<JobPosting | undefined> {
     return await handleDbOperation(async () => {
       const [jobPosting] = await db.select().from(jobPostings).where(eq(jobPostings.id, id));

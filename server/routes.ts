@@ -440,38 +440,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // AI-powered job recommendations using GROQ API
+  // Real job recommendations from actual job postings
   app.get('/api/jobs/recommendations', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const cacheKey = `recommendations_${userId}`;
-      const monthlyCacheKey = `monthly_recommendations_${userId}`;
       
-      // Check monthly cache first (refresh only once per month)
-      const monthlyCache = getCached(monthlyCacheKey);
-      if (monthlyCache) {
-        console.log("Serving monthly cached recommendations for user:", userId);
-        return res.json(monthlyCache);
+      // Check cache first
+      const cachedRecommendations = getCached(cacheKey);
+      if (cachedRecommendations) {
+        console.log("Serving cached recommendations for user:", userId);
+        return res.json(cachedRecommendations);
       }
       
-      // Get user profile for AI analysis
+      // Get user profile for matching
       const profile = await storage.getUserProfile(userId);
       if (!profile) {
-        return res.json({ message: "Please complete your profile to get personalized recommendations" });
+        return res.json([]);
       }
       
-      console.log("Generating AI recommendations for user:", userId);
+      console.log("Generating real job recommendations for user:", userId);
       
-      // Use GROQ API to generate personalized job recommendations
-      const recommendations = await groqService.generateJobRecommendations(profile);
+      // Get all active job postings from your platform
+      const allJobPostings = await storage.getJobPostings(); // Use existing method
       
-      // Cache for 30 days (monthly refresh)
-      const thirtyDaysInMs = 30 * 24 * 60 * 60 * 1000;
-      setCache(monthlyCacheKey, recommendations, thirtyDaysInMs);
+      if (!allJobPostings || allJobPostings.length === 0) {
+        return res.json([]);
+      }
+      
+      // Convert job postings to recommendation format with AI-powered matching scores
+      const recommendations = [];
+      
+      for (const job of allJobPostings.slice(0, 8)) { // Limit to 8 recommendations
+        try {
+          // Use AI to calculate match score for this specific job
+          const jobData = {
+            title: job.title,
+            company: job.company,
+            description: job.description,
+            requirements: job.requirements || '',
+            qualifications: job.qualifications || '',
+            benefits: job.benefits || ''
+          };
+          
+          const matchAnalysis = await groqService.analyzeJobMatch(jobData, profile);
+          
+          recommendations.push({
+            id: `job-${job.id}`, // Use actual job ID
+            title: job.title,
+            company: job.company,
+            location: job.location || 'Remote',
+            description: job.description.substring(0, 200) + '...',
+            requirements: job.requirements ? job.requirements.split('\n').slice(0, 3) : [],
+            matchScore: matchAnalysis.matchScore || 75,
+            salaryRange: job.salaryRange || 'Competitive',
+            workMode: job.workMode || 'Not specified',
+            postedDate: job.createdAt,
+            applicationUrl: `/jobs/${job.id}`, // Link to actual job page
+            benefits: job.benefits ? job.benefits.split('\n').slice(0, 3) : [],
+            isBookmarked: false
+          });
+        } catch (aiError) {
+          // Fallback without AI scoring
+          recommendations.push({
+            id: `job-${job.id}`,
+            title: job.title,
+            company: job.company,
+            location: job.location || 'Remote',
+            description: job.description.substring(0, 200) + '...',
+            requirements: job.requirements ? job.requirements.split('\n').slice(0, 3) : [],
+            matchScore: 75, // Default score
+            salaryRange: job.salaryRange || 'Competitive',
+            workMode: job.workMode || 'Not specified',
+            postedDate: job.createdAt,
+            applicationUrl: `/jobs/${job.id}`,
+            benefits: job.benefits ? job.benefits.split('\n').slice(0, 3) : [],
+            isBookmarked: false
+          });
+        }
+      }
+      
+      // Cache for 1 hour
+      setCache(cacheKey, recommendations, 3600000);
       
       res.json(recommendations);
     } catch (error) {
-      console.error("Error fetching AI job recommendations:", error);
+      console.error("Error fetching job recommendations:", error);
       res.status(500).json({ message: "Failed to fetch job recommendations. Please try again later." });
     }
   });
@@ -3943,7 +3997,19 @@ Additional Information:
   // Get a single job posting by ID for job seekers
   app.get('/api/jobs/postings/:id', isAuthenticated, async (req: any, res) => {
     try {
-      const jobId = parseInt(req.params.id);
+      let jobId: number;
+      
+      // Handle both "job-X" format and direct integer IDs
+      if (req.params.id.startsWith('job-')) {
+        jobId = parseInt(req.params.id.replace('job-', ''));
+      } else {
+        jobId = parseInt(req.params.id);
+      }
+      
+      if (isNaN(jobId)) {
+        return res.status(400).json({ message: "Invalid job ID format" });
+      }
+      
       const jobPosting = await storage.getJobPosting(jobId);
       
       if (!jobPosting || !jobPosting.isActive) {
