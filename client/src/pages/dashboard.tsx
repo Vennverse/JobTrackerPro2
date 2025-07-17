@@ -49,7 +49,8 @@ import {
   Search,
   Bell,
   Settings,
-  MessageSquare
+  MessageSquare,
+  Code
 } from "lucide-react";
 
 const containerVariants = {
