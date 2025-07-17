@@ -365,7 +365,7 @@ export default function Dashboard() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
+    <div key="modern-dashboard-2024" className="min-h-screen bg-gradient-to-br from-blue-50 via-white to-purple-50 dark:from-gray-900 dark:via-gray-800 dark:to-gray-900">
       <Navbar />
       
       <motion.div 
@@ -381,7 +381,7 @@ export default function Dashboard() {
         >
           <div className="text-center mb-8">
             <h1 className="text-5xl font-bold bg-gradient-to-r from-blue-600 via-purple-600 to-teal-600 bg-clip-text text-transparent mb-4">
-              Welcome back, {user?.firstName || 'Job Seeker'}! 
+              🚀 Welcome back, {user?.firstName || 'Job Seeker'}! 
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-300 max-w-2xl mx-auto">
               Your AI-powered career acceleration platform
