@@ -183,12 +183,35 @@ export default function PipelineManagement() {
   // Organize applications by stage
   useEffect(() => {
     if (applications.length > 0) {
+      // Transform flat data structure to nested format expected by frontend
+      const transformedApplications = applications.map((app: any) => ({
+        ...app,
+        candidate: {
+          id: app.applicantId,
+          name: app.applicantName,
+          email: app.applicantEmail,
+          phone: app.applicantPhone,
+          location: app.applicantLocation,
+          profileImageUrl: app.applicantProfileImageUrl,
+        },
+        job: {
+          id: app.jobPostingId,
+          title: app.jobPostingTitle,
+          company: app.jobPostingCompany,
+          location: app.jobPostingLocation,
+        },
+        stage: app.stage || "applied",
+        lastActivity: app.updatedAt || app.appliedAt,
+        userId: app.applicantId,
+        appliedAt: app.appliedAt,
+      }));
+
       const updatedStages = defaultStages.map(stage => ({
         ...stage,
-        applications: applications.filter((app: Application) => 
+        applications: transformedApplications.filter((app: Application) => 
           app.stage === stage.id || (!app.stage && stage.id === "applied")
         ),
-        count: applications.filter((app: Application) => 
+        count: transformedApplications.filter((app: Application) => 
           app.stage === stage.id || (!app.stage && stage.id === "applied")
         ).length
       }));
@@ -276,10 +299,15 @@ export default function PipelineManagement() {
   const filteredStages = pipelineStages.map(stage => ({
     ...stage,
     applications: stage.applications.filter(app => {
+      // Add null checks to prevent errors
+      if (!app.candidate || !app.job) {
+        return false;
+      }
+      
       const matchesSearch = searchTerm === "" || 
-        app.candidate.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.candidate.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        app.job.title.toLowerCase().includes(searchTerm.toLowerCase());
+        app.candidate.name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.candidate.email?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        app.job.title?.toLowerCase().includes(searchTerm.toLowerCase());
       
       const matchesJob = selectedJobFilter === "all" || 
         app.jobPostingId.toString() === selectedJobFilter;
@@ -468,18 +496,18 @@ export default function PipelineManagement() {
                           <div className="flex items-center justify-between">
                             <div className="flex items-center gap-4">
                               <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-purple-500 rounded-full flex items-center justify-center text-white font-semibold">
-                                {application.candidate.name.charAt(0)}
+                                {application.candidate?.name?.charAt(0) || '?'}
                               </div>
                               <div>
                                 <h4 className="font-semibold text-gray-900 dark:text-white">
-                                  {application.candidate.name}
+                                  {application.candidate?.name || 'Unknown Candidate'}
                                 </h4>
                                 <p className="text-sm text-gray-600 dark:text-gray-400">
-                                  {application.candidate.email}
+                                  {application.candidate?.email || 'No email provided'}
                                 </p>
                                 <div className="flex items-center gap-4 mt-1">
                                   <span className="text-sm text-gray-500">
-                                    Applied to: {application.job.title}
+                                    Applied to: {application.job?.title || 'Unknown Position'}
                                   </span>
                                   <span className="text-sm text-gray-500">
                                     {new Date(application.appliedAt).toLocaleDateString()}
