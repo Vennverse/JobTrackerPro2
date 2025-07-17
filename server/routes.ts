@@ -73,6 +73,7 @@ import { z } from "zod";
 import { rankingTestService } from "./rankingTestService";
 import { mockInterviewRoutes } from "./mockInterviewRoutes";
 import virtualInterviewRoutes from "./virtualInterviewRoutes";
+import { interviewAssignmentService } from "./interviewAssignmentService";
 
 // Middleware to check usage limits
 const checkUsageLimit = (feature: 'jobAnalyses' | 'resumeAnalyses' | 'applications' | 'autoFills') => {
@@ -3217,6 +3218,193 @@ Additional Information:
       });
     } catch (error: any) {
       res.status(500).json({ error: error.message });
+    }
+  });
+
+  // ========================================
+  // Interview Assignment Routes
+  // ========================================
+
+  // Assign virtual interview to candidate
+  app.post('/api/interviews/virtual/assign', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+
+      const {
+        candidateId,
+        jobPostingId,
+        interviewType,
+        role,
+        company,
+        difficulty,
+        duration,
+        dueDate,
+        interviewerPersonality,
+        jobDescription
+      } = req.body;
+
+      const interview = await interviewAssignmentService.assignVirtualInterview({
+        recruiterId: userId,
+        candidateId,
+        jobPostingId,
+        interviewType,
+        role,
+        company,
+        difficulty,
+        duration,
+        dueDate: new Date(dueDate),
+        interviewerPersonality,
+        jobDescription
+      });
+
+      res.json({ success: true, interview });
+    } catch (error) {
+      console.error('Error assigning virtual interview:', error);
+      res.status(500).json({ message: 'Failed to assign virtual interview' });
+    }
+  });
+
+  // Assign mock interview to candidate
+  app.post('/api/interviews/mock/assign', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+
+      const {
+        candidateId,
+        jobPostingId,
+        interviewType,
+        role,
+        company,
+        difficulty,
+        language,
+        totalQuestions,
+        dueDate
+      } = req.body;
+
+      const interview = await interviewAssignmentService.assignMockInterview({
+        recruiterId: userId,
+        candidateId,
+        jobPostingId,
+        interviewType,
+        role,
+        company,
+        difficulty,
+        language,
+        totalQuestions,
+        dueDate: new Date(dueDate)
+      });
+
+      res.json({ success: true, interview });
+    } catch (error) {
+      console.error('Error assigning mock interview:', error);
+      res.status(500).json({ message: 'Failed to assign mock interview' });
+    }
+  });
+
+  // Get recruiter's assigned interviews
+  app.get('/api/interviews/assigned', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+
+      const interviews = await interviewAssignmentService.getRecruiterAssignedInterviews(userId);
+      res.json(interviews);
+    } catch (error) {
+      console.error('Error fetching assigned interviews:', error);
+      res.status(500).json({ message: 'Failed to fetch assigned interviews' });
+    }
+  });
+
+  // Get partial results for recruiter
+  app.get('/api/interviews/:interviewType/:interviewId/partial-results', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+
+      const { interviewType, interviewId } = req.params;
+      
+      if (!['virtual', 'mock'].includes(interviewType)) {
+        return res.status(400).json({ message: 'Invalid interview type' });
+      }
+
+      const results = await interviewAssignmentService.getPartialResultsForRecruiter(
+        parseInt(interviewId),
+        interviewType as 'virtual' | 'mock',
+        userId
+      );
+
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching partial results:', error);
+      res.status(500).json({ message: 'Failed to fetch partial results' });
+    }
+  });
+
+  // Process retake payment for virtual interview
+  app.post('/api/interviews/virtual/:interviewId/retake-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { interviewId } = req.params;
+      const { paymentProvider, amount } = req.body;
+
+      if (!['stripe', 'paypal', 'razorpay'].includes(paymentProvider)) {
+        return res.status(400).json({ message: 'Invalid payment provider' });
+      }
+
+      const result = await interviewAssignmentService.processVirtualInterviewRetakePayment({
+        userId,
+        interviewId: parseInt(interviewId),
+        paymentProvider,
+        amount
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error processing virtual interview retake payment:', error);
+      res.status(500).json({ message: error.message || 'Failed to process payment' });
+    }
+  });
+
+  // Process retake payment for mock interview
+  app.post('/api/interviews/mock/:interviewId/retake-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { interviewId } = req.params;
+      const { paymentProvider, amount } = req.body;
+
+      if (!['stripe', 'paypal', 'razorpay'].includes(paymentProvider)) {
+        return res.status(400).json({ message: 'Invalid payment provider' });
+      }
+
+      const result = await interviewAssignmentService.processMockInterviewRetakePayment({
+        userId,
+        interviewId: parseInt(interviewId),
+        paymentProvider,
+        amount
+      });
+
+      res.json(result);
+    } catch (error) {
+      console.error('Error processing mock interview retake payment:', error);
+      res.status(500).json({ message: error.message || 'Failed to process payment' });
     }
   });
 
@@ -7078,6 +7266,177 @@ Host: https://autojobr.com`;
     } catch (error) {
       console.error("Error updating career AI progress:", error);
       res.status(500).json({ message: "Failed to update progress" });
+    }
+  });
+
+  // =====================================
+  // INTERVIEW ASSIGNMENT ROUTES
+  // =====================================
+
+  // Get candidates (job seekers) for assignment
+  app.get('/api/users/candidates', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const candidates = await interviewAssignmentService.getCandidates();
+      res.json(candidates);
+    } catch (error) {
+      console.error('Error fetching candidates:', error);
+      res.status(500).json({ message: 'Failed to fetch candidates' });
+    }
+  });
+
+  // Get job postings for assignment
+  app.get('/api/jobs/postings', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const jobPostings = await interviewAssignmentService.getJobPostings(userId);
+      res.json(jobPostings);
+    } catch (error) {
+      console.error('Error fetching job postings:', error);
+      res.status(500).json({ message: 'Failed to fetch job postings' });
+    }
+  });
+
+  // Assign virtual interview
+  app.post('/api/interviews/virtual/assign', isAuthenticated, async (req: any, res) => {
+    try {
+      const recruiterId = req.user.id;
+      const user = await storage.getUser(recruiterId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const assignment = await interviewAssignmentService.assignVirtualInterview(recruiterId, req.body);
+      res.json(assignment);
+    } catch (error) {
+      console.error('Error assigning virtual interview:', error);
+      res.status(500).json({ message: error.message || 'Failed to assign virtual interview' });
+    }
+  });
+
+  // Assign mock interview
+  app.post('/api/interviews/mock/assign', isAuthenticated, async (req: any, res) => {
+    try {
+      const recruiterId = req.user.id;
+      const user = await storage.getUser(recruiterId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const assignment = await interviewAssignmentService.assignMockInterview(recruiterId, req.body);
+      res.json(assignment);
+    } catch (error) {
+      console.error('Error assigning mock interview:', error);
+      res.status(500).json({ message: error.message || 'Failed to assign mock interview' });
+    }
+  });
+
+  // Get assigned interviews for recruiter
+  app.get('/api/interviews/assigned', isAuthenticated, async (req: any, res) => {
+    try {
+      const recruiterId = req.user.id;
+      const user = await storage.getUser(recruiterId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const assignments = await interviewAssignmentService.getAssignedInterviews(recruiterId);
+      res.json(assignments);
+    } catch (error) {
+      console.error('Error fetching assigned interviews:', error);
+      res.status(500).json({ message: 'Failed to fetch assigned interviews' });
+    }
+  });
+
+  // Get partial results for virtual interview
+  app.get('/api/interviews/virtual/:id/partial-results', isAuthenticated, async (req: any, res) => {
+    try {
+      const recruiterId = req.user.id;
+      const user = await storage.getUser(recruiterId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const interviewId = parseInt(req.params.id);
+      const results = await interviewAssignmentService.getVirtualInterviewPartialResults(recruiterId, interviewId);
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching virtual interview partial results:', error);
+      res.status(500).json({ message: error.message || 'Failed to fetch results' });
+    }
+  });
+
+  // Get partial results for mock interview
+  app.get('/api/interviews/mock/:id/partial-results', isAuthenticated, async (req: any, res) => {
+    try {
+      const recruiterId = req.user.id;
+      const user = await storage.getUser(recruiterId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const interviewId = parseInt(req.params.id);
+      const results = await interviewAssignmentService.getMockInterviewPartialResults(recruiterId, interviewId);
+      res.json(results);
+    } catch (error) {
+      console.error('Error fetching mock interview partial results:', error);
+      res.status(500).json({ message: error.message || 'Failed to fetch results' });
+    }
+  });
+
+  // Get interview assignment statistics
+  app.get('/api/interviews/stats', isAuthenticated, async (req: any, res) => {
+    try {
+      const recruiterId = req.user.id;
+      const user = await storage.getUser(recruiterId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+      
+      const stats = await interviewAssignmentService.getAssignmentStats(recruiterId);
+      res.json(stats);
+    } catch (error) {
+      console.error('Error fetching interview assignment stats:', error);
+      res.status(500).json({ message: 'Failed to fetch assignment stats' });
+    }
+  });
+
+  // Process retake payment
+  app.post('/api/interviews/retake-payment', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const { interviewId, interviewType, paymentProvider, ...paymentData } = req.body;
+      
+      const result = await interviewAssignmentService.processRetakePayment(
+        userId, 
+        interviewId, 
+        interviewType, 
+        paymentProvider, 
+        paymentData
+      );
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Error processing retake payment:', error);
+      res.status(500).json({ message: error.message || 'Failed to process retake payment' });
     }
   });
 

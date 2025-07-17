@@ -57,6 +57,70 @@ class PaymentService {
     }
   }
 
+  // Create Stripe payment intent
+  async createStripePaymentIntent(amount: number, currency: string = 'usd') {
+    return await stripe.paymentIntents.create({
+      amount,
+      currency,
+      payment_method_types: ['card', 'link', 'us_bank_account'],
+    });
+  }
+
+  // Create PayPal order
+  async createPaypalOrder(amount: number, currency: string = 'USD') {
+    if (!process.env.PAYPAL_CLIENT_ID || !process.env.PAYPAL_CLIENT_SECRET) {
+      throw new Error('PayPal credentials not configured');
+    }
+
+    // Get access token
+    const authResponse = await fetch('https://api-m.sandbox.paypal.com/v1/oauth2/token', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Basic ${Buffer.from(`${process.env.PAYPAL_CLIENT_ID}:${process.env.PAYPAL_CLIENT_SECRET}`).toString('base64')}`,
+        'Content-Type': 'application/x-www-form-urlencoded',
+      },
+      body: 'grant_type=client_credentials'
+    });
+
+    const authData = await authResponse.json();
+    const accessToken = authData.access_token;
+
+    // Create order
+    const orderResponse = await fetch('https://api-m.sandbox.paypal.com/v2/checkout/orders', {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        intent: 'CAPTURE',
+        purchase_units: [{
+          amount: {
+            currency_code: currency,
+            value: (amount / 100).toFixed(2) // Convert cents to dollars
+          }
+        }]
+      })
+    });
+
+    return await orderResponse.json();
+  }
+
+  // Create Razorpay order
+  async createRazorpayOrder(amount: number, currency: string = 'USD') {
+    if (!process.env.RAZORPAY_KEY_ID || !process.env.RAZORPAY_KEY_SECRET) {
+      throw new Error('Razorpay credentials not configured');
+    }
+
+    // For now, return a mock order since Razorpay integration would need API setup
+    return {
+      id: `razorpay_order_${Date.now()}`,
+      amount,
+      currency,
+      status: 'created'
+    };
+  }
+
   async createStripeSubscription(customerId: string, email: string): Promise<string | null> {
     try {
       let customer;

@@ -1595,9 +1595,31 @@ export const mockInterviews = pgTable("mock_interviews", {
   feedback: text("feedback"), // AI generated feedback
   isPaid: boolean("is_paid").default(false), // whether this interview was paid for
   paymentId: varchar("payment_id"), // reference to payment transaction
+  
+  // Recruiter assignment system
+  assignedBy: varchar("assigned_by").references(() => users.id), // recruiter who assigned this interview
+  assignmentType: varchar("assignment_type").default("self"), // self, recruiter_assigned
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id), // linked job posting
+  assignedAt: timestamp("assigned_at"),
+  dueDate: timestamp("due_date"),
+  emailSent: boolean("email_sent").default(false),
+  
+  // Result sharing control
+  resultsSharedWithRecruiter: boolean("results_shared_with_recruiter").default(false),
+  partialResultsOnly: boolean("partial_results_only").default(true), // only show summary to recruiter
+  retakeCount: integer("retake_count").default(0),
+  maxRetakes: integer("max_retakes").default(2),
+  bestAttemptId: integer("best_attempt_id"), // ID of best scoring attempt
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
-});
+}, (table) => [
+  index("mock_interviews_user_idx").on(table.userId),
+  index("mock_interviews_status_idx").on(table.status),
+  index("mock_interviews_assigned_by_idx").on(table.assignedBy),
+  index("mock_interviews_assignment_type_idx").on(table.assignmentType),
+  index("mock_interviews_job_posting_idx").on(table.jobPostingId),
+]);
 
 // Mock Interview Questions
 export const mockInterviewQuestions = pgTable("mock_interview_questions", {
@@ -1636,6 +1658,35 @@ export const interviewPayments = pgTable("interview_payments", {
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 });
+
+// Retake payments for both mock and virtual interviews
+export const interviewRetakePayments = pgTable("interview_retake_payments", {
+  id: serial("id").primaryKey(),
+  userId: varchar("user_id").references(() => users.id).notNull(),
+  interviewType: varchar("interview_type").notNull(), // mock, virtual
+  interviewId: integer("interview_id").notNull(), // references either mock or virtual interview
+  
+  // Payment details
+  amount: integer("amount").notNull().default(500), // $5 in cents
+  currency: varchar("currency").default("USD"),
+  paymentProvider: varchar("payment_provider").notNull(), // stripe, paypal, razorpay
+  paymentIntentId: varchar("payment_intent_id"), // Stripe payment intent ID
+  paypalOrderId: varchar("paypal_order_id"), // PayPal order ID
+  razorpayPaymentId: varchar("razorpay_payment_id"), // Razorpay payment ID
+  razorpayOrderId: varchar("razorpay_order_id"), // Razorpay order ID
+  status: varchar("status").default("pending"), // pending, completed, failed, refunded
+  
+  // Retake info
+  retakeNumber: integer("retake_number").notNull(),
+  previousScore: integer("previous_score"),
+  
+  createdAt: timestamp("created_at").defaultNow(),
+  updatedAt: timestamp("updated_at").defaultNow(),
+}, (table) => [
+  index("interview_retake_payments_user_idx").on(table.userId),
+  index("interview_retake_payments_interview_idx").on(table.interviewId, table.interviewType),
+  index("interview_retake_payments_status_idx").on(table.status),
+]);
 
 // User interview statistics
 export const userInterviewStats = pgTable("user_interview_stats", {
@@ -1709,6 +1760,12 @@ export const insertInterviewPaymentSchema = createInsertSchema(interviewPayments
   updatedAt: true,
 });
 
+export const insertInterviewRetakePaymentSchema = createInsertSchema(interviewRetakePayments).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+});
+
 export const insertUserInterviewStatsSchema = createInsertSchema(userInterviewStats).omit({
   id: true,
   createdAt: true,
@@ -1764,6 +1821,21 @@ export const virtualInterviews = pgTable("virtual_interviews", {
   isPaid: boolean("is_paid").default(false),
   paymentId: varchar("payment_id"),
   
+  // Recruiter assignment system
+  assignedBy: varchar("assigned_by").references(() => users.id), // recruiter who assigned this interview
+  assignmentType: varchar("assignment_type").default("self"), // self, recruiter_assigned
+  jobPostingId: integer("job_posting_id").references(() => jobPostings.id), // linked job posting
+  assignedAt: timestamp("assigned_at"),
+  dueDate: timestamp("due_date"),
+  emailSent: boolean("email_sent").default(false),
+  
+  // Result sharing control
+  resultsSharedWithRecruiter: boolean("results_shared_with_recruiter").default(false),
+  partialResultsOnly: boolean("partial_results_only").default(true), // only show summary to recruiter
+  retakeCount: integer("retake_count").default(0),
+  maxRetakes: integer("max_retakes").default(2),
+  bestAttemptId: integer("best_attempt_id"), // ID of best scoring attempt
+  
   createdAt: timestamp("created_at").defaultNow(),
   updatedAt: timestamp("updated_at").defaultNow(),
 }, (table) => [
@@ -1771,6 +1843,9 @@ export const virtualInterviews = pgTable("virtual_interviews", {
   index("virtual_interviews_status_idx").on(table.status),
   index("virtual_interviews_type_idx").on(table.interviewType),
   index("virtual_interviews_created_idx").on(table.createdAt),
+  index("virtual_interviews_assigned_by_idx").on(table.assignedBy),
+  index("virtual_interviews_assignment_type_idx").on(table.assignmentType),
+  index("virtual_interviews_job_posting_idx").on(table.jobPostingId),
 ]);
 
 // Virtual interview messages - Chat-like conversation log
@@ -1934,6 +2009,8 @@ export type MockInterviewQuestion = typeof mockInterviewQuestions.$inferSelect;
 export type InsertMockInterviewQuestion = z.infer<typeof insertMockInterviewQuestionSchema>;
 export type InterviewPayment = typeof interviewPayments.$inferSelect;
 export type InsertInterviewPayment = z.infer<typeof insertInterviewPaymentSchema>;
+export type InterviewRetakePayment = typeof interviewRetakePayments.$inferSelect;
+export type InsertInterviewRetakePayment = z.infer<typeof insertInterviewRetakePaymentSchema>;
 export type UserInterviewStats = typeof userInterviewStats.$inferSelect;
 export type InsertUserInterviewStats = z.infer<typeof insertUserInterviewStatsSchema>;
 
