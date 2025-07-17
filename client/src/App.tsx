@@ -48,6 +48,7 @@ import VirtualInterviewStart from "@/pages/VirtualInterviewStart";
 import VirtualInterview from "@/pages/VirtualInterview";
 import VirtualInterviewFeedback from "@/pages/VirtualInterviewFeedback";
 import InterviewAssignments from "@/pages/InterviewAssignments";
+import PipelineManagement from "@/pages/PipelineManagement";
 
 
 function Router() {
@@ -93,6 +94,7 @@ function Router() {
               <Route path="/recruiter/question-bank" component={QuestionBank} />
               <Route path="/admin/question-bank" component={QuestionBankAdmin} />
               <Route path="/recruiter/interview-assignments" component={InterviewAssignments} />
+              <Route path="/recruiter/pipeline" component={PipelineManagement} />
               <Route path="/jobs/:id" component={ViewJob} />
               <Route path="/profile" component={Profile} />
               <Route path="/subscription" component={RecruiterSubscription} />

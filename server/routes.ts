@@ -3222,6 +3222,51 @@ Additional Information:
   });
 
   // ========================================
+  // Pipeline Management Routes
+  // ========================================
+
+  // Update application stage
+  app.put('/api/recruiter/applications/:id/stage', isAuthenticated, async (req: any, res) => {
+    try {
+      const userId = req.user.id;
+      const user = await storage.getUser(userId);
+      
+      if (user?.userType !== 'recruiter') {
+        return res.status(403).json({ message: 'Access denied. Recruiter account required.' });
+      }
+
+      const applicationId = parseInt(req.params.id);
+      const { stage, notes } = req.body;
+
+      // Validate stage
+      const validStages = ['applied', 'phone_screen', 'technical_interview', 'final_interview', 'offer_extended', 'hired', 'rejected'];
+      if (!validStages.includes(stage)) {
+        return res.status(400).json({ message: 'Invalid stage' });
+      }
+
+      // Update application stage
+      const updatedApplication = await db
+        .update(schema.jobPostingApplications)
+        .set({ 
+          status: stage,
+          recruiterNotes: notes || '',
+          updatedAt: new Date()
+        })
+        .where(eq(schema.jobPostingApplications.id, applicationId))
+        .returning();
+
+      if (!updatedApplication.length) {
+        return res.status(404).json({ message: 'Application not found' });
+      }
+
+      res.json({ success: true, application: updatedApplication[0] });
+    } catch (error) {
+      console.error('Error updating application stage:', error);
+      res.status(500).json({ message: 'Failed to update application stage' });
+    }
+  });
+
+  // ========================================
   // Interview Assignment Routes
   // ========================================
 

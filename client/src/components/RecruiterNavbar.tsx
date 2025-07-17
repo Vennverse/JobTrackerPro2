@@ -15,7 +15,9 @@ import {
   X,
   Zap,
   Star,
-  Bell
+  Bell,
+  GitBranch,
+  Video
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
@@ -67,6 +69,18 @@ export function RecruiterNavbar({ user }: RecruiterNavbarProps) {
       href: "/recruiter/applications",
       icon: Users,
       current: location === "/recruiter/applications"
+    },
+    {
+      name: "Pipeline",
+      href: "/recruiter/pipeline",
+      icon: GitBranch,
+      current: location === "/recruiter/pipeline"
+    },
+    {
+      name: "Interview Assignments",
+      href: "/recruiter/interview-assignments",
+      icon: Video,
+      current: location === "/recruiter/interview-assignments"
     },
     {
       name: "Test Center",

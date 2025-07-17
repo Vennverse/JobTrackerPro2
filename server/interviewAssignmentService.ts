@@ -380,52 +380,57 @@ export class InterviewAssignmentService {
 
   // Get recruiter's assigned interviews
   async getRecruiterAssignedInterviews(recruiterId: string) {
-    const virtualInterviewsData = await db
-      .select({
-        id: virtualInterviews.id,
-        type: virtualInterviews.interviewType,
-        role: virtualInterviews.role,
-        company: virtualInterviews.company,
-        difficulty: virtualInterviews.difficulty,
-        status: virtualInterviews.status,
-        assignedAt: virtualInterviews.assignedAt,
-        dueDate: virtualInterviews.dueDate,
-        overallScore: virtualInterviews.overallScore,
-        candidateName: users.firstName,
-        candidateEmail: users.email,
-        interviewCategory: 'virtual' as const,
-        retakeCount: virtualInterviews.retakeCount,
-        maxRetakes: virtualInterviews.maxRetakes
-      })
-      .from(virtualInterviews)
-      .leftJoin(users, eq(virtualInterviews.userId, users.id))
-      .where(eq(virtualInterviews.assignedBy, recruiterId))
-      .orderBy(desc(virtualInterviews.assignedAt));
+    try {
+      const virtualInterviewsData = await db
+        .select({
+          id: virtualInterviews.id,
+          type: virtualInterviews.interviewType,
+          role: virtualInterviews.role,
+          company: virtualInterviews.company,
+          difficulty: virtualInterviews.difficulty,
+          status: virtualInterviews.status,
+          assignedAt: virtualInterviews.assignedAt,
+          dueDate: virtualInterviews.dueDate,
+          overallScore: virtualInterviews.overallScore,
+          candidateName: users.firstName,
+          candidateEmail: users.email,
+          interviewCategory: 'virtual' as const,
+          retakeCount: virtualInterviews.retakeCount,
+          maxRetakes: virtualInterviews.maxRetakes
+        })
+        .from(virtualInterviews)
+        .leftJoin(users, eq(virtualInterviews.userId, users.id))
+        .where(eq(virtualInterviews.assignedBy, recruiterId))
+        .orderBy(desc(virtualInterviews.assignedAt));
 
-    const mockInterviewsData = await db
-      .select({
-        id: mockInterviews.id,
-        type: mockInterviews.interviewType,
-        role: mockInterviews.role,
-        company: mockInterviews.company,
-        difficulty: mockInterviews.difficulty,
-        status: mockInterviews.status,
-        assignedAt: mockInterviews.assignedAt,
-        dueDate: mockInterviews.dueDate,
-        overallScore: mockInterviews.score,
-        candidateName: users.firstName,
-        candidateEmail: users.email,
-        interviewCategory: 'mock' as const,
-        retakeCount: mockInterviews.retakeCount,
-        maxRetakes: mockInterviews.maxRetakes
-      })
-      .from(mockInterviews)
-      .leftJoin(users, eq(mockInterviews.userId, users.id))
-      .where(eq(mockInterviews.assignedBy, recruiterId))
-      .orderBy(desc(mockInterviews.assignedAt));
+      const mockInterviewsData = await db
+        .select({
+          id: mockInterviews.id,
+          type: mockInterviews.interviewType,
+          role: mockInterviews.role,
+          company: mockInterviews.company,
+          difficulty: mockInterviews.difficulty,
+          status: mockInterviews.status,
+          assignedAt: mockInterviews.assignedAt,
+          dueDate: mockInterviews.dueDate,
+          overallScore: mockInterviews.score,
+          candidateName: users.firstName,
+          candidateEmail: users.email,
+          interviewCategory: 'mock' as const,
+          retakeCount: mockInterviews.retakeCount,
+          maxRetakes: mockInterviews.maxRetakes
+        })
+        .from(mockInterviews)
+        .leftJoin(users, eq(mockInterviews.userId, users.id))
+        .where(eq(mockInterviews.assignedBy, recruiterId))
+        .orderBy(desc(mockInterviews.assignedAt));
 
-    return [...virtualInterviewsData, ...mockInterviewsData]
-      .sort((a, b) => new Date(b.assignedAt!).getTime() - new Date(a.assignedAt!).getTime());
+      return [...virtualInterviewsData, ...mockInterviewsData]
+        .sort((a, b) => new Date(b.assignedAt!).getTime() - new Date(a.assignedAt!).getTime());
+    } catch (error) {
+      console.error('Error fetching recruiter assigned interviews:', error);
+      return [];
+    }
   }
 
   // Send assignment email notification
