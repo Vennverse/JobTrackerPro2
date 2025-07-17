@@ -50,6 +50,7 @@ import {
   Bell,
   Settings,
   MessageSquare,
+  MessageCircle,
   Code
 } from "lucide-react";
 
