@@ -214,33 +214,19 @@ class TestScoringService {
     }
 
     try {
-      const prompt = `
-        As an expert evaluator in ${question.domain}, score this short answer question:
+      const prompt = `Score answer (0-${question.points}). Return JSON:
 
-        Question: ${question.question}
-        Expected Answer/Keywords: ${question.correctAnswer || 'N/A'}
-        Keywords to look for: ${question.keywords?.join(', ') || 'N/A'}
-        Student Answer: ${userAnswer}
+Q: ${question.question}
+Expected: ${question.correctAnswer || 'N/A'}
+Answer: ${userAnswer}
 
-        Provide a score from 0 to ${question.points} based on:
-        1. Accuracy and correctness
-        2. Completeness of answer
-        3. Use of relevant keywords
-        4. Understanding demonstrated
-
-        Return ONLY a JSON object with:
-        {
-          "score": number,
-          "feedback": "detailed feedback explaining the score",
-          "correct": boolean
-        }
-      `;
+{"score": number, "feedback": "brief", "correct": boolean}`;
 
       const response = await groqService.client.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
         model: 'llama3-8b-8192',
         temperature: 0.1,
-        max_tokens: 500,
+        max_tokens: 200,
       });
 
       const result = JSON.parse(response.choices[0].message.content || '{}');

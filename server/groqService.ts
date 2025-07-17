@@ -101,73 +101,33 @@ class GroqService {
     // Add some randomization to prevent identical responses
     const analysisId = Math.random().toString(36).substring(7);
     
-    const prompt = `
-You are an expert ATS (Applicant Tracking System) analyzer and career coach. Analyze this resume comprehensively and provide a detailed, personalized assessment.
-
-RESUME CONTENT:
+    const prompt = `Analyze resume for ATS score (15-95). Return JSON only:
 ${resumeText}
 
-${userProfile ? `
-CANDIDATE PROFILE:
-- Role: ${userProfile.professionalTitle || 'Not specified'}
-- Experience: ${userProfile.yearsExperience || 'Not specified'} years
-- Target Industries: ${userProfile.targetIndustries?.join(', ') || 'Not specified'}
-` : ''}
-
-ANALYSIS REQUIREMENTS:
-1. Calculate ATS score (15-95 range) based on:
-   - Quantifiable achievements and metrics (25 points max)
-   - Technical skills and industry keywords (20 points max)
-   - Professional formatting and structure (15 points max)
-   - Action verbs and impact statements (15 points max)
-   - Contact information and sections (10 points max)
-   - Education and certifications (10 points max)
-
-2. Provide specific, actionable feedback based on what you actually see in this resume
-
-Return ONLY valid JSON:
 {
-  "atsScore": [realistic score 15-95 based on actual content analysis],
-  "recommendations": [
-    "Add specific metrics: Instead of 'improved processes', write 'improved processes by 30%'",
-    "Include relevant technical skills for your target role",
-    "Use stronger action verbs like 'spearheaded', 'optimized', 'architected'"
-  ],
+  "atsScore": number,
+  "recommendations": ["specific fixes"],
   "keywordOptimization": {
-    "missingKeywords": ["role-specific keywords you should add"],
-    "overusedKeywords": ["words that appear too frequently"],
-    "suggestions": ["industry-specific terms to include"]
+    "missingKeywords": ["keywords to add"],
+    "suggestions": ["tech terms needed"]
   },
   "formatting": {
-    "score": [0-100 based on structure, readability, ATS-friendliness],
-    "issues": ["specific formatting problems observed"],
-    "improvements": ["concrete formatting fixes needed"]
+    "score": number,
+    "improvements": ["format fixes"]
   },
   "content": {
-    "strengthsFound": ["specific strong points in this resume"],
-    "weaknesses": ["actual content gaps identified"],
-    "suggestions": ["targeted content improvements"]
+    "strengthsFound": ["good points"],
+    "suggestions": ["content improvements"]
   }
-}
-
-Focus on THIS specific resume content. Provide personalized, actionable advice that will genuinely improve ATS performance.`;
+}`;
 
     try {
       const accessInfo = this.hasAIAccess(user);
       const completion = await this.client.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert resume analyzer and ATS optimization specialist. Provide detailed, actionable feedback in valid JSON format only."
-          },
-          {
-            role: "user",
-            content: prompt
-          }
-        ],
+        messages: [{ role: "user", content: prompt }],
         model: this.getModel(user),
         temperature: 0.3,
-        max_tokens: 2000,
+        max_tokens: 1000,
       });
 
       const content = completion.choices[0]?.message?.content;
@@ -401,79 +361,32 @@ Focus on THIS specific resume content. Provide personalized, actionable advice t
       `${e.degree} in ${e.fieldOfStudy || 'N/A'} from ${e.institution}`
     ).join('\n');
 
-    const prompt = `
-Analyze how well this candidate matches the job posting and provide detailed insights.
+    const prompt = `Match candidate to job. Return JSON only:
 
-JOB POSTING:
-Title: ${jobData.title}
-Company: ${jobData.company}
-Description: ${jobData.description}
-${jobData.requirements ? `Requirements: ${jobData.requirements}` : ''}
-${jobData.qualifications ? `Qualifications: ${jobData.qualifications}` : ''}
-${jobData.benefits ? `Benefits: ${jobData.benefits}` : ''}
+JOB: ${jobData.title} at ${jobData.company}
+${jobData.description.substring(0, 300)}...
 
-CANDIDATE PROFILE:
-Professional Title: ${userProfile.professionalTitle || 'Not specified'}
-Years of Experience: ${userProfile.yearsExperience || 'Not specified'}
-Summary: ${userProfile.summary || 'Not provided'}
+CANDIDATE: ${userProfile.professionalTitle}, ${userProfile.yearsExperience}yr exp
+Skills: ${userSkills.substring(0, 200)}...
 
-Skills: ${userSkills}
-
-Work Experience:
-${userExperience}
-
-Education:
-${userEducation}
-
-Please provide a comprehensive job match analysis in the following JSON format:
 {
-  "matchScore": number (0-100),
-  "matchingSkills": ["skills that match job requirements"],
-  "missingSkills": ["skills mentioned in job but not in candidate profile"],
-  "skillGaps": {
-    "critical": ["must-have skills candidate is missing"],
-    "important": ["important skills that would strengthen application"],
-    "nice_to_have": ["bonus skills mentioned in job posting"]
-  },
-  "seniorityLevel": "entry|mid|senior|lead|principal",
-  "workMode": "remote|hybrid|onsite|not_specified",
-  "jobType": "full-time|part-time|contract|internship|not_specified",
-  "roleComplexity": "low|medium|high",
-  "careerProgression": "lateral|step-up|stretch",
-  "industryFit": "perfect|good|acceptable|poor",
-  "cultureFit": "strong|moderate|weak",
+  "matchScore": number,
+  "matchingSkills": ["matching skills"],
+  "missingSkills": ["gaps"],
+  "skillGaps": {"critical": [], "important": [], "nice_to_have": []},
+  "seniorityLevel": "entry|mid|senior",
   "applicationRecommendation": "strongly_recommended|recommended|consider|not_recommended",
-  "tailoringAdvice": "specific advice on how to tailor the application for this role",
-  "interviewPrepTips": "specific tips for preparing for interviews for this role"
-}
-
-Consider:
-1. Technical skill alignment
-2. Experience level requirements
-3. Industry background fit
-4. Role progression logic
-5. Company culture indicators
-6. Location and work arrangement preferences
-7. Salary expectations vs likely compensation
-8. Growth opportunities alignment
-`;
+  "tailoringAdvice": "brief advice",
+  "interviewPrepTips": "key tips"
+}`;
 
     try {
       const accessInfo = this.hasAIAccess(user);
       const completion = await this.client.chat.completions.create({
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert career counselor and job matching specialist. You MUST respond with valid JSON only. Do not include any text before or after the JSON object. Analyze job-candidate fit comprehensively."
-          },
-          {
-            role: "user",
-            content: prompt + "\n\nRemember: Respond with ONLY the JSON object, nothing else."
-          }
-        ],
+        messages: [{ role: "user", content: prompt }],
         model: this.getModel(user),
         temperature: 0.2,
-        max_tokens: 2500,
+        max_tokens: 800,
       });
 
       const content = completion.choices[0]?.message?.content;
@@ -601,73 +514,17 @@ Be precise and only extract information that is explicitly stated in the job pos
       const userExperience = userProfile.workExperience || [];
       const userEducation = userProfile.education || [];
       
-      const prompt = `
-You are an expert career advisor and job market analyst. Based on the user's profile, generate 5-6 personalized job recommendations that would be excellent matches for their background.
+      const prompt = `Generate 6 job recommendations for: ${userProfile.professionalTitle}, ${userProfile.yearsExperience}yr exp
+Skills: ${userSkills.map((s: any) => s.skillName).join(', ').substring(0, 100)}...
 
-USER PROFILE:
-- Name: ${userProfile.name || 'Professional'}
-- Professional Title: ${userProfile.professionalTitle || 'Not specified'}
-- Years of Experience: ${userProfile.yearsExperience || 'Not specified'}
-- Location: ${userProfile.location || 'Remote'}
-- Summary: ${userProfile.summary || 'Not provided'}
-
-Skills: ${userSkills.map((s: any) => `${s.skillName} (${s.proficiencyLevel || 'N/A'})`).join(', ')}
-
-Work Experience:
-${userExperience.map((w: any) => `${w.position} at ${w.company}${w.description ? ': ' + w.description.substring(0, 200) : ''}`).join('\n')}
-
-Education:
-${userEducation.map((e: any) => `${e.degree} in ${e.fieldOfStudy || 'N/A'} from ${e.institution}`).join('\n')}
-
-Target Industries: ${userProfile.targetIndustries?.join(', ') || 'Not specified'}
-Salary Range: ${userProfile.salaryMin && userProfile.salaryMax ? `$${userProfile.salaryMin}k - $${userProfile.salaryMax}k` : 'Not specified'}
-
-Generate 5-6 realistic job recommendations that would be excellent matches for this profile. For each job, provide:
-
-Return a JSON array of job objects with this exact structure:
-[
-  {
-    "id": "ai-rec-1",
-    "title": "Job Title",
-    "company": "Company Name",
-    "location": "City, State or Remote",
-    "description": "Detailed job description that matches user's background (150-200 words)",
-    "requirements": ["Requirement 1", "Requirement 2", "Requirement 3"],
-    "matchScore": 85,
-    "salaryRange": "$80k - $120k",
-    "workMode": "Remote/Hybrid/On-site",
-    "postedDate": "2024-12-15T10:00:00Z",
-    "applicationUrl": "https://company.com/careers/job-id",
-    "benefits": ["Benefit 1", "Benefit 2", "Benefit 3"],
-    "isBookmarked": false
-  }
-]
-
-Guidelines:
-- Match scores should be 75-95% based on how well the job fits the user's profile
-- Use realistic company names and job titles for the user's industry
-- Include specific technical skills and requirements that match the user's background
-- Salary ranges should be appropriate for the user's experience level and location
-- Job descriptions should be detailed and relevant to the user's career goals
-- Include a mix of remote, hybrid, and on-site positions if appropriate
-- Use current dates (within last 30 days)
-- Application URLs should be realistic company career pages
-`;
+Return JSON array:
+[{"id":"ai-1","title":"Job Title","company":"Company","location":"City","description":"Brief desc","requirements":["req1"],"matchScore":85,"salaryRange":"$80k-120k","workMode":"Remote","postedDate":"2024-01-15T10:00:00Z","applicationUrl":"https://company.com/jobs","benefits":["benefit1"],"isBookmarked":false}]`;
 
       const completion = await this.client.chat.completions.create({
         model: "llama3-8b-8192",
-        messages: [
-          {
-            role: "system",
-            content: "You are an expert job recommendation system. You MUST respond with valid JSON only. Do not include any text before or after the JSON array. Respond with ONLY the JSON array of job recommendations."
-          },
-          {
-            role: "user",
-            content: prompt + "\n\nIMPORTANT: Respond with ONLY the JSON array, no additional text or explanation."
-          },
-        ],
+        messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
-        max_tokens: 3000,
+        max_tokens: 1500,
       });
 
       const content = completion.choices[0]?.message?.content;

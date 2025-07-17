@@ -57,24 +57,15 @@ export class MockInterviewService {
   }
 
   private async generateAIQuestions(config: InterviewConfiguration, count: number): Promise<InterviewQuestion[]> {
-    const prompt = `Generate ${count} ${config.interviewType} interview questions for a ${config.role} position at ${config.company || 'a tech company'}. 
-    Difficulty level: ${config.difficulty}
-    Programming language: ${config.language}
-    
-    For each question, provide:
-    1. The question text
-    2. 3 helpful hints
-    3. For coding questions: 3 test cases with input/output
-    4. A sample answer
-    
-    Return JSON format with array of questions.`;
+    const prompt = `Generate ${count} ${config.difficulty} ${config.interviewType} questions for ${config.role}. Return JSON array:
+[{"question": "text", "hints": ["h1","h2","h3"], "testCases": [{"input":1,"expected":2}], "sampleAnswer": "brief"}]`;
 
     try {
       const response = await groqService.client.chat.completions.create({
         model: 'llama3-8b-8192',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
-        max_tokens: 2000,
+        max_tokens: 800,
       });
 
       const content = response.choices[0]?.message?.content;

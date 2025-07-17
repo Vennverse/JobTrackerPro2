@@ -208,35 +208,19 @@ print(json.dumps(results))
     try {
       const { groqService } = await import('./groqService');
       
-      const prompt = `
-        Evaluate this coding solution:
-        
-        Question: ${question}
-        
-        Code Solution:
-        ${code}
-        
-        Test Cases:
-        ${JSON.stringify(testCases, null, 2)}
-        
-        Please provide:
-        1. A score out of 100 based on correctness, efficiency, and code quality
-        2. Constructive feedback on the solution
-        3. Suggestions for improvement
-        
-        Format your response as JSON:
-        {
-          "score": number,
-          "feedback": "string",
-          "suggestions": ["string", "string"]
-        }
-      `;
+      const prompt = `Score code (0-100). Return JSON:
+${code}
+
+Q: ${question}
+Tests: ${JSON.stringify(testCases)}
+
+{"score": number, "feedback": "brief", "suggestions": ["tip1", "tip2"]}`;
 
       const response = await groqService.client.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
         model: 'llama3-8b-8192',
         temperature: 0.3,
-        max_tokens: 1000
+        max_tokens: 300
       });
 
       const evaluation = JSON.parse(response.choices[0].message.content || '{}');
