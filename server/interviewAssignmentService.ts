@@ -6,7 +6,7 @@ import {
   users, 
   jobPostings 
 } from "@shared/schema";
-import { eq, and, desc } from "drizzle-orm";
+import { eq, and, desc, count, sql } from "drizzle-orm";
 import { sendEmail } from "./emailService";
 import { paymentService } from "./paymentService";
 import type { 
@@ -429,6 +429,91 @@ export class InterviewAssignmentService {
         .sort((a, b) => new Date(b.assignedAt!).getTime() - new Date(a.assignedAt!).getTime());
     } catch (error) {
       console.error('Error fetching recruiter assigned interviews:', error);
+      return [];
+    }
+  }
+
+  // Get assignment statistics for recruiter
+  async getAssignmentStats(recruiterId: string) {
+    try {
+      // Get virtual interview stats
+      const virtualStats = await db
+        .select({
+          count: count(),
+          completed: count(sql`CASE WHEN ${virtualInterviews.status} = 'completed' THEN 1 END`),
+          pending: count(sql`CASE WHEN ${virtualInterviews.status} = 'pending' THEN 1 END`),
+          avgScore: sql`AVG(${virtualInterviews.overallScore})`
+        })
+        .from(virtualInterviews)
+        .where(eq(virtualInterviews.assignedBy, recruiterId))
+        .groupBy(virtualInterviews.assignedBy);
+
+      // Get mock interview stats
+      const mockStats = await db
+        .select({
+          count: count(),
+          completed: count(sql`CASE WHEN ${mockInterviews.status} = 'completed' THEN 1 END`),
+          pending: count(sql`CASE WHEN ${mockInterviews.status} = 'pending' THEN 1 END`),
+          avgScore: sql`AVG(${mockInterviews.score})`
+        })
+        .from(mockInterviews)
+        .where(eq(mockInterviews.assignedBy, recruiterId))
+        .groupBy(mockInterviews.assignedBy);
+
+      const virtualData = virtualStats[0] || { count: 0, completed: 0, pending: 0, avgScore: 0 };
+      const mockData = mockStats[0] || { count: 0, completed: 0, pending: 0, avgScore: 0 };
+
+      return {
+        total: Number(virtualData.count) + Number(mockData.count),
+        completed: Number(virtualData.completed) + Number(mockData.completed),
+        pending: Number(virtualData.pending) + Number(mockData.pending),
+        averageScore: (Number(virtualData.avgScore) + Number(mockData.avgScore)) / 2 || 0,
+        virtual: {
+          count: Number(virtualData.count),
+          completed: Number(virtualData.completed),
+          pending: Number(virtualData.pending),
+          avgScore: Number(virtualData.avgScore) || 0
+        },
+        mock: {
+          count: Number(mockData.count),
+          completed: Number(mockData.completed),
+          pending: Number(mockData.pending),
+          avgScore: Number(mockData.avgScore) || 0
+        }
+      };
+    } catch (error) {
+      console.error('Error fetching assignment stats:', error);
+      return {
+        total: 0,
+        completed: 0,
+        pending: 0,
+        averageScore: 0,
+        virtual: { count: 0, completed: 0, pending: 0, avgScore: 0 },
+        mock: { count: 0, completed: 0, pending: 0, avgScore: 0 }
+      };
+    }
+  }
+
+  // Get candidates (job seekers) for interview assignment
+  async getCandidates() {
+    try {
+      const candidates = await db
+        .select({
+          id: users.id,
+          firstName: users.firstName,
+          lastName: users.lastName,
+          email: users.email,
+          userType: users.userType,
+          createdAt: users.createdAt,
+          isActive: users.isActive
+        })
+        .from(users)
+        .where(eq(users.userType, 'jobSeeker'))
+        .orderBy(desc(users.createdAt));
+
+      return candidates;
+    } catch (error) {
+      console.error('Error fetching candidates:', error);
       return [];
     }
   }
