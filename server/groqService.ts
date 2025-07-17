@@ -44,10 +44,10 @@ interface JobMatchAnalysis {
 class GroqService {
   public client: Groq;
   
-  // AI Model Tiers
+  // AI Model Tiers - Using cheaper model with higher rate limits
   private readonly models = {
-    premium: "llama-3.3-70b-versatile", // Premium model for paying users and trial users
-    basic: "llama-3.1-8b-instant"      // Basic model for free users after trial
+    premium: "llama-3.1-8b-instant",   // Fast, cheaper model with higher rate limits
+    basic: "llama-3.1-8b-instant"      // Same model for all users - cost-effective
   };
 
   constructor() {
@@ -59,34 +59,10 @@ class GroqService {
     });
   }
 
-  // Check if user has premium AI access
+  // All users get the same fast, cost-effective model
   private hasAIAccess(user: any): { tier: 'premium' | 'basic', message?: string } {
-    if (!user) return { tier: 'basic' };
-    
-    // If user has active premium subscription, always use premium model
-    if (user.planType === 'premium' && user.subscriptionStatus === 'active') {
-      return { tier: 'premium' };
-    }
-    
-    // Check if user is within premium trial period
-    if (!user.hasUsedPremiumTrial) {
-      const now = new Date();
-      const trialStart = new Date(user.premiumTrialStartDate);
-      const trialEnd = new Date(trialStart.getTime() + (30 * 24 * 60 * 60 * 1000)); // 30 days
-      
-      if (now < trialEnd) {
-        return { tier: 'premium' };
-      } else {
-        // Trial expired, return message
-        return { 
-          tier: 'basic', 
-          message: "Your 30-day premium AI model trial has ended. Upgrade to premium to access the best AI models with advanced analysis capabilities."
-        };
-      }
-    }
-    
-    // User has used trial or no trial available
-    return { tier: 'basic' };
+    // Everyone gets the same efficient model - no tier restrictions
+    return { tier: 'premium' };
   }
 
   // Get model based on user tier
