@@ -4,8 +4,11 @@ import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import compression from "compression";
 
-// Set the correct DATABASE_URL for the application
-process.env.DATABASE_URL = 'postgresql://neondb_owner:npg_LXMUh9KdQB0q@ep-fragrant-feather-a88g5mva-pooler.eastus2.azure.neon.tech/neondb?sslmode=require&channel_binding=require';
+// Database URL should be provided via environment variables
+if (!process.env.DATABASE_URL) {
+  console.error('DATABASE_URL environment variable is required');
+  process.exit(1);
+}
 
 const app = express();
 
