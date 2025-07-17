@@ -142,11 +142,11 @@ export default function VirtualInterviewStart() {
           <div className="p-3 bg-blue-100 rounded-full">
             <Bot className="h-8 w-8 text-blue-600" />
           </div>
-          <h1 className="text-4xl font-bold">Virtual AI Interview</h1>
+          <h1 className="text-4xl font-bold">Real Interview Simulation</h1>
         </div>
         <p className="text-xl text-gray-600 max-w-2xl mx-auto">
-          Practice with our advanced AI interviewer. Get real-time feedback, improve your skills, 
-          and build confidence for your next interview.
+          Experience realistic interview conversations with our AI interviewer. Get real-time feedback, 
+          improve your communication skills, and build confidence for actual interviews.
         </p>
         
         {/* Usage Information */}

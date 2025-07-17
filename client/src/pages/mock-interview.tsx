@@ -173,10 +173,10 @@ export default function MockInterview() {
         {/* Header */}
         <div className="mb-8">
           <h1 className="text-3xl font-bold bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent mb-4">
-            Mock Interview Practice
+            Technical Skills Practice
           </h1>
           <p className="text-gray-600 dark:text-gray-300 text-lg">
-            Practice with AI-powered mock interviews to ace your next job interview
+            Practice specific questions with instant feedback and detailed scoring
           </p>
         </div>
 
