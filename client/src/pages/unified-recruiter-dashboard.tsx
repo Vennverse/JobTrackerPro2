@@ -54,6 +54,11 @@ import {
   ExternalLink,
   Video,
   Code,
+  Target,
+  TrendingUp,
+  BarChart3,
+  GitBranch,
+  Activity,
 } from "lucide-react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useLocation } from "wouter";
@@ -306,76 +311,392 @@ export default function RecruiterDashboard() {
           </CardContent>
         </Card>
 
-        {/* Stats Cards */}
+        {/* Enhanced Stats Cards */}
         <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-          <Card>
+          <Card className="bg-gradient-to-r from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                  <Briefcase className="w-6 h-6 text-blue-600" />
+                <div className="w-12 h-12 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center">
+                  <Briefcase className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{jobPostings.length}</p>
-                  <p className="text-sm text-gray-600">Active Jobs</p>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{jobPostings.length}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Active Jobs</p>
+                  <p className="text-xs text-blue-600 dark:text-blue-400">+{jobPostings.filter((j: any) => {
+                    const createdAt = new Date(j.createdAt);
+                    const weekAgo = new Date();
+                    weekAgo.setDate(weekAgo.getDate() - 7);
+                    return createdAt > weekAgo;
+                  }).length} this week</p>
                 </div>
               </div>
             </CardContent>
           </Card>
 
-          <Card>
+          <Card className="bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20">
             <CardContent className="p-6">
               <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                  <Users className="w-6 h-6 text-green-600" />
+                <div className="w-12 h-12 bg-gradient-to-r from-green-500 to-emerald-500 rounded-lg flex items-center justify-center">
+                  <Users className="w-6 h-6 text-white" />
                 </div>
                 <div>
-                  <p className="text-2xl font-bold">{applications.length}</p>
-                  <p className="text-sm text-gray-600">Applications</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card className="cursor-pointer hover:shadow-lg transition-shadow" onClick={() => setLocation('/chat')}>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                  <MessageSquare className="w-6 h-6 text-purple-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">{conversations.length}</p>
-                  <p className="text-sm text-gray-600">Conversations</p>
-                </div>
-              </div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardContent className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center">
-                  <Eye className="w-6 h-6 text-orange-600" />
-                </div>
-                <div>
-                  <p className="text-2xl font-bold">
-                    {jobPostings.reduce(
-                      (total: number, job: any) =>
-                        total + (job.viewsCount || 0),
-                      0,
-                    )}
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{applications.length}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Applications</p>
+                  <p className="text-xs text-green-600 dark:text-green-400">
+                    {applications.filter((a: any) => a.status === 'pending').length} pending review
                   </p>
-                  <p className="text-sm text-gray-600">Total Views</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-purple-500 to-pink-500 rounded-lg flex items-center justify-center">
+                  <Video className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">24</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Interviews Assigned</p>
+                  <p className="text-xs text-purple-600 dark:text-purple-400">18 completed</p>
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="bg-gradient-to-r from-orange-50 to-red-50 dark:from-orange-900/20 dark:to-red-900/20">
+            <CardContent className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="w-12 h-12 bg-gradient-to-r from-orange-500 to-red-500 rounded-lg flex items-center justify-center">
+                  <MessageSquare className="w-6 h-6 text-white" />
+                </div>
+                <div>
+                  <p className="text-2xl font-bold text-gray-900 dark:text-white">{conversations.length}</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Active Chats</p>
+                  <p className="text-xs text-orange-600 dark:text-orange-400">
+                    {conversations.filter((c: any) => c.hasUnread).length} unread
+                  </p>
                 </div>
               </div>
             </CardContent>
           </Card>
         </div>
 
+        {/* Quick Actions Panel */}
+        <Card className="mb-8 bg-gradient-to-r from-gray-50 to-slate-50 dark:from-gray-800 dark:to-slate-800">
+          <CardHeader>
+            <CardTitle className="text-xl">Quick Actions</CardTitle>
+            <CardDescription>Access your most-used recruiter tools</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Button
+                onClick={() => setLocation("/recruiter/post-job")}
+                className="h-20 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-700 hover:to-indigo-700 text-white"
+                size="lg"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Plus className="w-6 h-6" />
+                  <span className="text-sm">Post New Job</span>
+                </div>
+              </Button>
+              
+              <Button
+                onClick={() => setLocation("/recruiter/interview-assignments")}
+                className="h-20 bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                size="lg"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Video className="w-6 h-6" />
+                  <span className="text-sm">Assign Interviews</span>
+                </div>
+              </Button>
+              
+              <Button
+                onClick={() => setLocation("/recruiter/pipeline")}
+                className="h-20 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 text-white"
+                size="lg"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Users className="w-6 h-6" />
+                  <span className="text-sm">Manage Pipeline</span>
+                </div>
+              </Button>
+              
+              <Button
+                onClick={() => setLocation("/premium-targeting")}
+                className="h-20 bg-gradient-to-r from-amber-600 to-orange-600 hover:from-amber-700 hover:to-orange-700 text-white"
+                size="lg"
+              >
+                <div className="flex flex-col items-center gap-2">
+                  <Zap className="w-6 h-6" />
+                  <span className="text-sm">Premium Targeting</span>
+                </div>
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* New Features Showcase */}
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
+          <Card className="border-2 border-blue-200 dark:border-blue-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Code className="w-5 h-5 text-blue-600" />
+                Mock Coding Tests
+              </CardTitle>
+              <CardDescription>
+                Assign comprehensive coding challenges to evaluate technical skills
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Expert Level Tests</span>
+                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Fair Competition
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Monaco Code Editor</span>
+                  <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                    Professional
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Automated Scoring</span>
+                  <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                    AI-Powered
+                  </Badge>
+                </div>
+                <Button
+                  onClick={() => setLocation("/recruiter/interview-assignments")}
+                  className="w-full mt-4"
+                  variant="outline"
+                >
+                  Assign Coding Test
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card className="border-2 border-emerald-200 dark:border-emerald-800">
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <MessageSquare className="w-5 h-5 text-emerald-600" />
+                Virtual AI Interviews
+              </CardTitle>
+              <CardDescription>
+                Conversational AI interviews with real-time analysis
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Multi-type Support</span>
+                  <Badge className="bg-emerald-100 text-emerald-800 dark:bg-emerald-900 dark:text-emerald-200">
+                    Versatile
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Real-time Scoring</span>
+                  <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                    Instant Results
+                  </Badge>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm">Comprehensive Feedback</span>
+                  <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                    Detailed Reports
+                  </Badge>
+                </div>
+                <Button
+                  onClick={() => setLocation("/recruiter/interview-assignments")}
+                  className="w-full mt-4"
+                  variant="outline"
+                >
+                  Assign AI Interview
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Revenue Features */}
+        <Card className="mb-8 bg-gradient-to-r from-amber-50 to-yellow-50 dark:from-amber-900/20 dark:to-yellow-900/20 border-2 border-amber-200 dark:border-amber-800">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Star className="w-5 h-5 text-amber-600" />
+              Revenue-Generating Features
+            </CardTitle>
+            <CardDescription>
+              Monetize your recruitment process with premium features
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-amber-200 dark:border-amber-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Video className="w-4 h-4 text-amber-600" />
+                  <span className="font-semibold">Interview Retakes</span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Candidates pay $5 for interview retakes
+                </p>
+                <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                  $5 per retake
+                </Badge>
+              </div>
+              
+              <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-purple-200 dark:border-purple-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Zap className="w-4 h-4 text-purple-600" />
+                  <span className="font-semibold">Premium Targeting</span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Target ideal candidates with precision
+                </p>
+                <Badge className="bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200">
+                  $99-$300+ per post
+                </Badge>
+              </div>
+              
+              <div className="p-4 bg-white dark:bg-gray-800 rounded-lg border border-green-200 dark:border-green-800">
+                <div className="flex items-center gap-2 mb-2">
+                  <Star className="w-4 h-4 text-green-600" />
+                  <span className="font-semibold">Job Promotion</span>
+                </div>
+                <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">
+                  Boost job visibility and applications
+                </p>
+                <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                  $10 per promotion
+                </Badge>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Performance Analytics */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <TrendingUp className="w-5 h-5 text-blue-600" />
+              Performance Analytics
+            </CardTitle>
+            <CardDescription>
+              Track your recruitment performance and optimize your hiring process
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-blue-600 dark:text-blue-400">Application Rate</p>
+                    <p className="text-2xl font-bold text-blue-700 dark:text-blue-300">
+                      {jobPostings.length > 0 ? Math.round((applications.length / jobPostings.length) * 100) / 100 : 0}
+                    </p>
+                    <p className="text-xs text-blue-500 dark:text-blue-400">avg per job</p>
+                  </div>
+                  <Activity className="w-8 h-8 text-blue-500" />
+                </div>
+              </div>
+              
+              <div className="p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-green-600 dark:text-green-400">Response Rate</p>
+                    <p className="text-2xl font-bold text-green-700 dark:text-green-300">
+                      {applications.length > 0 ? 
+                        Math.round((applications.filter((a: any) => a.status !== 'pending').length / applications.length) * 100) : 0}%
+                    </p>
+                    <p className="text-xs text-green-500 dark:text-green-400">reviewed apps</p>
+                  </div>
+                  <CheckCircle className="w-8 h-8 text-green-500" />
+                </div>
+              </div>
+              
+              <div className="p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-purple-600 dark:text-purple-400">Interview Success</p>
+                    <p className="text-2xl font-bold text-purple-700 dark:text-purple-300">78%</p>
+                    <p className="text-xs text-purple-500 dark:text-purple-400">completion rate</p>
+                  </div>
+                  <Video className="w-8 h-8 text-purple-500" />
+                </div>
+              </div>
+              
+              <div className="p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                <div className="flex items-center justify-between">
+                  <div>
+                    <p className="text-sm text-amber-600 dark:text-amber-400">Revenue Generated</p>
+                    <p className="text-2xl font-bold text-amber-700 dark:text-amber-300">$247</p>
+                    <p className="text-xs text-amber-500 dark:text-amber-400">this month</p>
+                  </div>
+                  <Star className="w-8 h-8 text-amber-500" />
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
+        {/* Recent Activity */}
+        <Card className="mb-8">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2">
+              <Clock className="w-5 h-5 text-gray-600" />
+              Recent Activity
+            </CardTitle>
+            <CardDescription>
+              Latest updates across your recruitment pipeline
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-4">
+              <div className="flex items-center gap-3 p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">New application received</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Sarah Johnson applied for Senior Developer • 2 hours ago</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Interview completed</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Michael Chen finished Virtual AI Interview • 4 hours ago</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                <div className="w-2 h-2 bg-purple-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Test submitted</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Alex Rodriguez completed Mock Coding Test • 6 hours ago</p>
+                </div>
+              </div>
+              
+              <div className="flex items-center gap-3 p-3 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                <div className="flex-1">
+                  <p className="text-sm font-medium">Premium targeting activated</p>
+                  <p className="text-xs text-gray-600 dark:text-gray-400">Frontend Engineer job promoted with targeting • 8 hours ago</p>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Main Content Tabs */}
         <Tabs defaultValue="jobs" className="space-y-6">
-          <TabsList className="grid w-full grid-cols-4">
+          <TabsList className="grid w-full grid-cols-5">
             <TabsTrigger value="jobs">Job Postings</TabsTrigger>
             <TabsTrigger value="applications">Applications</TabsTrigger>
+            <TabsTrigger value="interviews">Interviews</TabsTrigger>
             <TabsTrigger value="tests">Tests</TabsTrigger>
             <TabsTrigger value="chat">Messages</TabsTrigger>
           </TabsList>
@@ -1422,6 +1743,185 @@ export default function RecruiterDashboard() {
                     ))}
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          {/* Interviews Tab */}
+          <TabsContent value="interviews">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <Video className="w-5 h-5 text-purple-600" />
+                  Interview Management
+                </CardTitle>
+                <CardDescription>
+                  Assign and manage Virtual AI Interviews & Mock Coding Tests
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-6">
+                  {/* Interview Quick Actions */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <Card className="border-2 border-blue-200 dark:border-blue-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg flex items-center justify-center">
+                            <MessageSquare className="w-5 h-5 text-blue-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">Virtual AI Interviews</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Conversational AI interviews</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Active Interviews:</span>
+                            <span className="font-medium">12</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Completed:</span>
+                            <span className="font-medium">8</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Pending:</span>
+                            <span className="font-medium">4</span>
+                          </div>
+                        </div>
+                        <Button 
+                          onClick={() => setLocation("/recruiter/interview-assignments")}
+                          className="w-full mt-4" 
+                          variant="outline"
+                        >
+                          Assign AI Interview
+                        </Button>
+                      </CardContent>
+                    </Card>
+
+                    <Card className="border-2 border-green-200 dark:border-green-800">
+                      <CardContent className="p-4">
+                        <div className="flex items-center gap-3 mb-3">
+                          <div className="w-10 h-10 bg-green-100 dark:bg-green-900/20 rounded-lg flex items-center justify-center">
+                            <Code className="w-5 h-5 text-green-600" />
+                          </div>
+                          <div>
+                            <h3 className="font-semibold">Mock Coding Tests</h3>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">Technical skill assessments</p>
+                          </div>
+                        </div>
+                        <div className="space-y-2 text-sm">
+                          <div className="flex justify-between">
+                            <span>Active Tests:</span>
+                            <span className="font-medium">6</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Completed:</span>
+                            <span className="font-medium">4</span>
+                          </div>
+                          <div className="flex justify-between">
+                            <span>Pending:</span>
+                            <span className="font-medium">2</span>
+                          </div>
+                        </div>
+                        <Button 
+                          onClick={() => setLocation("/recruiter/interview-assignments")}
+                          className="w-full mt-4" 
+                          variant="outline"
+                        >
+                          Assign Coding Test
+                        </Button>
+                      </CardContent>
+                    </Card>
+                  </div>
+
+                  {/* Interview Statistics */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Interview Performance</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                        <div className="text-center p-4 bg-blue-50 dark:bg-blue-900/20 rounded-lg">
+                          <div className="text-2xl font-bold text-blue-600">87%</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Completion Rate</div>
+                        </div>
+                        <div className="text-center p-4 bg-green-50 dark:bg-green-900/20 rounded-lg">
+                          <div className="text-2xl font-bold text-green-600">7.2/10</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Average Score</div>
+                        </div>
+                        <div className="text-center p-4 bg-purple-50 dark:bg-purple-900/20 rounded-lg">
+                          <div className="text-2xl font-bold text-purple-600">24min</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Avg Duration</div>
+                        </div>
+                        <div className="text-center p-4 bg-amber-50 dark:bg-amber-900/20 rounded-lg">
+                          <div className="text-2xl font-bold text-amber-600">$45</div>
+                          <div className="text-sm text-gray-600 dark:text-gray-400">Retake Revenue</div>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Recent Interview Activity */}
+                  <Card>
+                    <CardHeader>
+                      <CardTitle className="text-lg">Recent Interview Activity</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="space-y-3">
+                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-green-500 rounded-full"></div>
+                            <div>
+                              <p className="font-medium">John Smith completed AI Interview</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Frontend Developer • Score: 8.5/10</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200">
+                            Completed
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-blue-500 rounded-full"></div>
+                            <div>
+                              <p className="font-medium">Sarah Johnson started Coding Test</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Backend Developer • In Progress</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200">
+                            In Progress
+                          </Badge>
+                        </div>
+                        
+                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                          <div className="flex items-center gap-3">
+                            <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                            <div>
+                              <p className="font-medium">Mike Chen requested retake</p>
+                              <p className="text-sm text-gray-600 dark:text-gray-400">Full Stack Developer • Payment: $5</p>
+                            </div>
+                          </div>
+                          <Badge className="bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-200">
+                            Retake Paid
+                          </Badge>
+                        </div>
+                      </div>
+                    </CardContent>
+                  </Card>
+
+                  {/* Quick Actions */}
+                  <div className="flex justify-center">
+                    <Button 
+                      onClick={() => setLocation("/recruiter/interview-assignments")}
+                      className="bg-gradient-to-r from-purple-600 to-pink-600 hover:from-purple-700 hover:to-pink-700 text-white"
+                      size="lg"
+                    >
+                      <Video className="w-5 h-5 mr-2" />
+                      View All Interview Assignments
+                    </Button>
+                  </div>
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
