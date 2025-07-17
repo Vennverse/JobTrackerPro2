@@ -655,7 +655,7 @@ Guidelines:
 `;
 
       const completion = await this.client.chat.completions.create({
-        model: "llama-3.3-70b-versatile",
+        model: "llama-3.1-8b-instant",
         messages: [
           {
             role: "system",

@@ -234,7 +234,7 @@ print(json.dumps(results))
 
       const response = await groqService.client.chat.completions.create({
         messages: [{ role: 'user', content: prompt }],
-        model: 'llama3-70b-8192',
+        model: 'llama-3.1-8b-instant',
         temperature: 0.3,
         max_tokens: 1000
       });

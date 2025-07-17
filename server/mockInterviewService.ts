@@ -71,7 +71,7 @@ export class MockInterviewService {
 
     try {
       const response = await groqService.client.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.7,
         max_tokens: 2000,
@@ -195,7 +195,7 @@ export class MockInterviewService {
 
     try {
       const response = await groqService.client.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.5,
         max_tokens: 500,
@@ -249,7 +249,7 @@ export class MockInterviewService {
 
       try {
         const response = await groqService.client.chat.completions.create({
-          model: 'llama-3.3-70b-versatile',
+          model: 'llama-3.1-8b-instant',
           messages: [{ role: 'user', content: prompt }],
           temperature: 0.3,
           max_tokens: 10,
@@ -306,7 +306,7 @@ export class MockInterviewService {
 
     try {
       const response = await groqService.client.chat.completions.create({
-        model: 'llama-3.3-70b-versatile',
+        model: 'llama-3.1-8b-instant',
         messages: [{ role: 'user', content: prompt }],
         temperature: 0.6,
         max_tokens: 800,
