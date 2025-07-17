@@ -7551,6 +7551,32 @@ Host: https://autojobr.com`;
     }
   });
 
+  // Test endpoint to verify Groq AI functionality
+  app.get('/api/test-ai', async (req, res) => {
+    try {
+      const testCompletion = await groqService.client.chat.completions.create({
+        messages: [{ role: "user", content: "Say 'AI is working' in JSON format: {\"status\": \"working\", \"message\": \"AI is working\"}" }],
+        model: "llama3-8b-8192",
+        temperature: 0.1,
+        max_tokens: 100,
+      });
+
+      const response = testCompletion.choices[0]?.message?.content;
+      res.json({ 
+        success: true, 
+        aiResponse: response,
+        message: "Groq AI is functioning correctly" 
+      });
+    } catch (error: any) {
+      console.error("AI Test Error:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        message: "Groq AI test failed" 
+      });
+    }
+  });
+
   // Mock Interview Routes
   app.use('/api/mock-interview', mockInterviewRoutes);
   app.use('/api/virtual-interview', virtualInterviewRoutes);
