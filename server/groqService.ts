@@ -52,11 +52,18 @@ class GroqService {
 
   constructor() {
     if (!process.env.GROQ_API_KEY) {
-      throw new Error("GROQ_API_KEY environment variable is required");
+      console.warn("GROQ_API_KEY not found - AI features will be disabled");
+      this.client = null;
+      return;
     }
-    this.client = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
-    });
+    try {
+      this.client = new Groq({
+        apiKey: process.env.GROQ_API_KEY,
+      });
+    } catch (error) {
+      console.warn("Failed to initialize Groq client - AI features will be disabled:", error.message);
+      this.client = null;
+    }
   }
 
   // All users get the same fast, cost-effective model
