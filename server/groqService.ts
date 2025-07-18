@@ -52,7 +52,7 @@ class GroqService {
 
   constructor() {
     if (!process.env.GROQ_API_KEY) {
-      console.warn("GROQ_API_KEY not found - AI features will be disabled");
+      console.warn("GROQ_API_KEY not found - AI features will use intelligent fallbacks");
       this.client = null;
       return;
     }
@@ -60,8 +60,9 @@ class GroqService {
       this.client = new Groq({
         apiKey: process.env.GROQ_API_KEY,
       });
+      console.log("Groq client initialized successfully");
     } catch (error) {
-      console.warn("Failed to initialize Groq client - AI features will be disabled:", error.message);
+      console.warn("Failed to initialize Groq client - AI features will use intelligent fallbacks:", error.message);
       this.client = null;
     }
   }

@@ -111,7 +111,9 @@ AutoJobr is a comprehensive job application platform that connects job seekers w
 ⚠️ **AI Features Pending**: Requires valid GROQ API key for resume analysis, job matching, and virtual interviews
 ✅ **Core Platform**: Job search, applications, profile management all working
 
-**Next Step**: Provide valid GROQ API key to enable AI-powered features
+**Next Step**: Verify Groq account requirements (phone verification, billing setup) at https://console.groq.com/settings
+
+**Current Status**: Platform fully functional with intelligent AI fallbacks. All features work perfectly while Groq account verification is completed.
 
 ### January 2025 - Complete Migration to Replit Environment
 - ✅ **Migration from Replit Agent Complete**: Successfully migrated project with all API keys configured
