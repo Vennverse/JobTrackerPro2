@@ -1,5 +1,5 @@
 // Popup script for AutoJobr Chrome Extension
-// Fixed version with correct element IDs matching popup.html
+// Handles UI interactions, settings management, and communication with background/content scripts
 
 class AutojobrPopup {
   constructor() {
@@ -25,7 +25,7 @@ class AutojobrPopup {
   async loadSettings() {
     try {
       const response = await this.sendMessage({ action: 'getSettings' });
-      if (response && response.success) {
+      if (response.success) {
         this.settings = { ...this.settings, ...response.data };
       }
     } catch (error) {
@@ -59,11 +59,6 @@ class AutojobrPopup {
 
   updateProfileSection() {
     const profileInfo = document.getElementById('profile-info');
-    if (!profileInfo) {
-      console.error('Profile info element not found');
-      return;
-    }
-    
     if (this.userProfile) {
       profileInfo.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
@@ -98,33 +93,23 @@ class AutojobrPopup {
   bindEvents() {
     // Autofill toggle
     const autofillToggle = document.getElementById('autofill-toggle');
-    if (autofillToggle) {
-      autofillToggle.addEventListener('click', () => this.toggleAutofill());
-    }
+    autofillToggle.addEventListener('click', () => this.toggleAutofill());
     
     // Refresh analysis button
     const refreshBtn = document.getElementById('refresh-analysis');
-    if (refreshBtn) {
-      refreshBtn.addEventListener('click', () => this.refreshAnalysis());
-    }
+    refreshBtn.addEventListener('click', () => this.refreshAnalysis());
     
     // Fill forms button
     const fillFormsBtn = document.getElementById('fill-forms');
-    if (fillFormsBtn) {
-      fillFormsBtn.addEventListener('click', () => this.fillForms());
-    }
+    fillFormsBtn.addEventListener('click', () => this.fillForms());
     
     // Generate cover letter button
     const coverLetterBtn = document.getElementById('generate-cover-letter');
-    if (coverLetterBtn) {
-      coverLetterBtn.addEventListener('click', () => this.generateCoverLetter());
-    }
+    coverLetterBtn.addEventListener('click', () => this.generateCoverLetter());
     
     // Open dashboard link
     const dashboardLink = document.getElementById('open-dashboard');
-    if (dashboardLink) {
-      dashboardLink.addEventListener('click', () => this.openDashboard());
-    }
+    dashboardLink.addEventListener('click', () => this.openDashboard());
   }
   
   updateUI() {
@@ -139,21 +124,12 @@ class AutojobrPopup {
     const statusDot = document.querySelector('.status-dot');
     const statusDiv = document.getElementById('connection-status');
     
-    if (!statusEl || !statusDot || !statusDiv) {
-      console.error('Connection status elements not found');
-      return;
-    }
-    
     if (connected && this.userProfile) {
       statusEl.textContent = 'Connected to AutoJobr';
       statusDot.style.background = '#10b981';
       statusDiv.className = 'status connected';
       if (apiUrl) {
-        try {
-          statusEl.textContent += ` (${new URL(apiUrl).hostname})`;
-        } catch (e) {
-          // Handle invalid URL
-        }
+        statusEl.textContent += ` (${new URL(apiUrl).hostname})`;
       }
     } else if (connected && !this.userProfile) {
       statusEl.textContent = 'Connected - Please log in';
@@ -168,8 +144,6 @@ class AutojobrPopup {
   
   updateAutofillToggle() {
     const toggle = document.getElementById('autofill-toggle');
-    if (!toggle) return;
-    
     if (this.settings.autofillEnabled) {
       toggle.classList.add('active');
     } else {
@@ -177,17 +151,16 @@ class AutojobrPopup {
     }
   }
   
+
+  
   updateAnalysisSection() {
     const analysisContent = document.getElementById('analysis-info');
-    if (!analysisContent) {
-      console.error('Analysis info element not found');
-      return;
-    }
     
     if (!this.currentAnalysis) {
       analysisContent.innerHTML = `
-        <div class="loading">
-          Navigate to a job posting to see analysis
+        <div class="empty-state">
+          <div class="empty-state-icon">📋</div>
+          <p>Navigate to a job posting to see analysis</p>
         </div>
       `;
       return;
@@ -195,63 +168,146 @@ class AutojobrPopup {
     
     const analysis = this.currentAnalysis;
     const matchScoreClass = this.getMatchScoreClass(analysis.matchScore);
+    const progressColor = this.getProgressColor(analysis.matchScore);
     
     analysisContent.innerHTML = `
       <div class="analysis-card">
-        <div class="match-score ${matchScoreClass}">${analysis.matchScore}%</div>
-        <div class="progress-bar">
-          <div class="progress-fill" style="width: ${analysis.matchScore}%;"></div>
+        <div class="match-score">
+          <span class="match-score-label">Match Score</span>
+          <span class="match-score-value ${matchScoreClass}">${analysis.matchScore}%</span>
         </div>
-        <div style="font-size: 12px; margin-top: 10px;">
-          <strong>${analysis.jobTitle}</strong> at ${analysis.company}<br>
-          <span style="opacity: 0.8;">${analysis.detectedSeniority} • ${analysis.workMode}</span>
+        
+        <div class="progress-bar">
+          <div class="progress-fill" style="width: ${analysis.matchScore}%; background: ${progressColor};"></div>
+        </div>
+        
+        <div class="analysis-details">
+          <div class="analysis-item">
+            <div class="analysis-item-label">Seniority</div>
+            <div class="analysis-item-value">${analysis.detectedSeniority}</div>
+          </div>
+          <div class="analysis-item">
+            <div class="analysis-item-label">Work Mode</div>
+            <div class="analysis-item-value">${analysis.workMode}</div>
+          </div>
+        </div>
+        
+        ${analysis.matchingSkills && analysis.matchingSkills.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Matching Skills</div>
+            <div class="skills-list">
+              ${analysis.matchingSkills.slice(0, 4).map(skill => `
+                <span class="skill-tag" style="background: #dcfce7; color: #166534;">${skill}</span>
+              `).join('')}
+              ${analysis.matchingSkills.length > 4 ? `
+                <span class="skill-tag" style="background: #f3f4f6; color: #6b7280;">+${analysis.matchingSkills.length - 4}</span>
+              ` : ''}
+            </div>
+          </div>
+        ` : ''}
+        
+        ${analysis.missingSkills && analysis.missingSkills.length > 0 ? `
+          <div style="margin-bottom: 12px;">
+            <div style="font-size: 12px; color: #6b7280; margin-bottom: 6px;">Missing Skills</div>
+            <div class="skills-list">
+              ${analysis.missingSkills.slice(0, 4).map(skill => `
+                <span class="skill-tag" style="background: #fef3c7; color: #d97706;">${skill}</span>
+              `).join('')}
+              ${analysis.missingSkills.length > 4 ? `
+                <span class="skill-tag" style="background: #f3f4f6; color: #6b7280;">+${analysis.missingSkills.length - 4}</span>
+              ` : ''}
+            </div>
+          </div>
+        ` : ''}
+        
+        <div style="font-size: 11px; color: #9ca3af; text-align: center;">
+          ${analysis.jobTitle ? `For: ${analysis.jobTitle}` : ''}
+          ${analysis.company ? ` at ${analysis.company}` : ''}
         </div>
       </div>
     `;
   }
   
   getMatchScoreClass(score) {
-    if (score >= 70) return 'high';
-    if (score >= 40) return 'medium';
-    return 'low';
+    if (score >= 80) return 'excellent';
+    if (score >= 60) return 'good';
+    if (score >= 40) return 'fair';
+    return 'poor';
+  }
+  
+  getProgressColor(score) {
+    if (score >= 80) return '#10b981';
+    if (score >= 60) return '#3b82f6';
+    if (score >= 40) return '#f59e0b';
+    return '#ef4444';
   }
   
   showProfileError(message) {
     const profileContent = document.getElementById('profile-info');
-    if (!profileContent) return;
-    
     profileContent.innerHTML = `
-      <div class="error-message">${message}</div>
-      <button class="btn" onclick="chrome.tabs.create({url: '${this.settings.apiUrl}'})">
-        Open AutoJobr
-      </button>
+      <div class="error-state">
+        ${message}
+      </div>
     `;
   }
   
   async toggleAutofill() {
-    this.settings.autofillEnabled = !this.settings.autofillEnabled;
-    await this.sendMessage({ 
-      action: 'updateSettings', 
-      data: { autofillEnabled: this.settings.autofillEnabled } 
-    });
-    this.updateAutofillToggle();
+    const newState = !this.settings.autofillEnabled;
+    
+    try {
+      await this.sendMessage({
+        action: 'updateSettings',
+        data: { autofillEnabled: newState }
+      });
+      
+      this.settings.autofillEnabled = newState;
+      this.updateAutofillToggle();
+      
+      // Notify content script
+      await this.sendMessageToActiveTab({
+        action: 'toggleAutofill',
+        enabled: newState
+      });
+      
+      this.showNotification(`Autofill ${newState ? 'enabled' : 'disabled'}`);
+    } catch (error) {
+      console.error('Error toggling autofill:', error);
+      this.showNotification('Failed to update settings', 'error');
+    }
   }
   
   async refreshAnalysis() {
+    if (this.isLoading) return;
+    
+    this.isLoading = true;
+    const refreshBtn = document.getElementById('refresh-analysis');
+    const refreshText = document.getElementById('refresh-text');
+    const refreshLoading = document.getElementById('refresh-loading');
+    
+    refreshText.style.display = 'none';
+    refreshLoading.style.display = 'inline-block';
+    refreshBtn.disabled = true;
+    
     try {
-      const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      const response = await this.sendMessageToActiveTab({ action: 'analyzeJobPage' });
+      await this.sendMessageToActiveTab({ action: 'refreshAnalysis' });
       
-      if (response && response.success) {
-        this.currentAnalysis = response.analysis;
+      // Wait a bit and reload analysis
+      setTimeout(async () => {
+        await this.loadAnalysis();
         this.updateAnalysisSection();
-        this.showNotification('Job analysis updated!');
-      } else {
-        this.showNotification('No job posting found on this page', 'error');
-      }
+        this.showNotification('Analysis refreshed');
+      }, 2000);
+      
     } catch (error) {
       console.error('Error refreshing analysis:', error);
-      this.showNotification('Failed to analyze page', 'error');
+      this.showNotification('Failed to refresh analysis', 'error');
+    } finally {
+      setTimeout(() => {
+        this.isLoading = false;
+        refreshText.style.display = 'inline';
+        refreshLoading.style.display = 'none';
+        refreshBtn.disabled = false;
+      }, 2000);
     }
   }
   
@@ -262,16 +318,8 @@ class AutojobrPopup {
     }
     
     try {
-      const response = await this.sendMessageToActiveTab({ 
-        action: 'fillJobApplicationForm',
-        data: this.userProfile 
-      });
-      
-      if (response && response.success) {
-        this.showNotification(`Filled ${response.fieldsCount} form fields!`);
-      } else {
-        this.showNotification('No fillable forms found on this page', 'error');
-      }
+      await this.sendMessageToActiveTab({ action: 'fillForms' });
+      this.showNotification('Forms filled with your profile data');
     } catch (error) {
       console.error('Error filling forms:', error);
       this.showNotification('Failed to fill forms', 'error');
@@ -287,7 +335,7 @@ class AutojobrPopup {
     try {
       // Get current page job data
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
-      let jobData = await this.sendMessageToActiveTab({ action: 'getJobData' });
+      const jobData = await this.sendMessageToActiveTab({ action: 'getJobData' });
       
       if (!jobData || !jobData.company || !jobData.title) {
         // Prompt user for company and job title
@@ -299,11 +347,13 @@ class AutojobrPopup {
           return;
         }
         
-        jobData = {
-          company: company,
-          title: jobTitle,
-          description: jobData?.description || ''
-        };
+        // Initialize jobData if it's null
+        if (!jobData) {
+          jobData = {};
+        }
+        
+        jobData.company = company;
+        jobData.title = jobTitle;
       }
 
       // Generate cover letter via API
@@ -377,10 +427,24 @@ class AutojobrPopup {
     document.body.appendChild(notification);
     
     setTimeout(() => {
-      if (notification.parentNode) {
-        notification.parentNode.removeChild(notification);
+      notification.remove();
+    }, 2000);
+  }
+  
+  // Listen for storage changes to update UI
+  onStorageChange() {
+    chrome.storage.onChanged.addListener(async (changes) => {
+      if (changes.lastAnalysis) {
+        this.currentAnalysis = changes.lastAnalysis.newValue;
+        this.updateAnalysisSection();
       }
-    }, 3000);
+      
+      if (changes.userProfile) {
+        this.userProfile = changes.userProfile.newValue;
+        this.updateProfileSection();
+        this.updateConnectionStatus();
+      }
+    });
   }
 }
 
