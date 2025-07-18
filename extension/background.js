@@ -106,8 +106,8 @@ async function getUserProfile(sendResponse) {
     
     console.log('AutoJobr Extension: Using API URL:', finalApiUrl);
     
-    // Try extension-specific endpoint first
-    const extensionResponse = await fetch(`${finalApiUrl}/api/extension/profile`, {
+    // First, check if user is authenticated by calling /api/user
+    const userResponse = await fetch(`${finalApiUrl}/api/user`, {
       method: 'GET',
       credentials: 'include',
       mode: 'cors',
@@ -116,78 +116,158 @@ async function getUserProfile(sendResponse) {
       }
     });
     
-    if (extensionResponse.ok) {
-      const profileData = await extensionResponse.json();
-      console.log('AutoJobr Extension: Profile loaded successfully');
-      sendResponse({ success: true, data: profileData });
-      return;
-    }
-    
-    // Fallback: Check authentication
-    const authResponse = await fetch(`${finalApiUrl}/api/auth/user`, {
-      method: 'GET',
-      credentials: 'include',
-      mode: 'cors',
-      headers: {
-        'Content-Type': 'application/json',
-      }
-    });
-    
-    if (!authResponse.ok) {
+    if (!userResponse.ok) {
       console.log('AutoJobr Extension: User not authenticated');
-      sendResponse({ success: false, error: 'Please log in to AutoJobr web app first' });
+      sendResponse({ success: false, error: 'User not authenticated' });
       return;
     }
     
-    const user = await authResponse.json();
+    const userData = await userResponse.json();
+    console.log('AutoJobr Extension: User authenticated:', userData.email);
     
-    // Get profile data
-    let profile = null;
+    // Get comprehensive user data for form filling
+    const [profileResponse, skillsResponse, workExperienceResponse, educationResponse] = await Promise.all([
+      fetch(`${finalApiUrl}/api/profile`, {
+        method: 'GET',
+        credentials: 'include',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' }
+      }),
+      fetch(`${finalApiUrl}/api/skills`, {
+        method: 'GET',
+        credentials: 'include',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' }
+      }),
+      fetch(`${finalApiUrl}/api/work-experience`, {
+        method: 'GET',
+        credentials: 'include',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' }
+      }),
+      fetch(`${finalApiUrl}/api/education`, {
+        method: 'GET',
+        credentials: 'include',
+        mode: 'cors',
+        headers: { 'Content-Type': 'application/json' }
+      })
+    ]);
+    
+    let profileData = userData; // Start with user data
     let skills = [];
+    let workExperience = [];
+    let education = [];
     
-    try {
-      const profileResponse = await fetch(`${finalApiUrl}/api/profile`, {
-        method: 'GET',
-        credentials: 'include',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      if (profileResponse.ok) {
-        profile = await profileResponse.json();
-      }
-    } catch (e) {
-      console.log('Profile not found, using basic user data');
+    // Parse all responses
+    if (profileResponse.ok) {
+      const fullProfile = await profileResponse.json();
+      profileData = { ...userData, ...fullProfile };
     }
     
-    try {
-      const skillsResponse = await fetch(`${finalApiUrl}/api/skills`, {
-        method: 'GET',
-        credentials: 'include',
-        mode: 'cors',
-        headers: {
-          'Content-Type': 'application/json',
-        }
-      });
-      if (skillsResponse.ok) {
-        skills = await skillsResponse.json();
-      }
-    } catch (e) {
-      console.log('Skills not found');
+    if (skillsResponse.ok) {
+      skills = await skillsResponse.json();
     }
     
-    const userProfile = {
-      user,
-      profile,
-      skills
+    if (workExperienceResponse.ok) {
+      workExperience = await workExperienceResponse.json();
+    }
+    
+    if (educationResponse.ok) {
+      education = await educationResponse.json();
+    }
+    
+    // Create comprehensive profile for form filling
+    const extensionProfile = {
+      // Basic Info
+      firstName: userData.firstName || profileData.fullName?.split(' ')[0] || 'User',
+      lastName: userData.lastName || profileData.fullName?.split(' ').slice(1).join(' ') || '',
+      email: userData.email,
+      phone: profileData.phone || '',
+      
+      // Professional Info
+      professionalTitle: profileData.professionalTitle || '',
+      summary: profileData.summary || '',
+      yearsExperience: profileData.yearsExperience || 0,
+      
+      // Location
+      location: profileData.location || `${profileData.city || ''}, ${profileData.state || ''}`.trim(),
+      currentAddress: profileData.currentAddress || '',
+      city: profileData.city || '',
+      state: profileData.state || '',
+      zipCode: profileData.zipCode || '',
+      country: profileData.country || 'United States',
+      
+      // Work Authorization
+      workAuthorization: profileData.workAuthorization || '',
+      visaStatus: profileData.visaStatus || '',
+      requiresSponsorship: profileData.requiresSponsorship || false,
+      
+      // Salary & Preferences
+      desiredSalaryMin: profileData.desiredSalaryMin || 0,
+      desiredSalaryMax: profileData.desiredSalaryMax || 0,
+      salaryCurrency: profileData.salaryCurrency || 'USD',
+      preferredWorkMode: profileData.preferredWorkMode || '',
+      willingToRelocate: profileData.willingToRelocate || false,
+      noticePeriod: profileData.noticePeriod || '',
+      
+      // Social Links
+      linkedinUrl: profileData.linkedinUrl || '',
+      githubUrl: profileData.githubUrl || '',
+      portfolioUrl: profileData.portfolioUrl || '',
+      
+      // Skills (for form filling)
+      skills: skills.map(s => s.skillName || s.skill_name).filter(Boolean),
+      skillsDetailed: skills.map(s => ({
+        name: s.skillName || s.skill_name,
+        proficiency: s.proficiencyLevel || s.proficiency_level,
+        yearsExperience: s.yearsExperience || s.years_experience
+      })),
+      
+      // Work Experience (for form filling)
+      workExperience: workExperience.map(w => ({
+        company: w.company,
+        position: w.position,
+        location: w.location,
+        startDate: w.startDate?.split('T')[0] || '',
+        endDate: w.endDate?.split('T')[0] || '',
+        isCurrent: w.isCurrent,
+        description: w.description,
+        achievements: Array.isArray(w.achievements) ? w.achievements : []
+      })),
+      
+      // Education (for form filling)
+      education: education.map(e => ({
+        institution: e.institution,
+        degree: e.degree,
+        fieldOfStudy: e.fieldOfStudy || e.field_of_study,
+        startDate: e.startDate?.split('T')[0] || '',
+        endDate: e.endDate?.split('T')[0] || '',
+        gpa: e.gpa,
+        achievements: Array.isArray(e.achievements) ? e.achievements : []
+      })),
+      
+      // Additional Info
+      graduationYear: education.length > 0 ? new Date(education[0].endDate || education[0].end_date).getFullYear() : null,
+      highestDegree: education.length > 0 ? education[0].degree : '',
+      majorFieldOfStudy: education.length > 0 ? (education[0].fieldOfStudy || education[0].field_of_study) : '',
+      
+      // Demographics (optional)
+      gender: profileData.gender || '',
+      ethnicity: profileData.ethnicity || '',
+      veteranStatus: profileData.veteranStatus || '',
+      
+      // Emergency Contact
+      emergencyContactName: profileData.emergencyContactName || '',
+      emergencyContactPhone: profileData.emergencyContactPhone || '',
+      emergencyContactRelation: profileData.emergencyContactRelation || ''
     };
     
-    // Cache profile data
-    await chrome.storage.sync.set({ userProfile });
+    console.log('AutoJobr Extension: Comprehensive profile loaded with', skills.length, 'skills,', workExperience.length, 'work experiences,', education.length, 'education entries');
     
-    console.log('AutoJobr Extension: Profile data cached');
-    sendResponse({ success: true, data: userProfile });
+    // Store profile in extension storage for offline access
+    await chrome.storage.sync.set({ userProfile: extensionProfile });
+    
+    sendResponse({ success: true, data: extensionProfile });
     
   } catch (error) {
     console.error('AutoJobr Extension: Error fetching user profile:', error);

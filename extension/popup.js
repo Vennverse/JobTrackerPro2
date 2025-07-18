@@ -44,9 +44,11 @@ class AutojobrPopup {
       const response = await this.sendMessage({ action: 'getUserProfile' });
       if (response && response.success) {
         this.userProfile = response.data;
+        console.log('User profile loaded:', this.userProfile.email);
         this.updateProfileSection();
         this.updateConnectionStatus(true, apiUrl);
       } else {
+        console.log('Profile load failed:', response?.error || 'Unknown error');
         this.showProfileError('Please log in to AutoJobr web app first');
         this.updateConnectionStatus(false, apiUrl);
       }
@@ -65,17 +67,21 @@ class AutojobrPopup {
     }
     
     if (this.userProfile) {
+      const initials = this.userProfile.firstName ? 
+        this.userProfile.firstName.charAt(0).toUpperCase() : 
+        (this.userProfile.email ? this.userProfile.email.charAt(0).toUpperCase() : '?');
+      
       profileInfo.innerHTML = `
         <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 10px;">
-          <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px;">
-            ${this.userProfile.firstName ? this.userProfile.firstName.charAt(0) : '?'}
+          <div style="width: 40px; height: 40px; background: rgba(255,255,255,0.2); border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 18px; color: white;">
+            ${initials}
           </div>
           <div>
-            <div style="font-weight: bold;">${this.userProfile.firstName || 'Unknown'} ${this.userProfile.lastName || 'User'}</div>
-            <div style="font-size: 12px; opacity: 0.8;">${this.userProfile.professionalTitle || 'Professional'}</div>
+            <div style="font-weight: bold; color: white;">${this.userProfile.firstName || 'User'} ${this.userProfile.lastName || ''}</div>
+            <div style="font-size: 12px; opacity: 0.8; color: rgba(255,255,255,0.8);">${this.userProfile.professionalTitle || 'Professional'}</div>
           </div>
         </div>
-        <div style="font-size: 12px; opacity: 0.8;">
+        <div style="font-size: 12px; opacity: 0.8; color: rgba(255,255,255,0.8);">
           📧 ${this.userProfile.email || 'No email'}<br>
           📍 ${this.userProfile.location || 'No location'}<br>
           💼 ${this.userProfile.yearsExperience || 0} years experience
