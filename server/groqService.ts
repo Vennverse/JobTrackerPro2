@@ -526,7 +526,7 @@ Be precise and only extract information that is explicitly stated in the job pos
             content: prompt
           }
         ],
-        model: "llama3-8b-8192",
+        model: "llama-3.1-8b-instant",
         temperature: 0.1,
         max_tokens: 1000,
       });
@@ -557,7 +557,7 @@ Return JSON array:
 [{"id":"ai-1","title":"Job Title","company":"Company","location":"City","description":"Brief desc","requirements":["req1"],"matchScore":85,"salaryRange":"$80k-120k","workMode":"Remote","postedDate":"2024-01-15T10:00:00Z","applicationUrl":"https://company.com/jobs","benefits":["benefit1"],"isBookmarked":false}]`;
 
       const completion = await this.client.chat.completions.create({
-        model: "llama3-8b-8192",
+        model: "llama-3.1-8b-instant",
         messages: [{ role: "user", content: prompt }],
         temperature: 0.3,
         max_tokens: 1500,

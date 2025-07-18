@@ -7556,7 +7556,7 @@ Host: https://autojobr.com`;
     try {
       const testCompletion = await groqService.client.chat.completions.create({
         messages: [{ role: "user", content: "Say 'AI is working' in JSON format: {\"status\": \"working\", \"message\": \"AI is working\"}" }],
-        model: "llama3-8b-8192",
+        model: "llama-3.1-8b-instant",
         temperature: 0.1,
         max_tokens: 100,
       });
