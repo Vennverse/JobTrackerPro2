@@ -46,8 +46,8 @@ class GroqService {
   
   // AI Model Tiers - Using optimized model with higher rate limits and better context
   private readonly models = {
-    premium: "llama-3.1-8b-instant",   // Current optimized model with large context
-    basic: "llama-3.1-8b-instant"      // Same model for all users - cost-effective with better context
+    premium: "llama-3.3-70b-versatile",   // Current working model from user's example
+    basic: "llama-3.3-70b-versatile"      // Same model for all users
   };
 
   constructor() {
