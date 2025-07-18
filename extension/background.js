@@ -101,7 +101,7 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 async function getUserProfile(sendResponse) {
   try {
     // Use ExtensionConfig to get the correct API URL
-    const config = new ExtensionConfig();
+    const config = new (globalThis.ExtensionConfig || ExtensionConfig)();
     const finalApiUrl = await config.getApiUrl();
     
     console.log('AutoJobr Extension: Using API URL:', finalApiUrl);
@@ -198,7 +198,7 @@ async function getUserProfile(sendResponse) {
 // Handle enhanced AI job analysis with Groq
 async function handleJobAnalysis(jobData, sendResponse) {
   try {
-    const config = new ExtensionConfig();
+    const config = new (globalThis.ExtensionConfig || ExtensionConfig)();
     const apiUrl = await config.getApiUrl();
     
     if (!apiUrl) {
@@ -236,7 +236,7 @@ async function handleJobAnalysis(jobData, sendResponse) {
       },
       credentials: 'include',
       body: JSON.stringify({
-        jobUrl: jobData.url || window.location.href,
+        jobUrl: jobData.url || 'Unknown URL',
         jobTitle: jobData.title,
         company: jobData.company,
         jobDescription: jobData.description,
@@ -355,7 +355,7 @@ async function handleApplicationTracking(applicationData, sendResponse) {
       body: JSON.stringify({
         jobTitle: applicationData.jobTitle,
         company: applicationData.company,
-        jobUrl: applicationData.jobUrl || window.location.href,
+        jobUrl: applicationData.jobUrl || 'Unknown URL',
         location: applicationData.location,
         jobType: applicationData.jobType,
         workMode: applicationData.workMode,
@@ -475,7 +475,7 @@ async function generateCoverLetter(data, sendResponse) {
 // Handle auto-fill usage tracking for premium subscription model
 async function handleAutoFillTracking(fillData, sendResponse) {
   try {
-    const config = new ExtensionConfig();
+    const config = new (globalThis.ExtensionConfig || ExtensionConfig)();
     const apiUrl = await config.getApiUrl();
     
     if (!apiUrl) {

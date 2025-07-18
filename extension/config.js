@@ -70,4 +70,10 @@ class ExtensionConfig {
 }
 
 // Export for use in other extension files
-window.ExtensionConfig = ExtensionConfig;
+// Use globalThis for cross-environment compatibility (service worker, content script, popup)
+if (typeof globalThis !== 'undefined') {
+  globalThis.ExtensionConfig = ExtensionConfig;
+}
+if (typeof window !== 'undefined') {
+  window.ExtensionConfig = ExtensionConfig;
+}
