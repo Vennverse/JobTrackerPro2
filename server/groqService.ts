@@ -51,13 +51,19 @@ class GroqService {
   };
 
   constructor() {
-    if (!process.env.GROQ_API_KEY) {
+    const apiKey = process.env.GROQ_API_KEY;
+    if (!apiKey) {
       throw new Error("GROQ_API_KEY environment variable is required");
     }
     
-    console.log(`Initializing Groq with API key: ${process.env.GROQ_API_KEY.substring(0, 10)}...`);
+    // Validate API key format
+    if (!apiKey.startsWith('gsk_') || apiKey.length < 50) {
+      console.warn(`Invalid GROQ API key format. Expected gsk_... with 50+ chars, got: ${apiKey.substring(0, 10)}... (${apiKey.length} chars)`);
+    }
+    
+    console.log(`Initializing Groq with API key: ${apiKey.substring(0, 20)}... (${apiKey.length} chars)`);
     this.client = new Groq({
-      apiKey: process.env.GROQ_API_KEY,
+      apiKey: apiKey,
     });
     console.log("Groq client initialized successfully");
   }
@@ -146,9 +152,18 @@ ${resumeText}
     try {
       const accessInfo = this.hasAIAccess(user);
       const completion = await this.client.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert ATS resume analyzer. Analyze resumes and return valid JSON only. No code, no explanations, just the requested JSON structure."
+          },
+          {
+            role: "user",
+            content: prompt
+          }
+        ],
         model: this.getModel(user),
-        temperature: 0.3,
+        temperature: 0.2,
         max_tokens: 1000,
       });
 
@@ -448,9 +463,18 @@ Return detailed JSON:
       console.log(`Making Groq API call for job analysis with model: ${this.getModel(user)}`);
       
       const completion = await this.client.chat.completions.create({
-        messages: [{ role: "user", content: prompt }],
+        messages: [
+          {
+            role: "system",
+            content: "You are an expert career coach. Analyze job matches and return valid JSON only. No code, no explanations, just the requested JSON structure."
+          },
+          {
+            role: "user", 
+            content: prompt
+          }
+        ],
         model: this.getModel(user),
-        temperature: 0.2,
+        temperature: 0.1,
         max_tokens: 800,
       });
       
