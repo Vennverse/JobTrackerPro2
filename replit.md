@@ -126,6 +126,13 @@ AutoJobr is a comprehensive job application platform that connects job seekers w
 ✅ **Authentication Working**: User login and session management functional
 ✅ **AI Features Working**: GROQ API key verified and functional - all AI features operational
 ✅ **Core Platform**: Job search, applications, profile management all working
+✅ **Demo User Created**: Professional demo user for landing page screenshots
+
+**Demo User for Screenshots**: 
+- Email: demo.alexandra.chen@example.com
+- Password: demo123
+- Profile: Alexandra Chen - Senior Full Stack Engineer (6 years experience)
+- Features: High ATS score resume (94%), applications to Google/Stripe/Netflix with high match scores
 
 **Current Status**: Platform fully operational with all features including AI-powered resume analysis, job matching, and virtual interviews working perfectly.
 
