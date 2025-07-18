@@ -1997,19 +1997,21 @@ Additional Information:
       console.log("Job analysis result:", analysis);
 
       // Store the analysis in database for persistence
-      await storage.saveJobAnalysis({
-        userId,
-        jobTitle: jobData.title,
-        company: jobData.company,
-        matchScore: analysis.matchScore || 0,
-        matchingSkills: analysis.matchingSkills || [],
-        missingSkills: analysis.missingSkills || [],
-        applicationRecommendation: analysis.applicationRecommendation || 'review_required',
-        tailoringAdvice: analysis.tailoringAdvice || 'Review job requirements carefully',
-        interviewPrepTips: analysis.interviewPrepTips || 'Prepare for standard interview questions',
-        seniorityLevel: analysis.seniorityLevel || 'Not specified',
-        createdAt: new Date()
-      });
+      try {
+        await storage.addJobAnalysis({
+          userId,
+          jobUrl: "dashboard-analysis",
+          jobTitle: jobData.title,
+          company: jobData.company,
+          matchScore: analysis.matchScore || 0,
+          analysisData: analysis,
+          jobDescription: jobData.description,
+          appliedAt: null
+        });
+      } catch (storageError) {
+        console.log("Could not store analysis:", storageError);
+        // Continue without storing - analysis still works
+      }
 
       // Return analysis result for frontend
       res.json({
@@ -3547,11 +3549,25 @@ Additional Information:
         `Resume: ${profile?.summary || ''} Skills: ${profile?.yearsExperience || 0} years experience` :
         `Professional with ${profile?.yearsExperience || 0} years experience in ${profile?.professionalTitle || 'various roles'}`;
 
-      // Analyze with Groq
+      // Analyze with Groq - Fix API signature
       const analysis = await groqService.analyzeJobMatch(
-        jobDescription, 
-        resumeText,
-        profile || {}
+        {
+          title: "Manual Analysis",
+          company: "Manual Entry", 
+          description: jobDescription,
+          requirements: jobDescription,
+          qualifications: "",
+          benefits: ""
+        },
+        {
+          skills: profile?.skills || [],
+          workExperience: profile?.workExperience || [],
+          education: profile?.education || [],
+          yearsExperience: profile?.yearsExperience || 0,
+          professionalTitle: profile?.professionalTitle || "",
+          summary: profile?.summary || ""
+        },
+        req.user
       );
 
       // Store the analysis
@@ -3579,9 +3595,11 @@ Additional Information:
       const { companyName, jobTitle, jobDescription } = req.body;
       const userId = req.user?.id;
 
-      if (!companyName || !jobTitle) {
-        return res.status(400).json({ message: "Company name and job title are required" });
-      }
+      // Make company name and job title optional with defaults
+      const company = companyName || "The Company";
+      const title = jobTitle || "The Position";
+      
+      console.log("Cover letter request:", { company, title, hasJobDescription: !!jobDescription });
 
       // Get user profile
       const profile = await storage.getUserProfile(userId);
@@ -3595,8 +3613,8 @@ Additional Information:
         Generate a professional cover letter for the following:
         
         Job Details:
-        - Company: ${companyName}
-        - Position: ${jobTitle}
+        - Company: ${company}
+        - Position: ${title}
         ${jobDescription ? `- Job Description: ${jobDescription}` : ''}
         
         Candidate Profile:
@@ -3619,7 +3637,7 @@ Additional Information:
       `;
 
       const response = await groqService.client.chat.completions.create({
-        model: "llama3-70b-8192", // the newest model available
+        model: "llama-3.1-8b-instant",
         messages: [{ role: "user", content: prompt }],
         max_tokens: 1000,
         temperature: 0.7
