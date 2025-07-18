@@ -99,12 +99,6 @@ class GroqService {
     return this.models[tier];
   }
 
-  // Public method to get model for external usage
-  public getModel(user: any): string {
-    const { tier } = this.hasAIAccess(user);
-    return this.models[tier];
-  }
-
   // Get AI access information for user
   public getAIAccessInfo(user: any): { tier: 'premium' | 'basic', message?: string, daysLeft?: number } {
     const accessInfo = this.hasAIAccess(user);
