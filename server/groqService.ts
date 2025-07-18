@@ -363,29 +363,70 @@ ${resumeText}
   ): Promise<JobMatchAnalysis & { aiTier?: string, upgradeMessage?: string }> {
     const userSkills = userProfile.skills.map(s => s.skillName).join(', ');
     const userExperience = userProfile.workExperience.map(w => 
-      `${w.position} at ${w.company}${w.description ? ': ' + w.description.substring(0, 200) : ''}`
+      `${w.position} at ${w.company}${w.description ? ': ' + w.description.substring(0, 300) : ''}`
     ).join('\n');
     const userEducation = userProfile.education.map(e => 
       `${e.degree} in ${e.fieldOfStudy || 'N/A'} from ${e.institution}`
     ).join('\n');
 
-    const prompt = `Match candidate to job. Return JSON only:
+    // Create comprehensive prompt for detailed analysis
+    const prompt = `You are an expert career coach and recruiter. Analyze this job match comprehensively and provide detailed insights.
 
-JOB: ${jobData.title} at ${jobData.company}
-${jobData.description.substring(0, 300)}...
+=== JOB POSTING ===
+POSITION: ${jobData.title} at ${jobData.company}
+DESCRIPTION: ${jobData.description}
+${jobData.requirements ? `REQUIREMENTS: ${jobData.requirements}` : ''}
+${jobData.qualifications ? `QUALIFICATIONS: ${jobData.qualifications}` : ''}
+${jobData.benefits ? `BENEFITS: ${jobData.benefits}` : ''}
 
-CANDIDATE: ${userProfile.professionalTitle}, ${userProfile.yearsExperience}yr exp
-Skills: ${userSkills.substring(0, 200)}...
+=== CANDIDATE PROFILE ===
+TITLE: ${userProfile.professionalTitle || 'Professional'}
+EXPERIENCE: ${userProfile.yearsExperience || 0} years
+SUMMARY: ${userProfile.summary || 'N/A'}
 
+SKILLS: ${userSkills}
+
+WORK EXPERIENCE:
+${userExperience}
+
+EDUCATION:
+${userEducation}
+
+=== ANALYSIS REQUIRED ===
+Provide a comprehensive match analysis with these specific insights:
+
+1. Calculate precise match percentage (0-100) based on skills alignment, experience relevance, and role requirements
+2. Identify all matching skills and technologies between candidate and job
+3. List critical missing skills that would prevent success in this role
+4. Categorize skill gaps by importance level
+5. Assess seniority level fit (entry/mid/senior/executive)
+6. Determine work mode preferences and job type alignment
+7. Evaluate role complexity and career progression potential
+8. Assess industry and cultural fit
+9. Provide specific application recommendation
+10. Give detailed resume tailoring advice
+11. Provide comprehensive interview preparation tips
+
+Return detailed JSON:
 {
-  "matchScore": number,
-  "matchingSkills": ["matching skills"],
-  "missingSkills": ["gaps"],
-  "skillGaps": {"critical": [], "important": [], "nice_to_have": []},
-  "seniorityLevel": "entry|mid|senior",
-  "applicationRecommendation": "strongly_recommended|recommended|consider|not_recommended",
-  "tailoringAdvice": "brief advice",
-  "interviewPrepTips": "key tips"
+  "matchScore": number (precise 0-100 based on deep analysis),
+  "matchingSkills": ["specific skills that align between candidate and job"],
+  "missingSkills": ["important skills candidate lacks for this role"],
+  "skillGaps": {
+    "critical": ["must-have skills candidate lacks"],
+    "important": ["valuable skills to develop"],
+    "nice_to_have": ["bonus skills mentioned in job"]
+  },
+  "seniorityLevel": "entry|mid|senior|executive",
+  "workMode": "remote|hybrid|onsite|flexible|not_specified",
+  "jobType": "full-time|part-time|contract|internship|not_specified",
+  "roleComplexity": "basic|standard|advanced|expert",
+  "careerProgression": "lateral_move|step_up|significant_advancement|career_change",
+  "industryFit": "excellent|good|moderate|challenging|poor",
+  "cultureFit": "excellent|good|research_needed|potential_concerns",
+  "applicationRecommendation": "strongly_recommended|recommended|consider_with_preparation|needs_development|not_recommended",
+  "tailoringAdvice": "detailed specific advice on customizing resume and cover letter for this exact role",
+  "interviewPrepTips": "comprehensive preparation strategy including technical topics, behavioral questions, and company research"
 }`;
 
     try {
