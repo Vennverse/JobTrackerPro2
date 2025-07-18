@@ -134,6 +134,8 @@ AutoJobr is a comprehensive job application platform that connects job seekers w
 - Profile: Alexandra Chen - Senior Full Stack Engineer (6 years experience)
 - Features: High ATS score resume (94%), applications to Google/Stripe/Netflix with high match scores
 
+**Extension Fixed**: Updated manifest.json icon paths from root to icons/ directory
+
 **Current Status**: Platform fully operational with all features including AI-powered resume analysis, job matching, and virtual interviews working perfectly.
 
 ### January 2025 - Complete AI System Overhaul & Migration
