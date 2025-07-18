@@ -52,25 +52,45 @@ class GroqService {
 
   constructor() {
     if (!process.env.GROQ_API_KEY) {
-      console.warn("GROQ_API_KEY not found - AI features will use intelligent fallbacks");
-      this.client = null;
-      return;
+      throw new Error("GROQ_API_KEY environment variable is required");
     }
-    try {
-      this.client = new Groq({
-        apiKey: process.env.GROQ_API_KEY,
-      });
-      console.log("Groq client initialized successfully");
-    } catch (error) {
-      console.warn("Failed to initialize Groq client - AI features will use intelligent fallbacks:", error.message);
-      this.client = null;
-    }
+    
+    console.log(`Initializing Groq with API key: ${process.env.GROQ_API_KEY.substring(0, 10)}...`);
+    this.client = new Groq({
+      apiKey: process.env.GROQ_API_KEY,
+    });
+    console.log("Groq client initialized successfully");
   }
 
   // All users get the same fast, cost-effective model
   private hasAIAccess(user: any): { tier: 'premium' | 'basic', message?: string } {
     // Everyone gets the same efficient model - no tier restrictions
     return { tier: 'premium' };
+  }
+
+  private generateFallbackJobAnalysis(accessInfo: { tier: 'premium' | 'basic', message?: string }): JobMatchAnalysis & { aiTier?: string, upgradeMessage?: string } {
+    return {
+      matchScore: 45,
+      matchingSkills: [],
+      missingSkills: ['AI analysis unavailable - please check requirements manually'],
+      skillGaps: {
+        critical: [],
+        important: ['Verify technical requirements match your skills'],
+        nice_to_have: []
+      },
+      seniorityLevel: 'Mid-level',
+      workMode: 'Please check job posting for details',
+      jobType: 'Please review full job description',
+      roleComplexity: 'Standard',
+      careerProgression: 'Good opportunity to grow',
+      industryFit: 'Review company culture and values',
+      cultureFit: 'Research company background',
+      applicationRecommendation: 'recommended',
+      tailoringAdvice: 'Customize your resume to highlight relevant experience and skills mentioned in the job posting',
+      interviewPrepTips: 'Research the company, practice common interview questions, and prepare specific examples of your work',
+      aiTier: accessInfo.tier,
+      upgradeMessage: 'AI analysis temporarily unavailable - manual review recommended'
+    };
   }
 
   // Get model based on user tier
@@ -431,12 +451,16 @@ Return detailed JSON:
 
     try {
       const accessInfo = this.hasAIAccess(user);
+      console.log(`Making Groq API call for job analysis with model: ${this.getModel(user)}`);
+      
       const completion = await this.client.chat.completions.create({
         messages: [{ role: "user", content: prompt }],
         model: this.getModel(user),
         temperature: 0.2,
         max_tokens: 800,
       });
+      
+      console.log("Groq API call successful for job analysis");
 
       const content = completion.choices[0]?.message?.content;
       if (!content) {
