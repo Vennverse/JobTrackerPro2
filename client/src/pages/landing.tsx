@@ -51,8 +51,8 @@ import { Link } from "wouter";
 import { useState, useEffect } from "react";
 import { Helmet } from "react-helmet";
 
-// Import the platform screenshots - Demo User Alexandra Chen
-import dashboardImage from "@assets/image_1752850516130.png";
+// Import the platform screenshots
+import dashboardImage from "@assets/image_1752591356271.png";
 import resumeImage from "@assets/image_1752591359330.png";
 import jobMatchImage from "@assets/image_1752591363466.png";
 import applicationImage from "@assets/image_1752591366598.png";
@@ -68,60 +68,57 @@ const PlatformSlider = () => {
   
   const slides = [
     {
-      title: "AI-Powered Resume Analysis Dashboard",
-      description: "Alexandra Chen's professional resume receives 94% ATS score with detailed AI analysis and improvement recommendations",
+      title: "Application Tracking Dashboard",
+      description: "Complete job application management with pipeline visualization, success metrics, and activity tracking",
       image: dashboardImage,
-      alt: "Alexandra Chen's resume analysis showing 94% ATS score with professional insights",
+      alt: "Job Applications Dashboard showing pipeline, stats, and recent activity",
       features: [
-        "94% ATS Score with detailed breakdown",
-        "40% Overall ATS Score with improvement tracking",
-        "60% Formatting Score with specific optimization",
-        "Missing programming languages identified",
-        "Keyword suggestions for technical roles"
+        "Real-time application pipeline tracking",
+        "Success rate and interview analytics",
+        "Activity feed with timestamps",
+        "One-click application sync"
       ],
-      highlight: "Senior Full Stack Engineer • 6 years experience • 94% ATS compatibility"
+      highlight: "Track 5 applications • 0% response rate • 0 interviews scheduled"
     },
     {
-      title: "Elite Job Application Pipeline",
-      description: "Alexandra's applications to top companies including Google, Stripe, and Netflix with exceptional match scores",
+      title: "Resume Management & Analysis",
+      description: "Upload multiple resumes and get instant AI-powered ATS optimization with detailed scoring",
       image: resumeImage,
-      alt: "High-performing job applications to Google, Stripe, Netflix with 92-96% match scores",
+      alt: "Resume management interface with upload and analysis features",
       features: [
-        "Applications to Google, Stripe, Netflix",
-        "Match scores: 92-96% compatibility",
-        "Interview scheduled with Google",
-        "Offer received from Stripe",
-        "Final interviews with top companies"
+        "Upload up to 2 resumes simultaneously",
+        "40% ATS score with improvement tracking",
+        "Instant analysis of strengths and weaknesses",
+        "208.3 kB file size optimization"
       ],
-      highlight: "Google: 96% match • Stripe: 92% match • Netflix: 94% match"
+      highlight: "40% ATS Score • 2 Strengths • 4 Improvements • 3 Missing Keywords"
     },
     {
-      title: "Professional Profile Excellence",
-      description: "Alexandra Chen's complete professional profile showcasing 6 years of senior engineering experience",
+      title: "Detailed AI Resume Analysis",
+      description: "Comprehensive resume breakdown with ATS scoring, formatting analysis, and actionable recommendations",
       image: applicationImage,
-      alt: "Alexandra Chen's professional profile with 6 years senior engineering experience",
+      alt: "Detailed resume analysis showing ATS score, formatting, and recommendations",
       features: [
-        "Senior Full Stack Engineer with 6 years experience",
-        "San Francisco, CA location",
-        "Expert in React, Node.js, TypeScript, AWS",
-        "Led teams of 8+ developers",
-        "Built products serving 500K+ users"
+        "Overall ATS score (40%) with detailed breakdown",
+        "Formatting score (60%) with specific issues",
+        "Content quality assessment",
+        "Missing keywords identification",
+        "Keyword suggestions for improvement"
       ],
-      highlight: "Stanford CS Graduate • Team Lead Experience • 500K+ Users Served"
+      highlight: "Missing: programming languages, agile methodologies, cloud platforms"
     },
     {
-      title: "AI-Powered Career Intelligence",
-      description: "Advanced AI analysis provides Alexandra with strategic career insights and market intelligence",
+      title: "Personal Career AI Assistant",
+      description: "Get personalized career guidance powered by Groq AI with location-specific market insights",
       image: analyticsImage,
-      alt: "AI career intelligence dashboard with market insights and analysis",
+      alt: "Personal Career AI Assistant interface with analysis options",
       features: [
-        "Strategic career planning with AI guidance",
-        "Market intelligence for San Francisco tech scene",
-        "Salary range optimization ($140K-$180K)",
-        "Skill gap analysis and development roadmap",
-        "Powered by Groq AI (llama-3.3-70b-versatile)"
+        "CEO career goal setting and planning",
+        "5-year timeline with strategic milestones",
+        "Location-based market analysis (Bangalore)",
+        "Premium AI model access with 30-day trial"
       ],
-      highlight: "AI-driven insights • Market intelligence • Strategic planning"
+      highlight: "Powered by Groq AI (llama-3.3-70b-versatile) • Location-specific insights"
     },
     {
       title: "Skills Development Tracking",
@@ -472,44 +469,29 @@ export default function Landing() {
             <motion.div variants={itemVariants} className="mb-8">
               <Badge className="mb-4 bg-gradient-to-r from-blue-600 to-purple-600 text-white border-0">
                 <Sparkles className="w-3 h-3 mr-1" />
-                Success Story: Alexandra Chen
+                AI-Powered Job Search Revolution
               </Badge>
               <h1 className="text-4xl md:text-6xl font-bold text-gray-900 dark:text-white mb-6">
-                From 94% ATS Score to{' '}
+                Land Your{' '}
                 <span className="bg-gradient-to-r from-blue-600 to-purple-600 bg-clip-text text-transparent">
-                  Top Company Offers
+                  Dream Job
                 </span>
+                {' '}10x Faster
               </h1>
               <p className="text-xl text-gray-600 dark:text-gray-300 mb-8 max-w-3xl mx-auto">
-                Senior Full Stack Engineer Alexandra Chen used AutoJobr to land interviews at Google, Stripe, and Netflix 
-                with 92-96% match scores. Join thousands of successful professionals who've transformed their careers with AI.
+                AutoJobr combines AI-powered resume optimization, intelligent job matching, automated applications, 
+                and personalized career guidance to accelerate your job search success.
               </p>
-              
-              {/* Success metrics */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-6 max-w-2xl mx-auto mb-8">
-                <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm">
-                  <div className="text-2xl font-bold text-blue-600">94%</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">ATS Score</div>
-                </div>
-                <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm">
-                  <div className="text-2xl font-bold text-green-600">96%</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Match Rate</div>
-                </div>
-                <div className="text-center p-4 bg-white/50 dark:bg-gray-800/50 rounded-lg backdrop-blur-sm">
-                  <div className="text-2xl font-bold text-purple-600">3</div>
-                  <div className="text-sm text-gray-600 dark:text-gray-400">Top Companies</div>
-                </div>
-              </div>
             </motion.div>
 
             <motion.div variants={itemVariants} className="flex flex-col sm:flex-row gap-4 justify-center mb-12">
               <Button size="lg" onClick={handleLogin} className="bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 text-lg px-8 py-4">
                 <Play className="mr-2 h-5 w-5" />
-                Start Like Alexandra
+                Start Job Search
               </Button>
               <Button size="lg" variant="outline" className="text-lg px-8 py-4">
                 <Eye className="mr-2 h-5 w-5" />
-                See Her Dashboard
+                Watch Demo
               </Button>
             </motion.div>
 
@@ -1203,136 +1185,11 @@ export default function Landing() {
         </div>
       </section>
 
-      {/* Success Story Testimonial */}
-      <section className="py-20 bg-gradient-to-br from-gray-50 to-white dark:from-gray-900 dark:to-gray-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            className="mb-12"
-          >
-            <Badge className="mb-4 bg-gradient-to-r from-green-600 to-blue-600 text-white border-0">
-              <Star className="w-3 h-3 mr-1" />
-              Success Story
-            </Badge>
-            <h2 className="text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-8">
-              From Job Search to Dream Job in Weeks
-            </h2>
-          </motion.div>
-          
-          <motion.div
-            initial={{ opacity: 0, y: 20 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={{ once: true }}
-            transition={{ delay: 0.2 }}
-            className="bg-white dark:bg-gray-800 rounded-2xl p-8 shadow-xl border border-gray-200 dark:border-gray-700"
-          >
-            <div className="flex items-center justify-center mb-6">
-              <div className="w-16 h-16 bg-gradient-to-r from-blue-600 to-purple-600 rounded-full flex items-center justify-center text-white font-bold text-xl">
-                AC
-              </div>
-            </div>
-            
-            <blockquote className="text-lg md:text-xl text-gray-600 dark:text-gray-300 mb-6 italic">
-              "AutoJobr transformed my job search completely. The AI resume analysis brought my ATS score from 40% to 94%, 
-              and I landed interviews at Google, Stripe, and Netflix with 92-96% match scores. The platform made applying 
-              to top companies effortless and strategic."
-            </blockquote>
-            
-            <div className="flex items-center justify-center mb-4">
-              <div className="text-center">
-                <p className="font-semibold text-gray-900 dark:text-white">Alexandra Chen</p>
-                <p className="text-sm text-gray-600 dark:text-gray-400">Senior Full Stack Engineer</p>
-                <p className="text-sm text-gray-500 dark:text-gray-500">6 years experience • Stanford CS Graduate</p>
-              </div>
-            </div>
-            
-            <div className="flex items-center justify-center space-x-1 mb-6">
-              {[...Array(5)].map((_, i) => (
-                <Star key={i} className="w-5 h-5 text-yellow-400 fill-current" />
-              ))}
-            </div>
-            
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              <div className="text-center p-4 bg-gradient-to-br from-blue-50 to-purple-50 dark:from-blue-900/20 dark:to-purple-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-blue-600 mb-1">Google</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Interview Scheduled</div>
-                <div className="text-xs text-green-600 font-semibold">96% Match</div>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-br from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-green-600 mb-1">Stripe</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Offer Received</div>
-                <div className="text-xs text-green-600 font-semibold">92% Match</div>
-              </div>
-              <div className="text-center p-4 bg-gradient-to-br from-red-50 to-pink-50 dark:from-red-900/20 dark:to-pink-900/20 rounded-lg">
-                <div className="text-2xl font-bold text-red-600 mb-1">Netflix</div>
-                <div className="text-sm text-gray-600 dark:text-gray-400">Final Interview</div>
-                <div className="text-xs text-green-600 font-semibold">94% Match</div>
-              </div>
-            </div>
-          </motion.div>
-        </div>
-      </section>
-
-      {/* Company Logos */}
-      <section className="py-16 bg-white dark:bg-gray-800">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center mb-12">
-            <h2 className="text-2xl md:text-3xl font-bold text-gray-900 dark:text-white mb-4">
-              AutoJobr Users Work At
-            </h2>
-            <p className="text-gray-600 dark:text-gray-300">
-              Join professionals who've landed jobs at top companies worldwide
-            </p>
-          </div>
-          
-          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-8 items-center justify-center opacity-60 hover:opacity-100 transition-opacity duration-300">
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-blue-600">Google</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-purple-600">Stripe</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-red-600">Netflix</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-blue-500">Microsoft</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-gray-900 dark:text-white">Apple</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-orange-600">Amazon</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-blue-600">Meta</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-green-600">Uber</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-pink-600">Airbnb</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-green-600">Spotify</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-purple-600">Shopify</div>
-            </div>
-            <div className="text-center p-4">
-              <div className="text-2xl font-bold text-blue-600">Tesla</div>
-            </div>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
       <section className="py-20 bg-gradient-to-r from-blue-600 to-purple-600 text-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
           <h2 className="text-3xl md:text-4xl font-bold mb-6">
-            Ready to Get Results Like Alexandra?
+            Ready to Transform Your Career?
           </h2>
           <p className="text-xl mb-8 text-blue-100">
             Join 500,000+ professionals who've already accelerated their job search with AutoJobr
@@ -1343,8 +1200,8 @@ export default function Landing() {
               Start Free Today
             </Button>
             <Button size="lg" variant="outline" className="border-white text-white hover:bg-white/10 text-lg px-8 py-4">
-              <Eye className="mr-2 h-5 w-5" />
-              See Alexandra's Dashboard
+              <MessageSquare className="mr-2 h-5 w-5" />
+              Talk to Sales
             </Button>
           </div>
         </div>
