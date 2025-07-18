@@ -167,10 +167,7 @@ export default function Dashboard() {
   // Job application mutation
   const applyToJobMutation = useMutation({
     mutationFn: async (jobData: any) => {
-      const response = await apiRequest(`/api/applications`, {
-        method: "POST",
-        body: JSON.stringify(jobData),
-      });
+      const response = await apiRequest("POST", `/api/applications`, jobData);
       if (response.ok) {
         return response.json();
       }
@@ -206,13 +203,10 @@ export default function Dashboard() {
 
     setIsAnalyzing(true);
     try {
-      const response = await apiRequest("/api/jobs/analyze", {
-        method: "POST",
-        body: JSON.stringify({
-          jobDescription,
-          jobTitle,
-          company: companyName,
-        }),
+      const response = await apiRequest("POST", "/api/jobs/analyze", {
+        jobDescription,
+        jobTitle,
+        company: companyName,
       });
 
       if (response.ok) {
@@ -257,13 +251,10 @@ export default function Dashboard() {
 
     setIsGenerating(true);
     try {
-      const response = await apiRequest("/api/cover-letter/generate", {
-        method: "POST",
-        body: JSON.stringify({
-          jobDescription: coverJobDescription,
-          jobTitle,
-          company: companyName,
-        }),
+      const response = await apiRequest("POST", "/api/cover-letter/generate", {
+        jobDescription: coverJobDescription,
+        jobTitle,
+        company: companyName,
       });
 
       if (response.ok) {
