@@ -144,6 +144,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
 
+  // Setup session middleware early for extension support
+  // Note: Session setup is handled in setupAuth(), removing duplicate setup
+
+  // Extension API for Chrome extension - provides profile data for form filling (no auth required)
+  app.get('/api/extension/profile', async (req: any, res) => {
+    try {
+      // Check for session user first (without requiring authentication)
+      const sessionUser = req.session?.user;
+      
+      if (sessionUser && sessionUser.id) {
+        // Get real user profile from database
+        const [profile, skills, workExperience, education] = await Promise.all([
+          storage.getUserProfile(sessionUser.id),
+          storage.getUserSkills(sessionUser.id),
+          storage.getUserWorkExperience(sessionUser.id),
+          storage.getUserEducation(sessionUser.id)
+        ]);
+        
+        if (profile) {
+          const extensionProfile = {
+            firstName: profile.fullName?.split(' ')[0] || sessionUser.firstName || 'User',
+            lastName: profile.fullName?.split(' ').slice(1).join(' ') || sessionUser.lastName || 'Name',
+            email: sessionUser.email || 'user@example.com',
+            phone: profile.phone || '',
+            linkedinUrl: profile.linkedinUrl || '',
+            githubUrl: profile.githubUrl || '',
+            location: profile.location || `${profile.city || ''}, ${profile.state || ''}`.trim(),
+            professionalTitle: profile.professionalTitle || '',
+            yearsExperience: profile.yearsExperience || 0,
+            currentAddress: profile.currentAddress || '',
+            summary: profile.summary || '',
+            workAuthorization: profile.workAuthorization || '',
+            desiredSalaryMin: profile.desiredSalaryMin || 0,
+            desiredSalaryMax: profile.desiredSalaryMax || 0,
+            salaryCurrency: profile.salaryCurrency || 'USD',
+            skills: skills.map(s => s.skillName || s.name),
+            education: education.map(e => ({
+              degree: e.degree,
+              fieldOfStudy: e.fieldOfStudy,
+              institution: e.institution,
+              graduationYear: e.graduationYear
+            })),
+            workExperience: workExperience.map(w => ({
+              company: w.company,
+              position: w.position,
+              startDate: w.startDate?.toISOString().split('T')[0],
+              endDate: w.endDate?.toISOString().split('T')[0] || null,
+              description: w.description
+            }))
+          };
+          
+          return res.json(extensionProfile);
+        }
+      }
+      
+      // Fallback for demo/anonymous users
+      const mockProfile = {
+        firstName: 'Demo',
+        lastName: 'User',
+        email: 'demo@autojobr.com',
+        phone: '(555) 123-4567',
+        linkedinUrl: 'https://linkedin.com/in/demo-user',
+        githubUrl: 'https://github.com/demo-user',
+        location: 'San Francisco, CA',
+        professionalTitle: 'Software Engineer',
+        yearsExperience: 5,
+        currentAddress: '123 Tech Street, San Francisco, CA 94105',
+        summary: 'Experienced software engineer with expertise in full-stack development.',
+        workAuthorization: 'US Citizen',
+        desiredSalaryMin: 100000,
+        desiredSalaryMax: 150000,
+        salaryCurrency: 'USD',
+        skills: ['JavaScript', 'React', 'Node.js', 'Python', 'PostgreSQL'],
+        education: [{
+          degree: 'Bachelor of Science',
+          fieldOfStudy: 'Computer Science',
+          institution: 'University of California, Berkeley',
+          graduationYear: 2019
+        }],
+        workExperience: [{
+          company: 'Tech Corp',
+          position: 'Senior Software Engineer',
+          startDate: '2021-01-01',
+          endDate: null,
+          description: 'Led development of web applications using React and Node.js'
+        }]
+      };
+      
+      res.json(mockProfile);
+    } catch (error) {
+      console.error('Error fetching extension profile:', error);
+      res.status(500).json({ message: 'Failed to fetch profile' });
+    }
+  });
+
   // Auth middleware
   await setupAuth(app);
 
@@ -2312,8 +2407,8 @@ Additional Information:
     }
   });
 
-  // Extension API endpoint for checking connection
-  app.get('/api/extension/profile', isAuthenticated, async (req: any, res) => {
+  // Extension API endpoint for checking connection (authenticated)
+  app.get('/api/extension/profile-auth', isAuthenticated, async (req: any, res) => {
     try {
       const userId = req.user.id;
       const [user, profile, skills, workExperience, education] = await Promise.all([
@@ -2787,97 +2882,7 @@ Additional Information:
     }
   });
 
-  // Extension API for Chrome extension - provides profile data for form filling
-  app.get('/api/extension/profile', async (req: any, res) => {
-    try {
-      // Check for session user first
-      const sessionUser = req.session?.user;
-      
-      if (sessionUser && sessionUser.id) {
-        // Get real user profile from database
-        const [profile, skills, workExperience, education] = await Promise.all([
-          storage.getUserProfile(sessionUser.id),
-          storage.getUserSkills(sessionUser.id),
-          storage.getUserWorkExperience(sessionUser.id),
-          storage.getUserEducation(sessionUser.id)
-        ]);
-        
-        if (profile) {
-          const extensionProfile = {
-            firstName: profile.fullName?.split(' ')[0] || sessionUser.firstName || 'User',
-            lastName: profile.fullName?.split(' ').slice(1).join(' ') || sessionUser.lastName || 'Name',
-            email: sessionUser.email || 'user@example.com',
-            phone: profile.phone || '',
-            linkedinUrl: profile.linkedinUrl || '',
-            githubUrl: profile.githubUrl || '',
-            location: profile.location || `${profile.city || ''}, ${profile.state || ''}`.trim(),
-            professionalTitle: profile.professionalTitle || '',
-            yearsExperience: profile.yearsExperience || 0,
-            currentAddress: profile.currentAddress || '',
-            summary: profile.summary || '',
-            workAuthorization: profile.workAuthorization || '',
-            desiredSalaryMin: profile.desiredSalaryMin || 0,
-            desiredSalaryMax: profile.desiredSalaryMax || 0,
-            salaryCurrency: profile.salaryCurrency || 'USD',
-            skills: skills.map(s => s.skillName || s.name),
-            education: education.map(e => ({
-              degree: e.degree,
-              fieldOfStudy: e.fieldOfStudy,
-              institution: e.institution,
-              graduationYear: e.graduationYear
-            })),
-            workExperience: workExperience.map(w => ({
-              company: w.company,
-              position: w.position,
-              startDate: w.startDate?.toISOString().split('T')[0],
-              endDate: w.endDate?.toISOString().split('T')[0] || null,
-              description: w.description
-            }))
-          };
-          
-          return res.json(extensionProfile);
-        }
-      }
-      
-      // Fallback for demo/anonymous users
-      const mockProfile = {
-        firstName: 'Demo',
-        lastName: 'User',
-        email: 'demo@autojobr.com',
-        phone: '(555) 123-4567',
-        linkedinUrl: 'https://linkedin.com/in/demo-user',
-        githubUrl: 'https://github.com/demo-user',
-        location: 'San Francisco, CA',
-        professionalTitle: 'Software Engineer',
-        yearsExperience: 5,
-        currentAddress: '123 Tech Street, San Francisco, CA 94105',
-        summary: 'Experienced software engineer with expertise in full-stack development.',
-        workAuthorization: 'US Citizen',
-        desiredSalaryMin: 100000,
-        desiredSalaryMax: 150000,
-        salaryCurrency: 'USD',
-        skills: ['JavaScript', 'React', 'Node.js', 'Python', 'PostgreSQL'],
-        education: [{
-          degree: 'Bachelor of Science',
-          fieldOfStudy: 'Computer Science',
-          institution: 'University of California, Berkeley',
-          graduationYear: 2019
-        }],
-        workExperience: [{
-          company: 'Tech Corp',
-          position: 'Senior Software Engineer',
-          startDate: '2021-01-01',
-          endDate: null,
-          description: 'Led development of web applications using React and Node.js'
-        }]
-      };
-      
-      res.json(mockProfile);
-    } catch (error) {
-      console.error('Error fetching extension profile:', error);
-      res.status(500).json({ message: 'Failed to fetch profile' });
-    }
-  });
+
 
   // Extension-specific application tracking
   app.post('/api/extension/applications', isAuthenticated, async (req: any, res) => {

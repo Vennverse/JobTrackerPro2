@@ -8,7 +8,7 @@ class AutojobrPopup {
     this.currentAnalysis = null;
     this.settings = {
       autofillEnabled: true,
-      apiUrl: 'http://localhost:5000'
+      apiUrl: 'https://3d6f082b-7ea6-4d17-ac26-d8174ad1bade-00-2guo24ufezq8l.janeway.repl.co'
     };
     
     this.init();
@@ -36,7 +36,7 @@ class AutojobrPopup {
   async loadUserProfile() {
     try {
       // Test connection first using ExtensionConfig
-      const config = new ExtensionConfig();
+      const config = new (window.ExtensionConfig || globalThis.ExtensionConfig || ExtensionConfig)();
       const apiUrl = await config.detectApiUrl();
       
       console.log('Testing connection to:', apiUrl);
@@ -401,7 +401,7 @@ class AutojobrPopup {
       }
 
       // Generate cover letter via API
-      const config = new ExtensionConfig();
+      const config = new (window.ExtensionConfig || globalThis.ExtensionConfig || ExtensionConfig)();
       const apiUrl = await config.getApiUrl();
       
       const response = await fetch(`${apiUrl}/api/cover-letter/generate`, {
