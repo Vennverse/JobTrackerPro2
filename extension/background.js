@@ -1,6 +1,9 @@
 // Background script for AutoJobr Chrome Extension
 // Handles extension lifecycle, storage, and communication between components
 
+// Import ExtensionConfig for dynamic API URL detection
+importScripts('config.js');
+
 // Extension installation and update handling
 chrome.runtime.onInstalled.addListener(async (details) => {
   if (details.reason === 'install') {
@@ -11,8 +14,7 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     
     // Check for common AutoJobr deployment patterns
     const possibleUrls = [
-      'https://YOUR_REPLIT_URL.replit.app',  // Replace with your actual Replit URL
-      'https://60e68a76-86c4-4eef-b2f5-8a97de774d09-00-f9a0u7nh8k0p.kirk.replit.dev',
+      'https://f35468d8-af1d-4b42-9e66-a17d454fb018-00-tlc05acwrcdz.riker.replit.dev',
       'https://autojobr.replit.app',
       'http://localhost:5000'
     ];
@@ -20,13 +22,22 @@ chrome.runtime.onInstalled.addListener(async (details) => {
     for (const url of possibleUrls) {
       if (url) {
         try {
-          const response = await fetch(`${url}/api/auth/user`, { 
-            method: 'HEAD',
-            mode: 'no-cors'
+          const response = await fetch(`${url}/api/health`, { 
+            method: 'GET',
+            mode: 'cors',
+            credentials: 'include',
+            headers: {
+              'Accept': 'application/json',
+              'Content-Type': 'application/json'
+            }
           });
-          apiUrl = url;
-          break;
+          if (response.ok) {
+            apiUrl = url;
+            console.log('AutoJobr connected to:', url);
+            break;
+          }
         } catch (e) {
+          console.log('Connection failed for:', url, e);
           continue;
         }
       }
@@ -89,8 +100,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
 // Get user profile from web app API
 async function getUserProfile(sendResponse) {
   try {
-    const { apiUrl } = await chrome.storage.sync.get(['apiUrl']);
-    const finalApiUrl = apiUrl || 'http://localhost:5000';
+    // Use ExtensionConfig to get the correct API URL
+    const config = new ExtensionConfig();
+    const finalApiUrl = await config.getApiUrl();
+    
+    console.log('AutoJobr Extension: Using API URL:', finalApiUrl);
     
     // Try extension-specific endpoint first
     const extensionResponse = await fetch(`${finalApiUrl}/api/extension/profile`, {
@@ -104,6 +118,7 @@ async function getUserProfile(sendResponse) {
     
     if (extensionResponse.ok) {
       const profileData = await extensionResponse.json();
+      console.log('AutoJobr Extension: Profile loaded successfully');
       sendResponse({ success: true, data: profileData });
       return;
     }
@@ -119,6 +134,7 @@ async function getUserProfile(sendResponse) {
     });
     
     if (!authResponse.ok) {
+      console.log('AutoJobr Extension: User not authenticated');
       sendResponse({ success: false, error: 'Please log in to AutoJobr web app first' });
       return;
     }
@@ -130,7 +146,7 @@ async function getUserProfile(sendResponse) {
     let skills = [];
     
     try {
-      const profileResponse = await fetch(`${apiUrl}/api/profile`, {
+      const profileResponse = await fetch(`${finalApiUrl}/api/profile`, {
         method: 'GET',
         credentials: 'include',
         mode: 'cors',
@@ -146,7 +162,7 @@ async function getUserProfile(sendResponse) {
     }
     
     try {
-      const skillsResponse = await fetch(`${apiUrl}/api/skills`, {
+      const skillsResponse = await fetch(`${finalApiUrl}/api/skills`, {
         method: 'GET',
         credentials: 'include',
         mode: 'cors',
@@ -170,10 +186,11 @@ async function getUserProfile(sendResponse) {
     // Cache profile data
     await chrome.storage.sync.set({ userProfile });
     
+    console.log('AutoJobr Extension: Profile data cached');
     sendResponse({ success: true, data: userProfile });
     
   } catch (error) {
-    console.error('Error fetching user profile:', error);
+    console.error('AutoJobr Extension: Error fetching user profile:', error);
     sendResponse({ success: false, error: 'Connection failed. Please ensure you are logged in to AutoJobr.' });
   }
 }

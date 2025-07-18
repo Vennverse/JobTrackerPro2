@@ -4,8 +4,7 @@
 class ExtensionConfig {
   constructor() {
     this.possibleUrls = [
-      'https://YOUR_REPLIT_URL.replit.app',  // Replace with your actual Replit URL
-      'https://60e68a76-86c4-4eef-b2f5-8a97de774d09-00-f9a0u7nh8k0p.kirk.replit.dev',
+      'https://f35468d8-af1d-4b42-9e66-a17d454fb018-00-tlc05acwrcdz.riker.replit.dev',
       'https://autojobr.replit.app',
       'http://localhost:5000'
     ];
@@ -38,12 +37,17 @@ class ExtensionConfig {
   async testConnection(url) {
     try {
       const response = await fetch(`${url}/api/health`, {
-        method: 'HEAD',
+        method: 'GET',
         mode: 'cors',
-        credentials: 'include'
+        credentials: 'include',
+        headers: {
+          'Accept': 'application/json',
+          'Content-Type': 'application/json'
+        }
       });
       return response.ok;
     } catch (error) {
+      console.log(`Connection test failed for ${url}:`, error);
       return false;
     }
   }

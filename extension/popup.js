@@ -35,16 +35,25 @@ class AutojobrPopup {
   
   async loadUserProfile() {
     try {
+      // Test connection first using ExtensionConfig
+      const config = new ExtensionConfig();
+      const apiUrl = await config.detectApiUrl();
+      
+      console.log('Testing connection to:', apiUrl);
+      
       const response = await this.sendMessage({ action: 'getUserProfile' });
       if (response && response.success) {
         this.userProfile = response.data;
         this.updateProfileSection();
+        this.updateConnectionStatus(true, apiUrl);
       } else {
         this.showProfileError('Please log in to AutoJobr web app first');
+        this.updateConnectionStatus(false, apiUrl);
       }
     } catch (error) {
       console.error('Error loading user profile:', error);
       this.showProfileError('Connection failed - check if you are logged in');
+      this.updateConnectionStatus(false, null);
     }
   }
 
@@ -110,16 +119,26 @@ class AutojobrPopup {
     this.updateAnalysisSection();
   }
   
-  updateConnectionStatus() {
-    const statusEl = document.getElementById('connection-status');
+  updateConnectionStatus(connected = false, apiUrl = null) {
+    const statusEl = document.querySelector('#connection-status span');
     const statusDot = document.querySelector('.status-dot');
+    const statusDiv = document.getElementById('connection-status');
     
-    if (this.userProfile) {
-      statusEl.textContent = 'Connected';
+    if (connected && this.userProfile) {
+      statusEl.textContent = 'Connected to AutoJobr';
       statusDot.style.background = '#10b981';
+      statusDiv.className = 'status connected';
+      if (apiUrl) {
+        statusEl.textContent += ` (${new URL(apiUrl).hostname})`;
+      }
+    } else if (connected && !this.userProfile) {
+      statusEl.textContent = 'Connected - Please log in';
+      statusDot.style.background = '#fbbf24';
+      statusDiv.className = 'status disconnected';
     } else {
-      statusEl.textContent = 'Not logged in';
+      statusEl.textContent = 'Connection failed';
       statusDot.style.background = '#ef4444';
+      statusDiv.className = 'status disconnected';
     }
   }
   
