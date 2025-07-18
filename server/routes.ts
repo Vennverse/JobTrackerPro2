@@ -1994,23 +1994,39 @@ Additional Information:
       
       // Analyze job match with Groq AI
       const analysis = await groqService.analyzeJobMatch(jobData, userProfile);
+      console.log("Job analysis result:", analysis);
 
-      // Return simplified analysis result for dashboard
+      // Store the analysis in database for persistence
+      await storage.saveJobAnalysis({
+        userId,
+        jobTitle: jobData.title,
+        company: jobData.company,
+        matchScore: analysis.matchScore || 0,
+        matchingSkills: analysis.matchingSkills || [],
+        missingSkills: analysis.missingSkills || [],
+        applicationRecommendation: analysis.applicationRecommendation || 'review_required',
+        tailoringAdvice: analysis.tailoringAdvice || 'Review job requirements carefully',
+        interviewPrepTips: analysis.interviewPrepTips || 'Prepare for standard interview questions',
+        seniorityLevel: analysis.seniorityLevel || 'Not specified',
+        createdAt: new Date()
+      });
+
+      // Return analysis result for frontend
       res.json({
-        matchScore: analysis.matchScore,
-        matchingSkills: analysis.matchingSkills,
-        missingSkills: analysis.missingSkills,
-        skillGaps: analysis.skillGaps,
-        seniorityLevel: analysis.seniorityLevel,
-        workMode: analysis.workMode,
-        jobType: analysis.jobType,
-        roleComplexity: analysis.roleComplexity,
-        careerProgression: analysis.careerProgression,
-        industryFit: analysis.industryFit,
-        cultureFit: analysis.cultureFit,
-        applicationRecommendation: analysis.applicationRecommendation,
-        tailoringAdvice: analysis.tailoringAdvice,
-        interviewPrepTips: analysis.interviewPrepTips
+        matchScore: analysis.matchScore || 0,
+        matchingSkills: analysis.matchingSkills || [],
+        missingSkills: analysis.missingSkills || [],
+        skillGaps: analysis.skillGaps || { critical: [], important: [], nice_to_have: [] },
+        seniorityLevel: analysis.seniorityLevel || 'Not specified',
+        workMode: analysis.workMode || 'Not specified',
+        jobType: analysis.jobType || 'Not specified',
+        roleComplexity: analysis.roleComplexity || 'Standard',
+        careerProgression: analysis.careerProgression || 'Good opportunity',
+        industryFit: analysis.industryFit || 'Review required',
+        cultureFit: analysis.cultureFit || 'Research needed',
+        applicationRecommendation: analysis.applicationRecommendation || 'review_required',
+        tailoringAdvice: analysis.tailoringAdvice || 'Review job requirements carefully',
+        interviewPrepTips: analysis.interviewPrepTips || 'Prepare for standard interview questions'
       });
     } catch (error) {
       console.error("Error analyzing job:", error);
